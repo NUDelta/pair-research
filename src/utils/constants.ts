@@ -1,6 +1,6 @@
 // Global Constants
 // ! NO trailing slash at the end of the URL
-export const SITE_BASE_URL = 'https://www.pairresearch.io'
+export const SITE_BASE_URL = process.env.NEXT_PUBLIC_SITE_BASE_URL ?? 'http://localhost:3000'
 
 // Supabase Storage S3 Client
 export const S3_REGION = 'us-east-2'
