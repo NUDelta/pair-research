@@ -36,6 +36,7 @@ export const upsertTask = async (
         group_id: groupId,
         created_at: new Date(),
         updated_at: new Date(),
+        delete_pending: false,
       },
     })
 

@@ -4,6 +4,7 @@ import type { TaskValues } from '@/lib/validators/task'
 import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { useCurrentUserTaskDescription } from '@/hooks'
 import { upsertTask } from '@/lib/actions/task'
 import { taskSchema } from '@/lib/validators/task'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -16,12 +17,13 @@ import TaskDescription from './TaskDescription'
 
 interface TaskEditorProps {
   groupId: string
-  description?: string | null
+  currentUserId: string
+  initialDescription?: string | null
 }
 
-const TaskEditor = ({ groupId, description }: TaskEditorProps) => {
-  const [currentDescription, setCurrentDescription] = useState(description ?? '')
-  const [isJoined, setIsJoined] = useState(description !== undefined)
+const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorProps) => {
+  const { currentDescription } = useCurrentUserTaskDescription(groupId, currentUserId, initialDescription)
+  const [isJoined, setIsJoined] = useState(currentDescription !== null && currentDescription.trim() !== '')
   const [editing, setEditing] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -34,7 +36,7 @@ const TaskEditor = ({ groupId, description }: TaskEditorProps) => {
   } = useForm<TaskValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
-      description: description ?? '',
+      description: currentDescription ?? '',
     },
   })
 
@@ -51,7 +53,6 @@ const TaskEditor = ({ groupId, description }: TaskEditorProps) => {
       const { success, message } = await upsertTask(groupId, data.description.trim())
       if (success) {
         toast.success(message)
-        setCurrentDescription(data.description)
         setIsJoined(true)
         router.refresh()
       }
@@ -100,7 +101,7 @@ const TaskEditor = ({ groupId, description }: TaskEditorProps) => {
     : (
         <div className="flex justify-between items-center">
           <TaskDescription
-            description={description
+            description={currentDescription
               ?? 'No task submitted yet. Submit a task to join the pool!'}
           />
           <Button
@@ -110,9 +111,7 @@ const TaskEditor = ({ groupId, description }: TaskEditorProps) => {
             aria-label="Edit Task"
           >
             <SquarePen className="h-4 w-4" />
-            {(currentDescription === null || currentDescription.trim() !== '')
-              ? 'Edit'
-              : 'Add Task'}
+            {isJoined ? 'Edit' : 'Add Task'}
           </Button>
         </div>
       )

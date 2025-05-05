@@ -23,7 +23,7 @@ const TaskEditor = dynamic(async () => import('./TaskEditor'), {
 
 interface TaskCardProps {
   taskId?: string
-  editable?: boolean
+  currentUserId?: string
   groupId?: string
   description?: string | null
   fullName?: string | null
@@ -33,7 +33,7 @@ interface TaskCardProps {
 
 export default function TaskCard({
   taskId,
-  editable = false,
+  currentUserId,
   groupId,
   description,
   fullName,
@@ -41,16 +41,20 @@ export default function TaskCard({
   control,
 }: TaskCardProps) {
   return (
-    <Card>
+    <Card className={currentUserId === undefined ? 'animate-mask-reveal' : ''}>
       <CardContent className={
         `flex flex-col space-y-4 px-4 py-2
-        ${!editable && 'sm:flex-row sm:justify-between'}`
+        ${currentUserId === undefined && 'sm:flex-row sm:justify-between'}`
       }
       >
         <div className="space-y-3">
-          {editable && groupId !== undefined
+          {currentUserId !== undefined && groupId !== undefined
             ? (
-                <TaskEditor groupId={groupId} description={description} />
+                <TaskEditor
+                  groupId={groupId}
+                  currentUserId={currentUserId}
+                  initialDescription={description}
+                />
               )
             : (
                 <TaskDescription description={description ?? 'No task submitted yet.'} />

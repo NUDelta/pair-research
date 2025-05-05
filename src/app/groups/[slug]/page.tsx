@@ -27,6 +27,7 @@ export default async function SingleGroupPage({
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
 
+  // This may be an empty array
   const othersTasks = tasks.filter(task => task.userId !== currentUserId)
 
   return (
@@ -59,7 +60,7 @@ export default async function SingleGroupPage({
 
       {/* Current User's Task */}
       <TaskCard
-        editable={true}
+        currentUserId={currentUserId}
         groupId={groupInfo.id}
         description={currentUserTask?.description}
         userAvatar={groupInfo.avatarUrl}
@@ -67,9 +68,12 @@ export default async function SingleGroupPage({
       />
 
       {/* Others' Tasks */}
-      {othersTasks.length > 0 && (
-        <OthersTasks groupId={groupInfo.id} initialTasks={othersTasks} />
-      )}
+      <OthersTasks
+        groupId={groupInfo.id}
+        currentUserId={currentUserId}
+        currentUserHasTask={currentUserTask !== undefined}
+        initialTasks={othersTasks}
+      />
     </div>
   )
 }

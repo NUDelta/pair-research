@@ -15,7 +15,14 @@ export const deleteTask = async (
       where: { id },
     })
 
-    if (!task || task.user_id !== user.id) {
+    if (!task) {
+      return {
+        success: false,
+        message: 'Task not found',
+      }
+    }
+
+    if (task.user_id !== user.id) {
       return {
         success: false,
         message: 'You are not allowed to delete this task',
@@ -47,8 +54,15 @@ export const deleteTask = async (
       where: { task_id: id },
     })
 
-    // Finally delete the task itself
-    await prisma.task.delete({ where: { id } })
+    // Finally delete the task itself (mark it as pending deletion)
+    await prisma.task.update({
+      where: {
+        id,
+      },
+      data: {
+        delete_pending: true,
+      },
+    })
 
     return {
       success: true,
