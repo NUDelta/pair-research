@@ -1,0 +1,306 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth", "public"]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model profile {
+  id                                   String               @id @default(dbgenerated("auth.uid()")) @db.Uuid
+  full_name                            String?
+  avatar_url                           String?
+  email                                String
+  affinity_affinity_helpee_idToprofile affinity[]           @relation("affinity_helpee_idToprofile")
+  affinity_affinity_helper_idToprofile affinity[]           @relation("affinity_helper_idToprofile")
+  group                                group[]
+  group_member                         group_member[]
+  pair_pair_first_userToprofile        pair[]               @relation("pair_first_userToprofile")
+  pair_pair_second_userToprofile       pair[]               @relation("pair_second_userToprofile")
+  task                                 task[]
+  task_help_capacity                   task_help_capacity[]
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model affinity {
+  id                                  BigInt  @id @unique @default(autoincrement())
+  helpee_id                           String  @db.Uuid
+  helper_id                           String  @db.Uuid
+  pairing_id                          String  @db.Uuid
+  value                               Float   @db.Real
+  profile_affinity_helpee_idToprofile profile @relation("affinity_helpee_idToprofile", fields: [helpee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profile_affinity_helper_idToprofile profile @relation("affinity_helper_idToprofile", fields: [helper_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pairing                             pairing @relation(fields: [pairing_id], references: [id], onDelete: Cascade)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model group {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  active         Boolean        @default(true)
+  name           String
+  description    String?
+  active_pairing String?
+  creator_id     String         @default(dbgenerated("auth.uid()")) @db.Uuid
+  created_at     DateTime       @default(now()) @db.Timestamptz(6)
+  profile        profile        @relation(fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  group_member   group_member[]
+  group_role     group_role[]
+  pairing        pairing[]
+  task           task[]
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model group_member {
+  id         BigInt     @id @unique @default(autoincrement())
+  group_id   String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  role_id    BigInt
+  is_admin   Boolean    @default(false)
+  is_pending Boolean    @default(true)
+  joined_at  DateTime   @default(now()) @db.Timestamptz(6)
+  group      group      @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  group_role group_role @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profile    profile    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([group_id, user_id], map: "unique_group_user")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model group_role {
+  id           BigInt         @id @unique @default(autoincrement())
+  group_id     String         @db.Uuid
+  title        String
+  group_member group_member[]
+  group        group          @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pair {
+  id                                BigInt  @id @unique @default(autoincrement())
+  pairing_id                        String  @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_user                        String  @default(dbgenerated("auth.uid()")) @db.Uuid
+  second_user                       String  @default(dbgenerated("auth.uid()")) @db.Uuid
+  profile_pair_first_userToprofile  profile @relation("pair_first_userToprofile", fields: [first_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pairing                           pairing @relation(fields: [pairing_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profile_pair_second_userToprofile profile @relation("pair_second_userToprofile", fields: [second_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pairing {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  group_id   String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  affinity   affinity[]
+  pair       pair[]
+  group      group      @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  task       task[]
+
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model task {
+  id                 BigInt               @id @unique @default(autoincrement())
+  user_id            String               @default(dbgenerated("auth.uid()")) @db.Uuid
+  group_id           String               @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description        String
+  pairing_id         String?              @db.Uuid
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  group              group                @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pairing            pairing?             @relation(fields: [pairing_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profile            profile              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  task_help_capacity task_help_capacity[]
+
+  @@unique([user_id, group_id], map: "unique_user_group")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model task_help_capacity {
+  id            BigInt  @id @unique @default(autoincrement())
+  task_id       BigInt
+  user_id       String  @db.Uuid
+  help_capacity Int     @db.SmallInt
+  task          task    @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  profile       profile @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([task_id, user_id], map: "unique_task_user_rating")
+  @@schema("public")
+}
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model audit_log_entries {
+// @@schema("auth")
+// }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model flow_state {
+// @@schema("auth")
+// }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model identities {
+// @@schema("auth")
+// }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model instances {
+// @@schema("auth")
+// }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model mfa_amr_claims {
+// @@schema("auth")
+// }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model mfa_challenges {
+// @@schema("auth")
+// }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model mfa_factors {
+// @@schema("auth")
+// }
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model one_time_tokens {
+// @@schema("auth")
+// }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model refresh_tokens {
+// @@schema("auth")
+// }
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model saml_providers {
+// @@schema("auth")
+// }
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model saml_relay_states {
+// @@schema("auth")
+// }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model schema_migrations {
+// @@schema("auth")
+// }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model sessions {
+// @@schema("auth")
+// }
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+// model sso_domains {
+// @@schema("auth")
+// }
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+// model sso_providers {
+// @@schema("auth")
+// }
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+// model users {
+// @@schema("auth")
+// }
+
+enum aal_level {
+  aal1
+  aal2
+  aal3
+
+  @@schema("auth")
+}
+
+enum code_challenge_method {
+  s256
+  plain
+
+  @@schema("auth")
+}
+
+enum factor_status {
+  unverified
+  verified
+
+  @@schema("auth")
+}
+
+enum factor_type {
+  totp
+  webauthn
+  phone
+
+  @@schema("auth")
+}
+
+enum one_time_token_type {
+  confirmation_token
+  reauthentication_token
+  recovery_token
+  email_change_token_new
+  email_change_token_current
+  phone_change_token
+
+  @@schema("auth")
+}

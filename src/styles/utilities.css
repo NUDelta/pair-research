@@ -1,0 +1,45 @@
+/* Underline Utilities */
+@utility underline-interactive {
+  @apply underline decoration-dashed underline-offset-2 hover:underline-offset-4 transition-all-300;
+  @variant hover {
+    @apply decoration-dotted;
+  }
+}
+
+/* Transition Utilities */
+@utility transition-all-300 {
+  @apply transition-all duration-300 ease-in-out;
+}
+@utility transition-all-500 {
+  @apply transition-all duration-500 ease-in-out;
+}
+@utility transition-all-700 {
+  @apply transition-all duration-700 ease-in-out;
+}
+@utility transition-colors-300 {
+  @apply transition-colors duration-300 ease-in-out;
+}
+@utility transition-colors-500 {
+  @apply transition-colors duration-500 ease-in-out;
+}
+@utility transition-colors-700 {
+  @apply transition-colors duration-700 ease-in-out;
+}
+@utility transition-transform-300 {
+  @apply transition-transform duration-300 ease-in-out;
+}
+@utility transition-transform-500 {
+  @apply transition-transform duration-500 ease-in-out;
+}
+@utility transition-transform-700 {
+  @apply transition-transform duration-700 ease-in-out;
+}
+@utility transition-opacity-300 {
+  @apply transition-opacity duration-300 ease-in-out;
+}
+@utility transition-opacity-500 {
+  @apply transition-opacity duration-500 ease-in-out;
+}
+@utility transition-opacity-700 {
+  @apply transition-opacity duration-700 ease-in-out;
+}
