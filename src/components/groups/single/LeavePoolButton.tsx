@@ -7,13 +7,21 @@ import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'
 import { toast } from 'sonner'
 
-const LeavePoolButton = ({ taskId }: { taskId: string }) => {
+interface LeavePoolButtonProps {
+  taskId: string
+  groupId: string
+}
+
+const LeavePoolButton = ({
+  taskId,
+  groupId,
+}: LeavePoolButtonProps) => {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
   const handleLeave = async () => {
     startTransition(async () => {
-      const { success, message } = await deleteTask(taskId)
+      const { success, message } = await deleteTask(taskId, groupId)
       if (success) {
         toast.success(message)
         router.refresh()

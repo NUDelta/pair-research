@@ -39,7 +39,10 @@ export default async function SingleGroupPage({
         <div className="flex flex-wrap gap-2">
           {currentUserTask !== undefined
             && (
-              <LeavePoolButton taskId={currentUserTask.id} />
+              <LeavePoolButton
+                taskId={currentUserTask.id}
+                groupId={groupInfo.id}
+              />
             )}
           {groupInfo.isAdmin && (
             <>

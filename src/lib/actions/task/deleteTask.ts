@@ -5,6 +5,7 @@ import { getUser } from '@/utils/supabase/server'
 
 export const deleteTask = async (
   taskId: string,
+  groupId: string,
 ): Promise<ActionResponse> => {
   try {
     const user = await getUser()
@@ -21,10 +22,32 @@ export const deleteTask = async (
       }
     }
 
+    // Delete all help capacities submitted by this user on tasks in the same group
+    const tasksInGroup = await prisma.task.findMany({
+      where: {
+        group_id: groupId,
+        pairing_id: null,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    const taskIds = tasksInGroup.map(t => t.id)
+
+    await prisma.task_help_capacity.deleteMany({
+      where: {
+        task_id: { in: taskIds },
+        user_id: user.id,
+      },
+    })
+
+    // Delete help capacities other people submitted for this task
     await prisma.task_help_capacity.deleteMany({
       where: { task_id: id },
     })
 
+    // Finally delete the task itself
     await prisma.task.delete({ where: { id } })
 
     return {
