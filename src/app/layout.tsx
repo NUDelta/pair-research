@@ -16,6 +16,8 @@ const lato = Lato({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_BASE_URL),
   title: 'Pair Research',
+  // TODO: remove disallow when the site is ready for public
+  robots: { index: false, follow: false },
   alternates: { canonical: SITE_BASE_URL },
 }
 

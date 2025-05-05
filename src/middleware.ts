@@ -12,10 +12,12 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization)
      * - favicon.ico
+     * - robots.txt
+     * - sitemap.xml
      * - auth/callback
      * - auth/confirm
      * - static image extensions
      */
-    '/((?!_next/static|_next/image|favicon\\.ico|auth/callback|auth/confirm|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif)$).+)',
+    '/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|auth/callback|auth/confirm|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif)$).+)',
   ],
 }
