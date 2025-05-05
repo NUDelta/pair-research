@@ -65,7 +65,7 @@ export default async function SingleGroupPage({
 
       {/* Others' Tasks */}
       {othersTasks.length > 0 && (
-        <OthersTasks groupId={groupInfo.id} tasks={othersTasks} />
+        <OthersTasks groupId={groupInfo.id} initialTasks={othersTasks} />
       )}
     </div>
   )

@@ -3,8 +3,10 @@
 import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { upsertHelpCapacities } from '@/lib/actions/task'
+import { createClient } from '@/utils/supabase/client'
+import { produce } from 'immer'
 import { useRouter } from 'next/navigation'
-import { useEffect, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import TaskCard from './TaskCard'
@@ -15,14 +17,51 @@ interface CapacitiesFormValues {
 
 interface OthersTasksProps {
   groupId: string
-  tasks: Task[]
+  initialTasks: Task[]
 }
 
-const OthersTasks = ({ groupId, tasks }: OthersTasksProps) => {
+const OthersTasks = ({ groupId, initialTasks }: OthersTasksProps) => {
+  const supabase = createClient()
   const router = useRouter()
+  const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [isPending, startTransition] = useTransition()
 
   const methods = useForm<CapacitiesFormValues>()
+
+  useEffect(() => {
+    // Real-time subscription to tasks
+    const subscription = supabase
+      .channel('realtime-single-group-others-tasks')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'task',
+          filter: `group_id=eq.${groupId}`,
+        },
+        (payload) => {
+          const updatedTaskRaw = payload.new
+          const updatedTask = {
+            ...updatedTaskRaw,
+            id: String(updatedTaskRaw.id),
+          } as Task
+          setTasks(current =>
+            produce(current, (draft) => {
+              const index = draft.findIndex(task => task.id === updatedTask.id)
+              if (index !== -1) {
+                draft[index] = { ...draft[index], ...updatedTask }
+              }
+            }),
+          )
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [supabase, groupId])
 
   useEffect(() => {
     const defaultValues: CapacitiesFormValues = {
