@@ -12,7 +12,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthProfile } from '@/hooks'
 import Link from 'next/link'
-import { toast } from 'sonner'
 import SignOutItem from './components/SignOutItem'
 import AuthDialog from './forms/AuthDialog'
 
@@ -27,12 +26,7 @@ const AuthControls = ({ user }: AuthControlsProps) => {
       full_name: fullname,
       avatar_url: avatarUrl,
     },
-    error,
   } = useAuthProfile(user)
-
-  if (error !== null) {
-    toast.error(error)
-  }
 
   if (loading) {
     return (

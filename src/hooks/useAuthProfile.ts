@@ -8,7 +8,6 @@ import { toast } from 'sonner'
 
 export const useAuthProfile = (user: User | null) => {
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>({
     full_name: null,
     avatar_url: null,
@@ -51,7 +50,6 @@ export const useAuthProfile = (user: User | null) => {
       setProfile(result)
     }
     catch (err) {
-      setError('An unknown error occurred')
       console.error('Failed to fetch profile:', err)
     }
     finally {
@@ -64,5 +62,5 @@ export const useAuthProfile = (user: User | null) => {
     fetchProfile()
   }, [fetchProfile])
 
-  return { loading, profile, error }
+  return { loading, profile }
 }

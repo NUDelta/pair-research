@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { getSingleGroup } from '@/lib/actions/groups'
 import { redirect } from 'next/navigation'
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
 export const metadata: Metadata = {
   title: 'Group | Pair Research',
 }
@@ -16,6 +18,10 @@ export default async function SingleGroupPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
+  if (!UUID_REGEX.test(slug)) {
+    redirect('/groups')
+  }
+
   const res = await getSingleGroup(slug)
 
   if (!res) {

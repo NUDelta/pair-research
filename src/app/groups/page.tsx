@@ -12,9 +12,6 @@ export const metadata: Metadata = {
 
 export default async function GroupsPage() {
   const groups = await getUserGroups()
-  if (!groups) {
-    console.error('No groups found')
-  }
 
   const pending = groups?.filter(g => g.isPending)
   const joined = groups?.filter(g => !g.isPending)
@@ -25,7 +22,7 @@ export default async function GroupsPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Groups</h1>
         <Button>
-          <Link href="/groups/create" prefetch={false}>
+          <Link href="/groups/create">
             Create Group
           </Link>
         </Button>
