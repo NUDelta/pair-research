@@ -114,8 +114,7 @@ const GroupCard = ({
         </Link>
       )
     : (
-        <Button
-          variant="ghost"
+        <div
           className="w-full h-full text-left p-0"
           onClick={() => {
             toast.warning(
@@ -127,7 +126,7 @@ const GroupCard = ({
           }}
         >
           {CardContentComponent}
-        </Button>
+        </div>
       )
 }
 
