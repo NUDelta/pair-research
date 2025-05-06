@@ -1,14 +1,7 @@
-import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import AuthControls from './Auth/AuthControls'
 
 const Header = async () => {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   return (
     <header className="border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,7 +12,7 @@ const Header = async () => {
           </Link>
 
           {/* Auth Controls */}
-          <AuthControls user={user} />
+          <AuthControls />
         </nav>
       </div>
     </header>

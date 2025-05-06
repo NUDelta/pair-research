@@ -1,6 +1,5 @@
 'use client'
 
-import type { User } from '@supabase/supabase-js'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,18 +14,15 @@ import Link from 'next/link'
 import SignOutItem from './components/SignOutItem'
 import AuthDialog from './forms/AuthDialog'
 
-interface AuthControlsProps {
-  user: User | null
-}
-
-const AuthControls = ({ user }: AuthControlsProps) => {
+const AuthControls = () => {
   const {
     loading,
+    userLoggedIn,
     profile: {
       full_name: fullname,
       avatar_url: avatarUrl,
     },
-  } = useAuthProfile(user)
+  } = useAuthProfile()
 
   if (loading) {
     return (
@@ -39,7 +35,7 @@ const AuthControls = ({ user }: AuthControlsProps) => {
 
   return (
     <div className="flex items-center space-x-2">
-      {user !== null
+      {userLoggedIn
         ? (
             <div className="space-x-3 flex items-center my-auto">
               <Button variant="outline" size="lg">

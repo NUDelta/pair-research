@@ -1,13 +1,16 @@
 'use client'
 
-import type { User } from '@supabase/supabase-js'
 import { getOrCreateProfile } from '@/lib/actions/profile/getOrCreateProfile'
+import { createClient } from '@/utils/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-export const useAuthProfile = (user: User | null) => {
+export const useAuthProfile = () => {
+  const supabase = createClient()
+
   const [loading, setLoading] = useState(true)
+  const [userLoggedIn, setUserLoggedIn] = useState(false)
   const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>({
     full_name: null,
     avatar_url: null,
@@ -17,13 +20,24 @@ export const useAuthProfile = (user: User | null) => {
   const searchParams = useSearchParams()
 
   const fetchProfile = useCallback(async () => {
-    if (!user) {
-      setLoading(false)
-      return
-    }
-
+    setLoading(true)
     try {
-      setLoading(true)
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        setUserLoggedIn(false)
+        setProfile({
+          full_name: null,
+          avatar_url: null,
+        })
+        if (userError) {
+          throw new Error(userError.message)
+        }
+        return
+      }
 
       const from = searchParams.get('from')
       const error = searchParams.get('error')
@@ -48,19 +62,20 @@ export const useAuthProfile = (user: User | null) => {
 
       const result = await getOrCreateProfile()
       setProfile(result)
+      setUserLoggedIn(true)
     }
-    catch (err) {
-      console.error('Failed to fetch profile:', err)
+    catch (error_) {
+      console.error('Failed to fetch profile:', error_)
     }
     finally {
       setLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [supabase])
 
   useEffect(() => {
     fetchProfile()
   }, [fetchProfile])
 
-  return { loading, profile }
+  return { loading, userLoggedIn, profile }
 }

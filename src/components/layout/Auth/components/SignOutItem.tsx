@@ -1,3 +1,5 @@
+'use client'
+
 import DoubleConfirmDialog from '@/components/common/DoubleConfirmDialog'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/utils/supabase/client'
