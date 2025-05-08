@@ -1,6 +1,9 @@
 import { z } from 'zod'
 
 export const taskSchema = z.object({
+  groupId: z
+    .string()
+    .uuid('Invalid Group ID'),
   description: z
     .string()
     .nonempty('Task description is required')

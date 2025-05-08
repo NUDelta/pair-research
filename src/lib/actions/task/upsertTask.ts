@@ -2,14 +2,31 @@
 
 import { checkMembership } from '@/lib/actions/profile'
 import { prisma } from '@/lib/prismaClient'
+import { taskSchema } from '@/lib/validators/task'
 import { getUser } from '@/utils/supabase/server'
 
 export const upsertTask = async (
-  groupId: string,
-  taskDescription: string,
-): Promise<ActionResponse> => {
+  _: any,
+  formData: FormData,
+) => {
   try {
+    const res = taskSchema.safeParse({
+      groupId: formData.get('groupId'),
+      description: formData.get('description'),
+    })
+
+    if (!res.success) {
+      console.error('Error validating task schema:', res.error.issues)
+      return {
+        success: false,
+        schemaError: res.error.issues[0].message,
+      }
+    }
+
+    const { groupId, description } = res.data
+
     const user = await getUser()
+
     const membership = await checkMembership(user.id, groupId)
 
     if (!membership) {
@@ -27,11 +44,11 @@ export const upsertTask = async (
         },
       },
       update: {
-        description: taskDescription,
+        description,
         updated_at: new Date(),
       },
       create: {
-        description: taskDescription,
+        description,
         user_id: user.id,
         group_id: groupId,
         created_at: new Date(),
@@ -40,7 +57,7 @@ export const upsertTask = async (
       },
     })
 
-    if (task.description !== taskDescription) {
+    if (task.description !== description) {
       return {
         success: false,
         message: 'Failed to update the task',
