@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -22,21 +23,24 @@ export default function AuthDialog({ children, defaultTab = 'login' }: AuthDialo
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogDescription className="sr-only">
+        This is a dialog for authentication. It contains two tabs: Login and Sign Up.
+      </DialogDescription>
+      <DialogContent className="sm:max-w-[425px]" aria-describedby="auth-dialog">
         <Tabs defaultValue={defaultTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="login">
+          <TabsContent value="login" aria-describedby="Login Form">
             <DialogHeader>
               <DialogTitle>Welcome back</DialogTitle>
             </DialogHeader>
             <LoginForm />
           </TabsContent>
 
-          <TabsContent value="signup">
+          <TabsContent value="signup" aria-describedby="Signup Form">
             <DialogHeader>
               <DialogTitle>Create an account</DialogTitle>
             </DialogHeader>

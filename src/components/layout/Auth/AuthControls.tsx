@@ -11,18 +11,20 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthProfile } from '@/hooks'
 import Link from 'next/link'
+import { useState } from 'react'
 import SignOutItem from './components/SignOutItem'
 import AuthDialog from './forms/AuthDialog'
 
 const AuthControls = () => {
+  const [isUserLoggedIn, setUserLoggedIn] = useState<boolean>(false)
+
   const {
     loading,
-    userLoggedIn,
     profile: {
       full_name: fullname,
       avatar_url: avatarUrl,
     },
-  } = useAuthProfile()
+  } = useAuthProfile(setUserLoggedIn)
 
   if (loading) {
     return (
@@ -35,7 +37,7 @@ const AuthControls = () => {
 
   return (
     <div className="flex items-center space-x-2">
-      {userLoggedIn
+      {isUserLoggedIn
         ? (
             <div className="space-x-3 flex items-center my-auto">
               <Button variant="outline" size="lg">
@@ -62,7 +64,7 @@ const AuthControls = () => {
                   <DropdownMenuItem asChild>
                     <Link href="/account">Account Settings</Link>
                   </DropdownMenuItem>
-                  <SignOutItem />
+                  <SignOutItem setUserLoggedIn={setUserLoggedIn} />
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

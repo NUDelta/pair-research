@@ -6,11 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-export const useAuthProfile = () => {
-  const supabase = createClient()
+export const useAuthProfile = (
+  setUserLoggedIn: (value: boolean) => void,
+) => {
+  const supabaseAuth = createClient().auth
 
   const [loading, setLoading] = useState(true)
-  const [userLoggedIn, setUserLoggedIn] = useState(false)
   const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>({
     full_name: null,
     avatar_url: null,
@@ -25,7 +26,7 @@ export const useAuthProfile = () => {
       const {
         data: { user },
         error: userError,
-      } = await supabase.auth.getUser()
+      } = await supabaseAuth.getUser()
 
       if (userError || !user) {
         setUserLoggedIn(false)
@@ -71,11 +72,11 @@ export const useAuthProfile = () => {
       setLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase])
+  }, [supabaseAuth, searchParams, setUserLoggedIn])
 
   useEffect(() => {
     fetchProfile()
   }, [fetchProfile])
 
-  return { loading, userLoggedIn, profile }
+  return { loading, profile }
 }

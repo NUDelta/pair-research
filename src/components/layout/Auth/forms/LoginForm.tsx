@@ -45,8 +45,22 @@ const LoginForm = () => {
     <>
       <OAuthButton />
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 pb-4">
-        <AuthField id="email" label="Email" type="email" register={register} error={errors.email} />
-        <AuthField id="password" label="Password" type="password" register={register} error={errors.password} />
+        <AuthField
+          id="email"
+          label="Email"
+          type="email"
+          autocomplete="email"
+          error={errors.email}
+          register={register}
+        />
+        <AuthField
+          id="password"
+          label="Password"
+          type="password"
+          autocomplete="current-password"
+          error={errors.password}
+          register={register}
+        />
         <Button type="submit" className="w-full" disabled={!isValid || isPending}>
           {isPending
             ? (

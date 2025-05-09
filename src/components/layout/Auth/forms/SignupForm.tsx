@@ -46,9 +46,30 @@ export function SignupForm() {
     <>
       <OAuthButton />
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
-        <AuthField id="name" label="Name" type="text" register={register} error={errors.name} />
-        <AuthField id="email" label="Email" type="email" register={register} error={errors.email} />
-        <AuthField id="password" label="Password" type="password" register={register} error={errors.password} />
+        <AuthField
+          id="name"
+          label="Name"
+          type="text"
+          autocomplete="name"
+          error={errors.name}
+          register={register}
+        />
+        <AuthField
+          id="email"
+          label="Email"
+          type="email"
+          autocomplete="email"
+          error={errors.email}
+          register={register}
+        />
+        <AuthField
+          id="password"
+          label="Password"
+          type="password"
+          autocomplete="new-password"
+          error={errors.password}
+          register={register}
+        />
         <Button type="submit" className="w-full" disabled={!isValid || isPending}>
           {isPending
             ? (

@@ -3,12 +3,14 @@
 import DoubleConfirmDialog from '@/components/common/DoubleConfirmDialog'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-const SignOutItem = () => {
+interface SignOutItemProps {
+  setUserLoggedIn: (value: boolean) => void
+}
+
+const SignOutItem = ({ setUserLoggedIn }: SignOutItemProps) => {
   const supabase = createClient()
-  const router = useRouter()
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut()
@@ -18,7 +20,7 @@ const SignOutItem = () => {
     }
     else {
       toast.success('Signed out successfully')
-      router.refresh()
+      setUserLoggedIn(false)
     }
   }
 
