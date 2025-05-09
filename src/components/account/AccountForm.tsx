@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button'
 import { updateProfile } from '@/lib/actions/profile'
 import { accountSchema } from '@/lib/validators/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
-import { useTransition } from 'react'
+import { useEffect, useTransition } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import AvatarUploader from './AvatarUploader'
@@ -21,7 +20,6 @@ interface AccountFormProps {
 }
 
 const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
-  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   const methods = useForm<AccountFormValues>({
@@ -32,6 +30,14 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
       content_type: undefined,
     },
   })
+
+  useEffect(() => {
+    methods.reset({
+      full_name: full_name ?? '',
+      avatar: undefined,
+      content_type: undefined,
+    })
+  }, [full_name, methods])
 
   const { handleSubmit, setValue, formState } = methods
 
@@ -48,7 +54,6 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
 
       if (success) {
         toast.success(message)
-        router.refresh()
       }
       else {
         toast.error(message)

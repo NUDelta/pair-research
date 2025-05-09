@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prismaClient'
 import { uploadAvatarFromArrayBuffer } from '@/utils/avatar'
 import { getUser } from '@/utils/supabase/server'
+import { revalidatePath } from 'next/cache'
 
 export const updateProfile = async (
   fullName?: string,
@@ -42,6 +43,8 @@ export const updateProfile = async (
         avatar_url: true,
       },
     })
+
+    revalidatePath('/account')
 
     return {
       success: true,
