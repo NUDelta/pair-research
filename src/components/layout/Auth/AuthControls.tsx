@@ -8,10 +8,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthProfile } from '@/hooks'
 import Link from 'next/link'
 import { useState } from 'react'
+import AuthControlsLoading from './AuthControlsLoading'
 import SignOutItem from './components/SignOutItem'
 import AuthDialog from './forms/AuthDialog'
 
@@ -27,12 +27,7 @@ const AuthControls = () => {
   } = useAuthProfile(setUserLoggedIn)
 
   if (loading) {
-    return (
-      <div className="flex items-center space-x-2">
-        <Skeleton className="h-8 w-24 rounded-md" />
-        <Skeleton className="h-10 w-10 rounded-full" />
-      </div>
-    )
+    return <AuthControlsLoading />
   }
 
   return (

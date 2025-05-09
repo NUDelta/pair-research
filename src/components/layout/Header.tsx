@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import AuthControls from './Auth/AuthControls'
+import AuthControlsLoading from './Auth/AuthControlsLoading'
 
 const Header = async () => {
   return (
@@ -12,7 +14,9 @@ const Header = async () => {
           </Link>
 
           {/* Auth Controls */}
-          <AuthControls />
+          <Suspense fallback={<AuthControlsLoading />}>
+            <AuthControls />
+          </Suspense>
         </nav>
       </div>
     </header>
