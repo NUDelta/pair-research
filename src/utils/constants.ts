@@ -1,6 +1,9 @@
 // Global Constants
 // ! NO trailing slash at the end of the URL
-export const SITE_BASE_URL = process.env.NEXT_PUBLIC_SITE_BASE_URL ?? 'http://localhost:3000'
+export const SITE_BASE_URL
+  = process.env.NODE_ENV === 'development'
+    ? 'http://localhost:3000'
+    : process.env.NEXT_PUBLIC_SITE_BASE_URL ?? ''
 
 // Supabase Storage S3 Client
 export const S3_REGION = 'us-east-2'

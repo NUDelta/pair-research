@@ -2,10 +2,10 @@
 
 import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
+import { SITE_BASE_URL } from '@/utils/constants'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 export const OAuthButton = () => {
   const [loading, setLoading] = useState<boolean>(false)
@@ -13,16 +13,12 @@ export const OAuthButton = () => {
 
   const handleGoogle = async () => {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithOAuth({
+    await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${SITE_BASE_URL}/auth/callback`,
       },
     })
-    if (error) {
-      toast.error('Failed to sign in with Google')
-      setLoading(false)
-    }
   }
 
   return (
