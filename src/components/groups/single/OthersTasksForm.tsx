@@ -28,10 +28,19 @@ const OthersTasksForm = ({
   useEffect(() => {
     const defaultValues: CapacitiesFormValues = {
       capacities: tasks.reduce((acc, task) => {
-        if (task.helpCapacity !== undefined && task.helpCapacity !== null
+        // Get current form values
+        const currentValue = methods.getValues().capacities?.[task.id]
+
+        // If there's a current user input, preserve it
+        if (currentValue !== undefined) {
+          acc[task.id] = currentValue
+        }
+        // Otherwise use the task's help capacity if valid
+        else if (task.helpCapacity !== undefined && task.helpCapacity !== null
           && task.helpCapacity >= 1 && task.helpCapacity <= 5) {
           acc[task.id] = task.helpCapacity
         }
+        // If no valid input or help capacity, set to undefined
         else {
           acc[task.id] = undefined
         }
@@ -39,7 +48,10 @@ const OthersTasksForm = ({
       }, {} as Record<string, number | undefined>),
     }
 
-    methods.reset(defaultValues)
+    methods.reset(defaultValues, {
+      keepDirtyValues: true, // Keep user inputs
+      keepErrors: true, // Keep any validation errors
+    })
   }, [tasks, methods])
 
   const { handleSubmit, control, formState } = methods
@@ -92,6 +104,9 @@ const OthersTasksForm = ({
                 type="submit"
                 disabled={isPending}
                 className="hover:scale-105 transition-transform"
+                aria-label={isPending ? 'Submitting help capacity scores' : 'Submit help capacity scores'}
+                aria-busy={isPending}
+                aria-live="polite"
               >
                 {isPending
                   ? (<Spinner text="Submitting scores..." />)
