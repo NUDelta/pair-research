@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import LeavePoolButton from '@/components/groups/single/LeavePoolButton'
 import OthersTasks from '@/components/groups/single/OthersTasks'
+import Pairing from '@/components/groups/single/Pairing'
 import TaskCard from '@/components/groups/single/TaskCard'
 import { Button } from '@/components/ui/button'
 import { getSingleGroup } from '@/lib/actions/groups'
@@ -28,7 +29,7 @@ export default async function SingleGroupPage({
     redirect('/groups')
   }
 
-  const { groupInfo, tasks } = res
+  const { groupInfo, tasks, currentUserActivePairingTaskWithProfile } = res
   const { userId: currentUserId } = groupInfo
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
@@ -63,6 +64,11 @@ export default async function SingleGroupPage({
           )}
         </div>
       </div>
+
+      {/* Current Active Pairing */}
+      {currentUserActivePairingTaskWithProfile !== null && (
+        <Pairing pairingInfo={currentUserActivePairingTaskWithProfile} />
+      )}
 
       {/* Current User's Task */}
       <TaskCard

@@ -43,18 +43,19 @@ model affinity {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model group {
-  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  active         Boolean        @default(true)
-  name           String
-  description    String?
-  active_pairing String?
-  creator_id     String         @default(dbgenerated("auth.uid()")) @db.Uuid
-  created_at     DateTime       @default(now()) @db.Timestamptz(6)
-  profile        profile        @relation(fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  group_member   group_member[]
-  group_role     group_role[]
-  pairing        pairing[]
-  task           task[]
+  id                                       String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  active                                   Boolean        @default(true)
+  name                                     String
+  description                              String?
+  active_pairing_id                        String?        @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creator_id                               String         @default(dbgenerated("auth.uid()")) @db.Uuid
+  created_at                               DateTime       @default(now()) @db.Timestamptz(6)
+  pairing_group_active_pairing_idTopairing pairing?       @relation("group_active_pairing_idTopairing", fields: [active_pairing_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profile                                  profile        @relation(fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  group_member                             group_member[]
+  group_role                               group_role[]
+  pairing                                  pairing[]
+  task                                     task[]
 
   @@schema("public")
 }
@@ -102,13 +103,14 @@ model pair {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model pairing {
-  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  group_id   String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  created_at DateTime   @default(now()) @db.Timestamptz(6)
-  affinity   affinity[]
-  pair       pair[]
-  group      group      @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  task       task[]
+  id                                     String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  group_id                               String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at                             DateTime   @default(now()) @db.Timestamptz(6)
+  affinity                               affinity[]
+  group_group_active_pairing_idTopairing group[]    @relation("group_active_pairing_idTopairing")
+  pair                                   pair[]
+  group                                  group      @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  task                                   task[]
 
   @@schema("public")
 }
