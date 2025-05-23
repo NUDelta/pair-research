@@ -6,7 +6,7 @@ import { Spinner } from '@/components/common'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { optimizeAvatar } from '@/utils/avatar'
+import { getInitials, optimizeAvatar } from '@/utils/avatar'
 import { CheckCircle } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -61,7 +61,7 @@ const AvatarUploader = ({
         <Avatar className="w-24 h-24">
           <AvatarImage src={previewUrl ?? ''} alt={`${fullName}'s avatar`} />
           <AvatarFallback>
-            {fullName?.split(' ').map(name => name[0]).slice(0, 2).join('') ?? ''}
+            {getInitials(fullName)}
           </AvatarFallback>
         </Avatar>
         {isUpdated && (

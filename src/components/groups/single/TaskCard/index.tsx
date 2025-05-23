@@ -4,6 +4,7 @@ import type { Control } from 'react-hook-form'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getInitials } from '@/utils/avatar'
 import dynamic from 'next/dynamic'
 import TaskDescription from './TaskDescription'
 
@@ -69,7 +70,7 @@ export default function TaskCard({
                 loading="lazy"
               />
               <AvatarFallback>
-                {(fullName)?.[0]?.toUpperCase() ?? 'U'}
+                {getInitials(fullName)}
               </AvatarFallback>
             </Avatar>
             <span className="text-sm">{fullName ?? 'New User (Name not set)'}</span>

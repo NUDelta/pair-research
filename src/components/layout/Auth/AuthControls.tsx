@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuthProfile } from '@/hooks'
+import { getInitials } from '@/utils/avatar'
 import Link from 'next/link'
 import { useState } from 'react'
 import AuthControlsLoading from './AuthControlsLoading'
@@ -48,9 +49,7 @@ const AuthControls = () => {
                         )
                       : (
                           <AvatarFallback>
-                            {fullname !== null
-                              ? fullname.split(' ').slice(0, 2).map(name => name[0]).join('')
-                              : 'U'}
+                            {getInitials(fullname)}
                           </AvatarFallback>
                         )}
                   </Avatar>
