@@ -7,11 +7,16 @@ export async function GET(request: Request) {
   // if "next" is in param, use it as the redirect URL
   const next = searchParams.get('next') ?? '/'
 
+  const forwardedHost = request.headers.get('x-forwarded-host')
+
+  const targetHost = forwardedHost !== null ? forwardedHost : origin
+  const targetProtocol = targetHost.includes('localhost') ? 'http' : 'https'
+  const targetAddress = `${targetProtocol}://${targetHost}`
+
   if (code !== null) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === 'development'
       const nextWithIdentifier = `${next}?from=auth-callback`
       if (isLocalEnv) {
@@ -19,16 +24,17 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}${nextWithIdentifier}`)
       }
       else if (forwardedHost !== null) {
-        return NextResponse.redirect(`https://${forwardedHost}${nextWithIdentifier}`)
+        return NextResponse.redirect(`${targetAddress}${nextWithIdentifier}`)
       }
       else {
-        return NextResponse.redirect(`${origin}${nextWithIdentifier}`)
+        return NextResponse.redirect(`${targetAddress}${nextWithIdentifier}`)
       }
     }
     // TODO: add error handling page
-    return NextResponse.redirect(`${origin}/?error=${encodeURIComponent(error.message)}`)
+    console.error(`[AUTH CALLBACK]Error occurred: `, error instanceof Error ? error.message : error)
+    return NextResponse.redirect(`${targetAddress}/?error=${encodeURIComponent(error.message)}`)
   }
 
   // if no code is present, redirect to the home page
-  return NextResponse.redirect(`${origin}/`)
+  return NextResponse.redirect(`${targetAddress}/`)
 }

@@ -5,9 +5,12 @@ import { NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
+  const forwardedHost = request.headers.get('x-forwarded-host')
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
   const next = searchParams.get('next') ?? '/'
+
+  const targetOrigin = forwardedHost !== null ? `https://${forwardedHost}` : origin
 
   if (token_hash !== null && type) {
     const supabase = await createClient()
@@ -18,16 +21,16 @@ export async function GET(request: NextRequest) {
     })
     if (!error) {
       // redirect user to specified redirect URL or root of app
-      return NextResponse.redirect(`${origin}${next}?from=auth-confirm`)
+      return NextResponse.redirect(`${targetOrigin}${next}?from=auth-confirm`)
     }
     else {
       // handle error
       return NextResponse.redirect(
-        `${origin}/?error=${encodeURIComponent(error.message)}`,
+        `${targetOrigin}/?error=${encodeURIComponent(error.message)}`,
       )
     }
   }
 
   // if no token_hash is present, redirect to the home page
-  return NextResponse.redirect(`${origin}/`)
+  return NextResponse.redirect(`${targetOrigin}/`)
 }
