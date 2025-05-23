@@ -1,6 +1,6 @@
 'use client'
 
-import DoubleConfirmDialog from '@/components/common/DoubleConfirmDialog'
+import { DoubleConfirmDialog } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { deleteTask } from '@/lib/actions/task'
 import { useRouter } from 'next/navigation'

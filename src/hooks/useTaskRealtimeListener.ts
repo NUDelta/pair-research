@@ -3,7 +3,9 @@
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/client'
 import { produce } from 'immer'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 /**
  * Real-time subscription to tasks updates, inserts, and deletes
@@ -17,6 +19,7 @@ export const useTaskRealtimeListener = (
   currentUserId: string,
   initialTasks?: Task[],
 ) => {
+  const router = useRouter()
   const supabase = createClient()
   const [tasks, setTasks] = useState<Task[]>(initialTasks || [])
 
@@ -119,6 +122,8 @@ export const useTaskRealtimeListener = (
     }
 
     if (taskRaw.pairing_id !== null) {
+      toast.success('Task paired with another user! Refreshing...')
+      router.refresh()
       return
     }
 

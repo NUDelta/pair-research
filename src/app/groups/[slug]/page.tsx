@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import LeavePoolButton from '@/components/groups/single/LeavePoolButton'
+import { LeavePoolButton, MakePairsButton } from '@/components/groups/single/buttons'
 import OthersTasks from '@/components/groups/single/OthersTasks'
 import Pairing from '@/components/groups/single/Pairing'
 import TaskCard from '@/components/groups/single/TaskCard'
@@ -57,9 +57,7 @@ export default async function SingleGroupPage({
               <Button variant="destructive" aria-label="Reset Pool">
                 Reset Pool
               </Button>
-              <Button aria-label="Make Pairs">
-                Make Pairs
-              </Button>
+              <MakePairsButton groupId={groupInfo.id} />
             </>
           )}
         </div>
