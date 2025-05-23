@@ -4,6 +4,7 @@ import nextPlugin from '@next/eslint-plugin-next'
 export default antfu({
   formatters: true,
   react: true,
+  ignores: ['src/components/ui/**.tsx'],
   typescript: {
     tsconfigPath: 'tsconfig.json',
   },
