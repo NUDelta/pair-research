@@ -1,7 +1,7 @@
 'use server'
 
-import { createProfileWithName } from '@/lib/actions/profile/getOrCreateProfile'
 import { signupSchema } from '@/lib/validators/auth'
+import { gravatarLink } from '@/utils/avatar'
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 
@@ -20,19 +20,35 @@ export const signup = async (formData: FormData): Promise<ActionResponse> => {
 
   const { data } = result
 
-  const { data: { user }, error } = await supabase.auth.signUp(data)
+  const gravatarUrl = await gravatarLink(data.email, data.name)
+
+  const { data: { user }, error } = await supabase.auth.signUp({
+    email: data.email.trim(),
+    password: data.password,
+    options: {
+      data: {
+        full_name: data.name.trim(),
+        avatar_url: gravatarUrl,
+      },
+    },
+  })
 
   if (error) {
-    return { success: false, message: error.message }
+    console.error('Signup error:', error)
+
+    return {
+      success: false,
+      message: error.code as string ?? 'Unexpected Error',
+    }
   }
 
   if (!user) {
     return { success: false, message: 'Unexpected Error' }
   }
 
-  // Create profile when user is created
-  await createProfileWithName(user.id, data.name.trim(), data.email)
-
   revalidatePath('/', 'layout')
-  return { success: true, message: `Welcome ${data.name.trim()}!\nCheck your email to confirm your account.` }
+  return {
+    success: true,
+    message: `Welcome ${data.name.trim()}!\nCheck your email to confirm your account.`,
+  }
 }

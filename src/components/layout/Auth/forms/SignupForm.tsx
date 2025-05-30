@@ -8,14 +8,19 @@ import { signup } from '@/lib/actions/auth'
 import { signupSchema } from '@/lib/validators/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LoaderCircle } from 'lucide-react'
-import { redirect } from 'next/navigation'
 import { useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import AuthField from '../components/AuthField'
 import { OAuthButton } from '../components/OAuthButton'
 
-const SignupForm = () => {
+interface SignupFormProps {
+  toggleOpen: () => void
+}
+
+const SignupForm = ({
+  toggleOpen,
+}: SignupFormProps) => {
   const {
     register,
     handleSubmit,
@@ -52,7 +57,7 @@ const SignupForm = () => {
         const result = await signup(formData)
         if (result.success) {
           toast.warning(result.message)
-          redirect('/')
+          toggleOpen()
         }
         else {
           toast.error(result.message)

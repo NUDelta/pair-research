@@ -18,6 +18,7 @@ import AuthDialog from './forms/AuthDialog'
 
 const AuthControls = () => {
   const [isUserLoggedIn, setUserLoggedIn] = useState<boolean>(false)
+  const [AuthDialogOpen, setAuthDialogOpen] = useState<boolean>(false)
 
   const {
     loading,
@@ -65,11 +66,23 @@ const AuthControls = () => {
           )
         : (
             <>
-              <AuthDialog defaultTab="login">
-                <Button variant="ghost" size="lg">Sign in</Button>
+              <AuthDialog
+                defaultTab="login"
+                open={AuthDialogOpen}
+                onOpenChange={() => setAuthDialogOpen(!AuthDialogOpen)}
+              >
+                <Button variant="ghost" size="lg">
+                  Sign in
+                </Button>
               </AuthDialog>
-              <AuthDialog defaultTab="signup">
-                <Button variant="default" size="lg">Sign up</Button>
+              <AuthDialog
+                defaultTab="signup"
+                open={AuthDialogOpen}
+                onOpenChange={() => setAuthDialogOpen(!AuthDialogOpen)}
+              >
+                <Button variant="default" size="lg">
+                  Sign up
+                </Button>
               </AuthDialog>
             </>
           )}

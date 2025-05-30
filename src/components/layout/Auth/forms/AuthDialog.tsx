@@ -18,7 +18,7 @@ interface AuthDialogProps {
   /** Which tab to show first */
   defaultTab?: 'login' | 'signup'
   open?: boolean
-  onOpenChange?: (open: boolean) => void
+  onOpenChange: (open: boolean) => void
 }
 
 const AuthDialog = ({
@@ -85,11 +85,11 @@ const AuthDialog = ({
             </TabsList>
 
             <TabsContent value="login" className="space-y-4 mt-6">
-              <LoginForm />
+              <LoginForm toggleOpen={() => onOpenChange(false)} />
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4 mt-6">
-              <SignupForm />
+              <SignupForm toggleOpen={() => onOpenChange(false)} />
             </TabsContent>
           </Tabs>
 

@@ -1,3 +1,4 @@
+export { gravatarLink } from './gravatarLink'
 export { getInitials } from './initials'
 export { optimizeAvatar } from './optimizeAvatar'
 export { optimizeImageFromUrl } from './optimizeImage'
