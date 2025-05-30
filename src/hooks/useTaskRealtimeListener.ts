@@ -121,8 +121,11 @@ export const useTaskRealtimeListener = (
       handleTaskDelete(taskRaw.id)
     }
 
+    // When a pairing is created, the task is deleted from the current user
+    // and refresh the page to show the new pairing
     if (taskRaw.pairing_id !== null) {
       toast.success('Task paired with another user! Refreshing...')
+      handleTaskDelete(taskRaw.id)
       router.refresh()
       return
     }
