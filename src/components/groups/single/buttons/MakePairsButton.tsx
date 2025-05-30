@@ -59,7 +59,8 @@ const MakePairsButton = ({ groupId }: Props) => {
       trigger={(
         <Button
           disabled={isPending}
-          onClick={handleMakePairs}
+          aria-busy={isPending}
+          aria-label="Make Pairs"
         >
           {isPending ? 'Making pairs...' : 'Make Pairs'}
         </Button>

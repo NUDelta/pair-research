@@ -98,15 +98,33 @@ export const getSingleGroup = async (groupId: string) => {
       // Combine information of the current user's active pair's task
         // The user could be a first user or a second user in the pair
         // if they are a first user, the helpee is the second user, vice versa
-        const helpeeUserId = currentUserActivePairing?.first_user === userId ? currentUserActivePairing?.second_user : currentUserActivePairing?.first_user
-        const helpeeUserProfile = membership.group.pairing[0]?.pair.find(pair =>
-          pair.first_user === helpeeUserId,
-        )?.profile_pair_first_userToprofile
+        const helpeeUserId = currentUserActivePairing?.first_user === userId
+          ? currentUserActivePairing?.second_user
+          : currentUserActivePairing?.first_user
 
-        const helperUserId = currentUserActivePairing?.first_user === userId ? currentUserActivePairing?.first_user : currentUserActivePairing?.second_user
-        const helperUserProfile = membership.group.pairing[0]?.pair.find(pair =>
-          pair.first_user === helperUserId,
-        )?.profile_pair_first_userToprofile
+        const helpeePair = membership.group.pairing[0]?.pair.find(pair =>
+          pair.first_user === helpeeUserId || pair.second_user === helpeeUserId,
+        )
+
+        const helpeeUserProfile = helpeePair
+          ? helpeePair.first_user === helpeeUserId
+            ? helpeePair.profile_pair_first_userToprofile
+            : helpeePair.profile_pair_second_userToprofile
+          : undefined
+
+        const helperUserId = currentUserActivePairing?.first_user === userId
+          ? currentUserActivePairing?.first_user
+          : currentUserActivePairing?.second_user
+
+        const helperPair = membership.group.pairing[0]?.pair.find(pair =>
+          pair.first_user === helperUserId || pair.second_user === helperUserId,
+        )
+
+        const helperUserProfile = helperPair
+          ? helperPair.first_user === helperUserId
+            ? helperPair.profile_pair_first_userToprofile
+            : helperPair.profile_pair_second_userToprofile
+          : undefined
 
         const helpeeTask = membership.group.pairing[0]?.task.find(task =>
           task.user_id === helpeeUserId,
