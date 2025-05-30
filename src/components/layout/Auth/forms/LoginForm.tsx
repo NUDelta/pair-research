@@ -1,11 +1,11 @@
 'use client'
 
 import type { LoginValues } from '@/lib/validators/auth'
-import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { login } from '@/lib/actions/auth'
 import { loginSchema } from '@/lib/validators/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { LoaderCircle } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { useTransition } from 'react'
 import { useForm } from 'react-hook-form'
@@ -18,6 +18,7 @@ const LoginForm = () => {
     register,
     handleSubmit,
     formState: { errors, isValid },
+    setError,
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
@@ -30,46 +31,90 @@ const LoginForm = () => {
       const formData = new FormData()
       formData.append('email', values.email)
       formData.append('password', values.password)
-      const result = await login(formData)
-      if (result.success) {
-        toast.success(result.message)
-        redirect('/')
+      try {
+        const result = await login(formData)
+        if (result.success) {
+          toast.success(result.message)
+          redirect('/')
+        }
+        else {
+          toast.error(result.message)
+          setError('root', { message: result.message })
+        }
       }
-      else {
-        toast.error(result.message)
+      catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Login failed'
+        toast.error(errorMessage)
+        setError('root', { message: errorMessage })
       }
     })
   }
 
+  const handleForgotPassword = async () => {
+    toast.warning('Not implemented yet.')
+  }
+
   return (
-    <>
+    <div className="space-y-4">
       <OAuthButton />
-      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 pb-4">
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <AuthField
           id="email"
           label="Email"
           type="email"
           autocomplete="email"
+          placeholder="Enter your email"
           error={errors.email}
           register={register}
         />
+
         <AuthField
           id="password"
           label="Password"
           type="password"
           autocomplete="current-password"
+          placeholder="Enter your password"
           error={errors.password}
           register={register}
         />
-        <Button type="submit" className="w-full" disabled={!isValid || isPending}>
+
+        {errors.root && (
+          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
+            {errors.root.message}
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            onClick={handleForgotPassword}
+            className="px-0 h-auto font-normal text-xs text-muted-foreground hover:text-foreground"
+          >
+            Forgot password?
+          </Button>
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full h-11"
+          disabled={!isValid || isPending}
+        >
           {isPending
             ? (
-                <Spinner text="Logging in..." />
+                <>
+                  <LoaderCircle className="mr-2 size-4 animate-spin" />
+                  Signing in...
+                </>
               )
-            : 'Login'}
+            : (
+                'Sign In'
+              )}
         </Button>
       </form>
-    </>
+    </div>
   )
 }
 

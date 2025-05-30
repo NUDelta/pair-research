@@ -1,11 +1,13 @@
 'use client'
 
 import type { SignupValues } from '@/lib/validators/auth'
-import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { signup } from '@/lib/actions/auth'
 import { signupSchema } from '@/lib/validators/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { LoaderCircle } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { useTransition } from 'react'
 import { useForm } from 'react-hook-form'
@@ -13,71 +15,148 @@ import { toast } from 'sonner'
 import AuthField from '../components/AuthField'
 import { OAuthButton } from '../components/OAuthButton'
 
-export function SignupForm() {
+const SignupForm = () => {
   const {
     register,
     handleSubmit,
     formState: { errors, isValid },
-  } = useForm<SignupValues>({
+    setError,
+    watch,
+    setValue,
+  } = useForm<SignupValues & { agreeToTerms?: boolean }>({
     resolver: zodResolver(signupSchema),
     mode: 'onChange',
-    defaultValues: { name: '', email: '', password: '' },
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      agreeToTerms: false,
+    },
   })
   const [isPending, startTransition] = useTransition()
 
+  const agreeToTerms = watch('agreeToTerms')
+
   const onSubmit = async (values: SignupValues) => {
+    if (!agreeToTerms) {
+      setError('root', { message: 'You must agree to the terms and conditions' })
+      return
+    }
+
     startTransition(async () => {
       const formData = new FormData()
       formData.append('email', values.email)
       formData.append('password', values.password)
       formData.append('name', values.name)
-      const result = await signup(formData)
-      if (result.success) {
-        toast.warning(result.message)
-        redirect('/')
+      try {
+        const result = await signup(formData)
+        if (result.success) {
+          toast.warning(result.message)
+          redirect('/')
+        }
+        else {
+          toast.error(result.message)
+          setError('root', { message: result.message })
+        }
       }
-      else {
-        toast.error(result.message)
+      catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Sign up failed'
+        toast.error(errorMessage)
+        setError('root', { message: errorMessage })
       }
     })
   }
 
   return (
-    <>
+    <div className="space-y-4">
       <OAuthButton />
-      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <AuthField
           id="name"
-          label="Name"
+          label="Full Name"
           type="text"
           autocomplete="name"
+          placeholder="Enter your full name"
           error={errors.name}
           register={register}
         />
+
         <AuthField
           id="email"
           label="Email"
           type="email"
           autocomplete="email"
+          placeholder="Enter your email"
           error={errors.email}
           register={register}
         />
+
         <AuthField
           id="password"
           label="Password"
           type="password"
           autocomplete="new-password"
+          placeholder="Create a strong password"
           error={errors.password}
           register={register}
         />
-        <Button type="submit" className="w-full" disabled={!isValid || isPending}>
+
+        <div className="flex items-start space-x-3 space-y-0">
+          <Checkbox
+            id="agreeToTerms"
+            checked={agreeToTerms}
+            onCheckedChange={checked => setValue('agreeToTerms', checked === true)}
+            className="mt-1"
+          />
+          <div className="space-y-1 leading-none">
+            <Label htmlFor="agreeToTerms" className="text-sm font-normal cursor-pointer">
+              I agree to the
+              {' '}
+              <button
+                type="button"
+                className="underline hover:text-foreground transition-colors"
+              >
+                Terms of Service
+              </button>
+              {' '}
+              and
+              {' '}
+              <button
+                type="button"
+                className="underline hover:text-foreground transition-colors"
+              >
+                Privacy Policy
+              </button>
+            </Label>
+          </div>
+        </div>
+
+        {errors.root && (
+          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
+            {errors.root.message}
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          className="w-full h-11"
+          disabled={!isValid || !agreeToTerms || isPending}
+        >
           {isPending
             ? (
-                <Spinner text="Signing up..." />
+                <>
+                  <LoaderCircle className="mr-2 size-4 animate-spin" />
+                  Creating account...
+                </>
               )
-            : 'Sign Up'}
+            : (
+                'Create Account'
+              )}
         </Button>
       </form>
-    </>
+    </div>
   )
 }
+
+export default SignupForm
