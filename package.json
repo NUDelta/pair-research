@@ -2,7 +2,7 @@
   "name": "pair-research-nextjs",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.11.0",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "pnpm run prisma:generate &&  pnpm run lint:fix && next build",
@@ -55,24 +55,16 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "husky": "^9.1.7",
-    "lint-staged": "^15.5.1",
-    "prettier": "^3.5.3",
+    "nano-staged": "^1.0.2",
     "prisma": "^6.7.0",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.2.9",
     "typescript": "^5"
   },
-  "lint-staged": {
-    "**/*.{js,jsx,ts,tsx,json,yml}": [
+  "nano-staged": {
+    "**/*.{js,jsx,ts,tsx,json,yml,md,mdx,css,html}": [
       "eslint --fix"
-    ],
-    "**/*.{css,scss,less,styl,html,md}": [
-      "prettier --write"
     ]
-  },
-  "prettier": {
-    "semi": false,
-    "singleQuote": true
   },
   "browserslist": {
     "production": [
