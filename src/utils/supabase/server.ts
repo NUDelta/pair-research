@@ -1,15 +1,16 @@
-import type { User } from '@supabase/supabase-js'
+import type { SupabaseClient, User } from '@supabase/supabase-js'
+import type { ResponseHeaderName } from '@tanstack/react-start/server'
 import { createServerClient } from '@supabase/ssr'
-import { getCookies, setCookie } from '@tanstack/react-start/server'
+import { getCookies, setCookie, setResponseHeader } from '@tanstack/react-start/server'
 import { getSupabasePublicEnv } from '@/utils/env'
 
-export async function createClient() {
+export async function createClient(): Promise<SupabaseClient> {
   const cookies = getCookies()
-  const { url, anonKey } = getSupabasePublicEnv()
+  const { url, publishableKey } = getSupabasePublicEnv()
 
   return createServerClient(
     url,
-    anonKey,
+    publishableKey,
     {
       cookies: {
         getAll() {
@@ -18,9 +19,12 @@ export async function createClient() {
             value,
           }))
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
           cookiesToSet.forEach(({ name, value, options }) => {
             setCookie(name, value, options)
+          })
+          Object.entries(headers).forEach(([name, value]) => {
+            setResponseHeader(name as ResponseHeaderName, value)
           })
         },
       },

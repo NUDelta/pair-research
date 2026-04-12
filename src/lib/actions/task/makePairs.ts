@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from '@/lib/prismaClient'
 
 interface MissingHelpCapacity {
   taskId: string
@@ -34,6 +33,7 @@ export const makePairs = createServerFn({ method: 'POST' })
     const { groupId } = data
 
     try {
+      const { prisma } = await import('@/lib/prismaClient')
       const tasks = await prisma.task.findMany({
         where: {
           group_id: groupId,

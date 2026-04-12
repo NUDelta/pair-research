@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { checkMembership } from '@/lib/actions/profile'
-import { prisma } from '@/lib/prismaClient'
 import { taskSchema } from '@/lib/validators/task'
 import { getUser } from '@/utils/supabase/server'
 
@@ -9,6 +8,7 @@ export const upsertTask = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     try {
       const { groupId, description } = data
+      const { prisma } = await import('@/lib/prismaClient')
 
       const user = await getUser()
 

@@ -19,6 +19,21 @@ export const useAuthProfile = (
   const fetchProfile = useCallback(async () => {
     setLoading(true)
     try {
+      const url = new URL(globalThis.location.href)
+      const from = url.searchParams.get('from')
+      const error = url.searchParams.get('error')
+
+      if ((error !== null && error.trim() !== '') || (from !== null && from.trim() !== '')) {
+        url.searchParams.delete('from')
+        url.searchParams.delete('error')
+        const nextHref = `${url.pathname}${url.search}${url.hash}`
+        globalThis.history.replaceState(null, '', nextHref)
+      }
+
+      if (error !== null && error.trim() !== '') {
+        toast.error(error)
+      }
+
       const {
         data: { user },
         error: userError,
@@ -36,26 +51,11 @@ export const useAuthProfile = (
         return
       }
 
-      const url = new URL(globalThis.location.href)
-      const from = url.searchParams.get('from')
-      const error = url.searchParams.get('error')
-
-      if ((error !== null && error.trim() !== '') || (from !== null && from.trim() !== '')) {
-        url.searchParams.delete('from')
-        url.searchParams.delete('error')
-        const nextHref = `${url.pathname}${url.search}${url.hash}`
-        globalThis.history.replaceState(null, '', nextHref)
-      }
-
       if (from === 'auth-callback') {
         toast.success('Logged in successfully')
       }
       if (from === 'auth-confirm') {
         toast.success('Email confirmed successfully')
-      }
-
-      if (error !== null && error.trim() !== '') {
-        throw new Error(error)
       }
 
       const result = await getOrCreateProfileFn()
@@ -71,8 +71,22 @@ export const useAuthProfile = (
   }, [getOrCreateProfileFn, setUserLoggedIn, supabaseAuth])
 
   useEffect(() => {
-    fetchProfile()
+    void fetchProfile()
   }, [fetchProfile])
 
-  return { loading, profile }
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabaseAuth.onAuthStateChange(() => {
+      queueMicrotask(() => {
+        void fetchProfile()
+      })
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [fetchProfile, supabaseAuth])
+
+  return { loading, profile, refreshProfile: fetchProfile }
 }

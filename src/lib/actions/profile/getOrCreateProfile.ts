@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from '@/lib/prismaClient'
 import { getUser } from '@/utils/supabase/server'
 
 /**
@@ -12,6 +11,7 @@ export const getOrCreateProfile = createServerFn({ method: 'GET' }).handler(asyn
   id: string
   email: string
 }> => {
+  const { prisma } = await import('@/lib/prismaClient')
   const user = await getUser()
 
   const {
@@ -85,6 +85,7 @@ export const createProfileWithName = async (
   email: string,
   fullName?: string,
 ) => {
+  const { prisma } = await import('@/lib/prismaClient')
   await prisma.profile.create({
     data: {
       id,

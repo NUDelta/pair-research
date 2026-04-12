@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { checkMembership } from '@/lib/actions/profile'
-import { prisma } from '@/lib/prismaClient'
 import { getUser } from '@/utils/supabase/server'
 
 export const upsertHelpCapacities = createServerFn({ method: 'POST' })
@@ -28,6 +27,7 @@ export const upsertHelpCapacities = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
+      const { prisma } = await import('@/lib/prismaClient')
       const validUpdates = data.updates.filter(
         update => update.capacity !== undefined && update.capacity >= 1 && update.capacity <= 5,
       )

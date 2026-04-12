@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from '@/lib/prismaClient'
 import { getUser } from '@/utils/supabase/server'
 
 export const getSingleGroup = createServerFn({ method: 'GET' })
@@ -14,6 +13,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
     const { groupId } = data
 
     try {
+      const { prisma } = await import('@/lib/prismaClient')
       const { id: userId } = await getUser()
 
       const membership = await prisma.group_member.findFirst({

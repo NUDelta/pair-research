@@ -19,6 +19,7 @@ interface AuthDialogProps {
   defaultTab?: 'login' | 'signup'
   open?: boolean
   onOpenChange: (open: boolean) => void
+  onAuthSuccess?: () => Promise<void> | void
 }
 
 const AuthDialog = ({
@@ -26,6 +27,7 @@ const AuthDialog = ({
   defaultTab = 'login',
   open,
   onOpenChange,
+  onAuthSuccess,
 }: AuthDialogProps) => {
   const [activeTab, setActiveTab] = useState(defaultTab)
 
@@ -85,11 +87,11 @@ const AuthDialog = ({
             </TabsList>
 
             <TabsContent value="login" className="space-y-4 mt-6">
-              <LoginForm toggleOpen={() => onOpenChange(false)} />
+              <LoginForm toggleOpen={() => onOpenChange(false)} onAuthSuccess={onAuthSuccess} />
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4 mt-6">
-              <SignupForm toggleOpen={() => onOpenChange(false)} />
+              <SignupForm toggleOpen={() => onOpenChange(false)} onAuthSuccess={onAuthSuccess} />
             </TabsContent>
           </Tabs>
 

@@ -1,5 +1,6 @@
 import type { SignupValues } from '@/lib/validators/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { LoaderCircle } from 'lucide-react'
 import { useTransition } from 'react'
@@ -10,15 +11,18 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { signup } from '@/lib/actions/auth'
 import { signupSchema } from '@/lib/validators/auth'
+import { sanitizeRedirectPath } from '@/utils/supabase/authRedirect'
 import AuthField from '../components/AuthField'
 import { OAuthButton } from '../components/OAuthButton'
 
 interface SignupFormProps {
   toggleOpen: () => void
+  onAuthSuccess?: () => Promise<void> | void
 }
 
 const SignupForm = ({
   toggleOpen,
+  onAuthSuccess,
 }: SignupFormProps) => {
   const {
     register,
@@ -39,6 +43,8 @@ const SignupForm = ({
   })
   const signupFn = useServerFn(signup)
   const [isPending, startTransition] = useTransition()
+  const navigate = useNavigate()
+  const router = useRouter()
 
   const agreeToTerms = watch('agreeToTerms')
 
@@ -52,6 +58,20 @@ const SignupForm = ({
       try {
         const result = await signupFn({ data: values })
         if (result.success) {
+          if (result.sessionEstablished === true) {
+            const redirectPath = sanitizeRedirectPath(
+              new URL(globalThis.location.href).searchParams.get('next'),
+              '/groups',
+            )
+
+            await onAuthSuccess?.()
+            await router.invalidate()
+            toast.success(result.message)
+            toggleOpen()
+            await navigate({ href: redirectPath })
+            return
+          }
+
           toast.warning(result.message)
           toggleOpen()
         }

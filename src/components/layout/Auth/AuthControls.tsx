@@ -24,6 +24,7 @@ const AuthControls = () => {
       full_name: fullname,
       avatar_url: avatarUrl,
     },
+    refreshProfile,
   } = useAuthProfile(setIsUserLoggedIn)
 
   if (loading) {
@@ -68,6 +69,7 @@ const AuthControls = () => {
                 defaultTab="login"
                 open={isAuthDialogOpen}
                 onOpenChange={() => setIsAuthDialogOpen(!isAuthDialogOpen)}
+                onAuthSuccess={refreshProfile}
               >
                 <Button variant="ghost" size="lg">
                   Sign in
@@ -77,6 +79,7 @@ const AuthControls = () => {
                 defaultTab="signup"
                 open={isAuthDialogOpen}
                 onOpenChange={() => setIsAuthDialogOpen(!isAuthDialogOpen)}
+                onAuthSuccess={refreshProfile}
               >
                 <Button variant="default" size="lg">
                   Sign up

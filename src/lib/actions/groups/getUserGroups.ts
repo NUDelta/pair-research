@@ -1,11 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { prisma } from '@/lib/prismaClient'
 import { groupsResponseSchema } from '@/lib/schemas/group'
 import { getUser } from '@/utils/supabase/server'
 
 export const getUserGroups = createServerFn({ method: 'GET' }).handler(async () => {
   try {
+    const { prisma } = await import('@/lib/prismaClient')
     const user = await getUser()
     const userId = user.id
 

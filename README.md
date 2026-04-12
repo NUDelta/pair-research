@@ -39,13 +39,14 @@ You will need the following information to be set up in the `.env` file:
 - `DATABASE_URL`: This is the URL to your PostgreSQL database. It should be in the format `postgres://username:password@host:port/postgres`.
 - `S3_ACCESS_KEY`: This is the access key for your Supabase storage bucket.
 - `S3_SECRET_KEY`: This is the secret key for your Supabase storage bucket.
-- `SERVICE_ROLE_SECRET`: This is the service role secret for your Supabase instance. You need it to create new users and send invitations when they are invited to join a group but not yet registered.
+- `SUPABASE_URL`: Optional server-side Supabase project URL. If omitted, the server falls back to `VITE_SUPABASE_URL`.
+- `SUPABASE_SECRET_KEY`: This is the server-only Supabase secret key for admin operations. You need it to create new users and send invitations when they are invited to join a group but not yet registered.
 
 Below are public client variables. These can live in `.env.local` for local development:
 
 - `VITE_SUPABASE_URL`: This is the URL to your Supabase instance. It should be in the format `https://your-project-ref.supabase.co`.
-- `VITE_SUPABASE_ANON_KEY`: This is the anonymous key for your Supabase instance.
-- `VITE_SITE_BASE_URL`: Optional canonical site URL used for sitemap generation in production.
+- `VITE_SUPABASE_PUBLISHABLE_KEY`: This is the browser-safe Supabase publishable key.
+- `VITE_SITE_BASE_URL`: Optional canonical site URL used for sitemap generation in production and for auth email confirmation redirects.
 
 Sample `.env` file:
 
@@ -53,13 +54,14 @@ Sample `.env` file:
 DATABASE_URL="postgres://prisma.[Supabase Project ID]:[Password]@[Supabase Project Location].pooler.supabase.com:5432/postgres"
 S3_ACCESS_KEY="[Supabase Storage S3 Compatible Access Key]"
 S3_SECRET_KEY="[Supabase Storage S3 Compatible Secret Key]"
-SERVICE_ROLE_SECRET="[Supabase Project Service Role Secret]"
+SUPABASE_SECRET_KEY="[Supabase Project Service Role Secret]"
+SUPABASE_URL="https://[Supabase Project Ref].supabase.co"
 ```
 
 Sample `.env.local` file:
 
 ```env
 VITE_SUPABASE_URL="https://[Supabase Project Ref].supabase.co"
-VITE_SUPABASE_ANON_KEY="[Supabase Project Anon Key]"
+VITE_SUPABASE_PUBLISHABLE_KEY="[Supabase Project Publishable Key]"
 VITE_SITE_BASE_URL="https://example.com"
 ```

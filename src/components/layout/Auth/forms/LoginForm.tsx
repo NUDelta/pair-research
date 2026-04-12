@@ -1,5 +1,6 @@
 import type { LoginValues } from '@/lib/validators/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { LoaderCircle } from 'lucide-react'
 import { useTransition } from 'react'
@@ -8,15 +9,18 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { login } from '@/lib/actions/auth'
 import { loginSchema } from '@/lib/validators/auth'
+import { sanitizeRedirectPath } from '@/utils/supabase/authRedirect'
 import AuthField from '../components/AuthField'
 import { OAuthButton } from '../components/OAuthButton'
 
 interface LoginFormProps {
   toggleOpen: () => void
+  onAuthSuccess?: () => Promise<void> | void
 }
 
 const LoginForm = ({
   toggleOpen,
+  onAuthSuccess,
 }: LoginFormProps) => {
   const {
     register,
@@ -30,14 +34,24 @@ const LoginForm = ({
   })
   const loginFn = useServerFn(login)
   const [isPending, startTransition] = useTransition()
+  const navigate = useNavigate()
+  const router = useRouter()
 
   const onSubmit = async (values: LoginValues) => {
     startTransition(async () => {
       try {
         const result = await loginFn({ data: values })
         if (result.success) {
+          const redirectPath = sanitizeRedirectPath(
+            new URL(globalThis.location.href).searchParams.get('next'),
+            '/groups',
+          )
+
+          await onAuthSuccess?.()
+          await router.invalidate()
           toast.success(result.message)
           toggleOpen()
+          await navigate({ href: redirectPath })
         }
         else {
           toast.error(result.message)

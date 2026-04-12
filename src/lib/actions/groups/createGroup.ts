@@ -1,15 +1,17 @@
 import type { User } from '@supabase/supabase-js'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { prisma } from '@/lib/prismaClient'
 import { groupSchema } from '@/lib/validators/group'
 import { getUser } from '@/utils/supabase/server'
-import { createServiceRoleSupabase } from '@/utils/supabase/serviceRole'
 
 export const createGroup = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => groupSchema.parse(data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
+      const [{ prisma }, { createServiceRoleSupabase }] = await Promise.all([
+        import('@/lib/prismaClient'),
+        import('@/utils/supabase/serviceRole'),
+      ])
       const user = await getUser()
       const {
         groupName,
@@ -80,7 +82,7 @@ export const createGroup = createServerFn({ method: 'POST' })
         m => !existingUsers.some(u => u.email === m.email),
       )
 
-      const serviceRoleSupabase = await createServiceRoleSupabase()
+      const serviceRoleSupabase = createServiceRoleSupabase()
       const userCreations = await Promise.allSettled(
         newUsers.map(async ({ email }) => {
           const {

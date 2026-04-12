@@ -2,10 +2,11 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { getCurrentUser } from '@/lib/actions/auth'
 
 export const Route = createFileRoute('/_authed')({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const user = await getCurrentUser()
     if (!user) {
-      throw redirect({ to: '/' })
+      const next = encodeURIComponent(location.href)
+      throw redirect({ href: `/?next=${next}` })
     }
 
     return { user }

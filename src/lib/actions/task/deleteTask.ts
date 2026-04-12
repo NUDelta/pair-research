@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from '@/lib/prismaClient'
 import { getUser } from '@/utils/supabase/server'
 
 export const deleteTask = createServerFn({ method: 'POST' })
@@ -20,6 +19,7 @@ export const deleteTask = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
+      const { prisma } = await import('@/lib/prismaClient')
       const user = await getUser()
       const id = BigInt(data.taskId)
 

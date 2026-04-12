@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { prisma } from '@/lib/prismaClient'
 import { getUser } from '@/utils/supabase/server'
 
 export const acceptGroupInvitation = createServerFn({ method: 'POST' })
@@ -14,6 +13,7 @@ export const acceptGroupInvitation = createServerFn({ method: 'POST' })
     const { groupId } = data
 
     try {
+      const { prisma } = await import('@/lib/prismaClient')
       const user = await getUser()
 
       const invitedMember = await prisma.group_member.findFirst({
