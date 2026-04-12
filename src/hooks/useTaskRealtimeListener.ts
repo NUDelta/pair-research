@@ -1,11 +1,9 @@
-'use client'
-
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
-import { createClient } from '@/utils/supabase/client'
+import { useRouter } from '@tanstack/react-router'
 import { produce } from 'immer'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { createClient } from '@/utils/supabase/client'
 
 /**
  * Real-time subscription to tasks updates, inserts, and deletes
@@ -85,7 +83,7 @@ export const useTaskRealtimeListener = (
     )
   }
 
-  const taskSubscriptionHandler = (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
+  const taskSubscriptionHandler = async (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
     const eventType = payload.eventType
 
     const taskId = (payload.new as { id?: string }).id ?? (payload.old as { id?: string }).id ?? ''
@@ -126,13 +124,13 @@ export const useTaskRealtimeListener = (
     if (taskRaw.pairing_id !== null) {
       toast.success('Task paired with another user! Refreshing...')
       handleTaskDelete(taskRaw.id)
-      router.refresh()
+      await router.invalidate()
       return
     }
 
     switch (eventType) {
       case 'INSERT':
-        handleTaskInsert(taskRaw)
+        await handleTaskInsert(taskRaw)
         break
       case 'UPDATE':
         handleTaskUpdate(taskRaw)
@@ -158,7 +156,7 @@ export const useTaskRealtimeListener = (
       supabase.removeChannel(subscription)
     }
     // Ignore async function as dependency
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react/exhaustive-deps
   }, [supabase, groupId])
 
   return { tasks }

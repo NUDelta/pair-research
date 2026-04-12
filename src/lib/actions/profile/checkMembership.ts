@@ -1,5 +1,3 @@
-'use server'
-
 import { prisma } from '@/lib/prismaClient'
 
 export const checkMembership = async (

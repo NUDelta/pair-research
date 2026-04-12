@@ -1,11 +1,11 @@
-import type { MemberValues, RoleValues } from '@/lib/validators/group'
 import type { Control } from 'react-hook-form'
+import type { GroupValues, MemberValues, RoleValues } from '@/lib/validators/group'
+import { Plus, Trash } from 'lucide-react'
+import { Controller } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Trash } from 'lucide-react'
-import { Controller } from 'react-hook-form'
 
 interface RoleField extends RoleValues {
   id: string
@@ -16,7 +16,7 @@ interface MemberField extends MemberValues {
 }
 
 interface MemberInviteListProps {
-  control: Control<any>
+  control: Control<GroupValues>
   roleFields: RoleField[]
   memberFields: MemberField[]
   appendMember: (member: MemberValues) => void
@@ -58,7 +58,7 @@ const MemberInviteList = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
-                      const raw = (field.value as string) || ''
+                      const raw = field.value || ''
                       const emails = raw
                         .split(',')
                         .map(e => e.trim())
@@ -91,7 +91,7 @@ const MemberInviteList = ({
               control={control}
               render={({ field }) => (
                 <Select
-                  value={field.value as string}
+                  value={field.value}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="min-w-[150px]">

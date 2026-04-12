@@ -1,7 +1,7 @@
 import type { AccountFormValues } from '@/lib/validators/auth'
+import { useFormContext } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useFormContext } from 'react-hook-form'
 
 const FullNameInput = () => {
   const {

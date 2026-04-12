@@ -1,9 +1,14 @@
 // Global Constants
+import { z } from 'zod'
+
+const siteBaseUrlSchema = z.url().nonempty()
+const parsedSiteBaseUrl = siteBaseUrlSchema.safeParse(import.meta.env.VITE_SITE_BASE_URL ?? '')
+
 // ! NO trailing slash at the end of the URL
 export const SITE_BASE_URL
-  = process.env.NODE_ENV === 'development'
+  = import.meta.env.DEV
     ? 'http://localhost:3000'
-    : process.env.NEXT_PUBLIC_SITE_BASE_URL ?? ''
+    : parsedSiteBaseUrl.success ? parsedSiteBaseUrl.data : ''
 
 // Supabase Storage S3 Client
 export const S3_REGION = 'us-east-2'

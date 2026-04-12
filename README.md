@@ -6,7 +6,7 @@ This application takes the original Google Sheets prototype further, developing 
 
 ## Development
 
-This project is developed with [Next.js](https://nextjs.org/) best practices in mind. This section describes some architectural design decisions and any nonconventional dev solutions.
+This project is built with [TanStack Start](https://tanstack.com/start/latest) and Vite. Routes live under `src/app`, Prisma is used for relational app data, and Supabase handles authentication, storage, and realtime updates.
 
 ### API Organization
 
@@ -26,7 +26,11 @@ TO BE WRITTEN
 
 ## Deployment
 
-TO BE WRITTEN
+The production build is a TanStack Start server output intended to run on a Node host. The current start command is:
+
+```bash
+pnpm run start
+```
 
 ### Setup
 
@@ -37,10 +41,11 @@ You will need the following information to be set up in the `.env` file:
 - `S3_SECRET_KEY`: This is the secret key for your Supabase storage bucket.
 - `SERVICE_ROLE_SECRET`: This is the service role secret for your Supabase instance. You need it to create new users and send invitations when they are invited to join a group but not yet registered.
 
-Below are information not secured, if you wish you can put in a separate `.env.local` file:
+Below are public client variables. These can live in `.env.local` for local development:
 
-- `NEXT_PUBLIC_SUPABASE_URL`: This is the URL to your Supabase instance. It should be in the format `https://your-project-ref.supabase.co`.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: This is the anonymous key for your Supabase instance.
+- `VITE_SUPABASE_URL`: This is the URL to your Supabase instance. It should be in the format `https://your-project-ref.supabase.co`.
+- `VITE_SUPABASE_ANON_KEY`: This is the anonymous key for your Supabase instance.
+- `VITE_SITE_BASE_URL`: Optional canonical site URL used for sitemap generation in production.
 
 Sample `.env` file:
 
@@ -54,10 +59,7 @@ SERVICE_ROLE_SECRET="[Supabase Project Service Role Secret]"
 Sample `.env.local` file:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL="https://[Supabase Project Ref].supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="[Supabase Project Anon Key]"
+VITE_SUPABASE_URL="https://[Supabase Project Ref].supabase.co"
+VITE_SUPABASE_ANON_KEY="[Supabase Project Anon Key]"
+VITE_SITE_BASE_URL="https://example.com"
 ```
-
-### Deploying
-
-TO BE WRITTEN

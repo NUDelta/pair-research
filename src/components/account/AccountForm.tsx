@@ -1,14 +1,13 @@
-'use client'
-
 import type { AccountFormValues } from '@/lib/validators/auth'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useServerFn } from '@tanstack/react-start'
+import { useEffect, useTransition } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { updateProfile } from '@/lib/actions/profile'
 import { accountSchema } from '@/lib/validators/auth'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useTransition } from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import AvatarUploader from './AvatarUploader'
 import EmailSection from './EmailSection'
 import FullNameInput from './FullNameInput'
@@ -21,6 +20,7 @@ interface AccountFormProps {
 
 const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
   const [isPending, startTransition] = useTransition()
+  const updateProfileFn = useServerFn(updateProfile)
 
   const methods = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
@@ -46,11 +46,13 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
       ? await data.avatar.arrayBuffer()
       : data.avatar
     startTransition(async () => {
-      const { success, message } = await updateProfile(
-        data.full_name !== full_name ? data.full_name : undefined,
-        avatarBuffer,
-        data.content_type,
-      )
+      const { success, message } = await updateProfileFn({
+        data: {
+          fullName: data.full_name !== full_name ? data.full_name : undefined,
+          imageBuffer: avatarBuffer,
+          contentType: data.content_type,
+        },
+      })
 
       if (success) {
         toast.success(message)

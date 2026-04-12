@@ -7,7 +7,7 @@ interface CapacitiesFormValues {
 
 interface RatingControlProps {
   taskId?: string
-  control?: Control<any>
+  control?: Control<CapacitiesFormValues>
 }
 
 const RatingControl = ({ taskId, control }: RatingControlProps) => {

@@ -1,26 +1,14 @@
-'use client'
-
 import type { Control } from 'react-hook-form'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { getInitials } from '@/utils/avatar'
-import dynamic from 'next/dynamic'
+import RatingControl from './RatingControl'
 import TaskDescription from './TaskDescription'
+import TaskEditor from './TaskEditor'
 
-const RatingControl = dynamic(async () => import('./RatingControl'), {
-  loading: () => (
-    <div className="flex items-center gap-2">
-      {Array.from({ length: 5 }, (_, i) => (
-        <Skeleton key={i} className="rounded-full w-8 h-8" />
-      ))}
-    </div>
-  ),
-})
-
-const TaskEditor = dynamic(async () => import('./TaskEditor'), {
-  loading: () => <Skeleton className="h-8 w-full" />,
-})
+interface CapacitiesFormValues {
+  capacities: Record<string, number | undefined>
+}
 
 interface TaskCardProps {
   taskId?: string
@@ -29,7 +17,7 @@ interface TaskCardProps {
   description?: string | null
   fullName?: string | null
   userAvatar?: string | null
-  control?: Control<any>
+  control?: Control<CapacitiesFormValues>
 }
 
 export default function TaskCard({

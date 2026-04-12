@@ -1,8 +1,6 @@
-'use client'
-
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
-import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
 
 export const useCurrentUserTaskDescription = (
   groupId: string,
@@ -80,7 +78,7 @@ export const useCurrentUserTaskDescription = (
     return () => {
       supabase.removeChannel(channel)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react/exhaustive-deps
   }, [supabase, groupId, currentUserId])
 
   return { currentDescription, setCurrentDescription }

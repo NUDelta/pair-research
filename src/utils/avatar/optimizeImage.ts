@@ -1,5 +1,3 @@
-'use client'
-
 import { encode } from '@jsquash/webp'
 
 const loadImage = async (src: string): Promise<ImageData> => {

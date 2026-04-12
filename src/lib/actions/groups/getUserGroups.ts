@@ -1,11 +1,10 @@
-'use server'
-
+import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
 import { prisma } from '@/lib/prismaClient'
 import { groupsResponseSchema } from '@/lib/schemas/group'
 import { getUser } from '@/utils/supabase/server'
-import { z } from 'zod'
 
-export const getUserGroups = async () => {
+export const getUserGroups = createServerFn({ method: 'GET' }).handler(async () => {
   try {
     const user = await getUser()
     const userId = user.id
@@ -71,9 +70,9 @@ export const getUserGroups = async () => {
   }
   catch (error_) {
     if (error_ instanceof z.ZodError) {
-      console.error('[GET_USER_GROUPS_ERROR-ZOD]', error_.errors)
+      console.error('[GET_USER_GROUPS_ERROR-ZOD]', error_.issues)
     }
 
     console.error('[GET_USER_GROUPS_ERROR]', error_)
   }
-}
+})

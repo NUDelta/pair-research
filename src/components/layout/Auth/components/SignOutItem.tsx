@@ -1,10 +1,8 @@
-'use client'
-
+import { useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
 import DoubleConfirmDialog from '@/components/common/DoubleConfirmDialog'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 
 interface SignOutItemProps {
   setUserLoggedIn: (value: boolean) => void
@@ -12,7 +10,7 @@ interface SignOutItemProps {
 
 const SignOutItem = ({ setUserLoggedIn }: SignOutItemProps) => {
   const supabase = createClient()
-  const router = useRouter()
+  const navigate = useNavigate()
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut()
@@ -23,7 +21,7 @@ const SignOutItem = ({ setUserLoggedIn }: SignOutItemProps) => {
     else {
       toast.success('Signed out successfully')
       setUserLoggedIn(false)
-      router.push('/')
+      await navigate({ to: '/' })
     }
   }
 

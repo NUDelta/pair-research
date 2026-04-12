@@ -1,15 +1,11 @@
 import antfu from '@antfu/eslint-config'
-import nextPlugin from '@next/eslint-plugin-next'
 
 export default antfu({
   formatters: true,
   react: true,
-  ignores: ['src/components/ui/**.tsx'],
+  ignores: ['src/components/ui/**.tsx', 'src/routeTree.gen.ts', '.output/**', 'prisma/generated/**'],
   typescript: {
     tsconfigPath: 'tsconfig.json',
-  },
-  plugins: {
-    '@next/next': nextPlugin,
   },
   lessOpinionated: true,
   rules: {
@@ -19,12 +15,12 @@ export default antfu({
     'node/prefer-global/buffer': 'off',
   },
 }, {
-  files: ['src/app/**/loading.tsx'],
+  files: ['src/components/pending/**.tsx'],
   rules: {
     'react/no-array-index-key': 'off',
   },
 }, {
-  files: ['src/components/ui/**.tsx'],
+  files: ['src/components/ui/**.tsx', 'src/routes/**/*.tsx'],
   rules: {
     'react-refresh/only-export-components': 'off',
   },

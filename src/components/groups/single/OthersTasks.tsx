@@ -1,7 +1,5 @@
-'use client'
-
-import { useTaskRealtimeListener } from '@/hooks'
 import { AlertCircle } from 'lucide-react'
+import { useTaskRealtimeListener } from '@/hooks'
 import OthersTasksForm from './OthersTasksForm'
 
 interface OthersTasksProps {

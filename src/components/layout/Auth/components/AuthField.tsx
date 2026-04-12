@@ -1,11 +1,9 @@
-'use client'
-
 import type { FieldError, UseFormRegister } from 'react-hook-form'
+import { Eye, EyeOff, Mail, User } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Eye, EyeOff, Mail, User } from 'lucide-react'
-import { useState } from 'react'
 
 interface AuthFieldProps {
   id: string

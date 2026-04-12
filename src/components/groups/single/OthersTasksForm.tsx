@@ -1,10 +1,11 @@
-import { Spinner } from '@/components/common'
-import { Button } from '@/components/ui/button'
-import { upsertHelpCapacities } from '@/lib/actions/task'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useTransition } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { Spinner } from '@/components/common'
+import { Button } from '@/components/ui/button'
+import { upsertHelpCapacities } from '@/lib/actions/task'
 import TaskCard from './TaskCard'
 
 interface CapacitiesFormValues {
@@ -21,6 +22,7 @@ const OthersTasksForm = ({
   tasks,
 }: OthersTasksFormProps) => {
   const router = useRouter()
+  const upsertHelpCapacitiesFn = useServerFn(upsertHelpCapacities)
   const [isPending, startTransition] = useTransition()
 
   const methods = useForm<CapacitiesFormValues>()
@@ -68,10 +70,10 @@ const OthersTasksForm = ({
       return
     }
     startTransition(async () => {
-      const { success, message } = await upsertHelpCapacities(groupId, updates)
+      const { success, message } = await upsertHelpCapacitiesFn({ data: { groupId, updates } })
       if (success) {
         toast.success(message)
-        router.refresh()
+        await router.invalidate()
       }
       else {
         toast.error(message)

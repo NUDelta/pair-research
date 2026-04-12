@@ -1,57 +1,54 @@
-import type { Metadata } from 'next'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { LeavePoolButton, MakePairsButton } from '@/components/groups/single/buttons'
 import OthersTasks from '@/components/groups/single/OthersTasks'
 import Pairing from '@/components/groups/single/Pairing'
 import TaskCard from '@/components/groups/single/TaskCard'
+import SingleGroupPending from '@/components/pending/SingleGroupPending'
 import { Button } from '@/components/ui/button'
 import { getSingleGroup } from '@/lib/actions/groups'
-import { redirect } from 'next/navigation'
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export const metadata: Metadata = {
-  title: 'Group | Pair Research',
-}
+export const Route = createFileRoute('/_authed/groups/$slug')({
+  loader: async ({ params }) => {
+    if (!UUID_REGEX.test(params.slug)) {
+      throw redirect({ to: '/groups' })
+    }
 
-export default async function SingleGroupPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
-  const { slug } = await params
-  if (!UUID_REGEX.test(slug)) {
-    redirect('/groups')
-  }
+    const result = await getSingleGroup({ data: { groupId: params.slug } })
+    if (!result) {
+      throw redirect({ to: '/groups' })
+    }
 
-  const res = await getSingleGroup(slug)
+    return result
+  },
+  pendingComponent: SingleGroupPending,
+  head: () => ({
+    meta: [{ title: 'Group | Pair Research' }],
+  }),
+  component: SingleGroupPage,
+})
 
-  if (!res) {
-    redirect('/groups')
-  }
-
-  const { groupInfo, tasks, currentUserActivePairingTaskWithProfile } = res
+function SingleGroupPage() {
+  const { groupInfo, tasks, currentUserActivePairingTaskWithProfile } = Route.useLoaderData()
   const { userId: currentUserId } = groupInfo
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
-
-  // This may be an empty array
   const othersTasks = tasks.filter(task => task.userId !== currentUserId)
 
   return (
-    <div className="container max-w-5xl mx-auto space-y-6 p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+    <div className="container mx-auto max-w-5xl space-y-6 p-6">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold" aria-label="Group title">
           {groupInfo.name}
         </h1>
         <div className="flex flex-wrap gap-2">
-          {currentUserTask !== undefined
-            && (
-              <LeavePoolButton
-                taskId={currentUserTask.id}
-                groupId={groupInfo.id}
-              />
-            )}
+          {currentUserTask !== undefined && (
+            <LeavePoolButton
+              taskId={currentUserTask.id}
+              groupId={groupInfo.id}
+            />
+          )}
           {groupInfo.isAdmin && (
             <>
               <Button variant="destructive" aria-label="Reset Pool">
@@ -63,12 +60,10 @@ export default async function SingleGroupPage({
         </div>
       </div>
 
-      {/* Current Active Pairing */}
       {currentUserActivePairingTaskWithProfile !== null && (
         <Pairing pairingInfo={currentUserActivePairingTaskWithProfile} />
       )}
 
-      {/* Current User's Task */}
       <TaskCard
         currentUserId={currentUserId}
         groupId={groupInfo.id}
@@ -77,7 +72,6 @@ export default async function SingleGroupPage({
         fullName={groupInfo.fullName}
       />
 
-      {/* Others' Tasks */}
       <OthersTasks
         groupId={groupInfo.id}
         currentUserId={currentUserId}

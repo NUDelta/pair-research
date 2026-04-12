@@ -1,14 +1,13 @@
-'use client'
-
 import type { LoginValues } from '@/lib/validators/auth'
-import { Button } from '@/components/ui/button'
-import { login } from '@/lib/actions/auth'
-import { loginSchema } from '@/lib/validators/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useServerFn } from '@tanstack/react-start'
 import { LoaderCircle } from 'lucide-react'
 import { useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { login } from '@/lib/actions/auth'
+import { loginSchema } from '@/lib/validators/auth'
 import AuthField from '../components/AuthField'
 import { OAuthButton } from '../components/OAuthButton'
 
@@ -29,15 +28,13 @@ const LoginForm = ({
     mode: 'onChange',
     defaultValues: { email: '', password: '' },
   })
+  const loginFn = useServerFn(login)
   const [isPending, startTransition] = useTransition()
 
   const onSubmit = async (values: LoginValues) => {
     startTransition(async () => {
-      const formData = new FormData()
-      formData.append('email', values.email)
-      formData.append('password', values.password)
       try {
-        const result = await login(formData)
+        const result = await loginFn({ data: values })
         if (result.success) {
           toast.success(result.message)
           toggleOpen()

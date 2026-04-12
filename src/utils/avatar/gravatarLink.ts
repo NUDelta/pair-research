@@ -1,13 +1,9 @@
-'use server'
-
-import { subtle } from 'node:crypto'
-
 const digestMessage = async (
   email: string,
   method: string = 'SHA-256',
 ): Promise<string> => {
   const msgUint8 = new TextEncoder().encode(email)
-  const hashBuffer = await subtle.digest(method, msgUint8)
+  const hashBuffer = await globalThis.crypto.subtle.digest(method, msgUint8)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   const hashHex = hashArray
     .map(b => b.toString(16).padStart(2, '0'))

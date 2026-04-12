@@ -1,22 +1,23 @@
-'use client'
-
 import type { GroupValues } from '@/lib/validators/group'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
+import * as React from 'react'
+import { useTransition } from 'react'
+import { useFieldArray, useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { createGroup } from '@/lib/actions/groups'
 import { groupSchema } from '@/lib/validators/group'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
-import React, { useTransition } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import AssignedRoleSelector from './AssignedRoleSelector'
 import GroupBasicsSection from './GroupBasicsSection'
 import MemberInviteList from './MemberInviteList'
 import RolesEditor from './RolesEditor'
 
 const CreateGroupForm = () => {
-  const router = useRouter()
+  const navigate = useNavigate()
+  const createGroupFn = useServerFn(createGroup)
   const [isPending, startTransition] = useTransition()
   const form = useForm<GroupValues>({
     resolver: zodResolver(groupSchema),
@@ -66,10 +67,10 @@ const CreateGroupForm = () => {
       return
     }
     startTransition(async () => {
-      const { success, message } = await createGroup(data)
+      const { success, message } = await createGroupFn({ data })
       if (success) {
         toast.success(message)
-        router.push('/groups')
+        await navigate({ to: '/groups' })
       }
       else {
         toast.error(message)

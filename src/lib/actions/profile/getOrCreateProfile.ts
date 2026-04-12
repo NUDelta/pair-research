@@ -1,5 +1,4 @@
-'use server'
-
+import { createServerFn } from '@tanstack/react-start'
 import { prisma } from '@/lib/prismaClient'
 import { getUser } from '@/utils/supabase/server'
 
@@ -7,7 +6,7 @@ import { getUser } from '@/utils/supabase/server'
  * Get or create a profile by uid. Optionally upload and store avatar.
  * @returns An object with full_name and avatar_url
  */
-export const getOrCreateProfile = async (): Promise<{
+export const getOrCreateProfile = createServerFn({ method: 'GET' }).handler(async (): Promise<{
   full_name: string | null
   avatar_url: string | null
   id: string
@@ -24,7 +23,6 @@ export const getOrCreateProfile = async (): Promise<{
     },
   } = user
 
-  // Try to find the existing profile
   const existing = await prisma.profile.findUnique({
     where: { id },
     select: { full_name: true, avatar_url: true },
@@ -64,7 +62,6 @@ export const getOrCreateProfile = async (): Promise<{
     }
   }
 
-  // ! Below are logic for creating a new profile
   const created = await prisma.profile.create({
     data: {
       id,
@@ -81,7 +78,7 @@ export const getOrCreateProfile = async (): Promise<{
     id,
     email: email?.trim() as string,
   }
-}
+})
 
 export const createProfileWithName = async (
   id: string,

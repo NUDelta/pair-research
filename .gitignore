@@ -20,6 +20,15 @@
 
 # production
 /build
+/dist
+/.output
+/prisma/generated
+dist-ssr
+*.local
+count.txt
+.tanstack
+.output
+todos.json
 
 # misc
 .DS_Store

@@ -1,5 +1,3 @@
-'use client'
-
 import { cn } from '@/lib/utils'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 

@@ -1,15 +1,19 @@
-'use client'
-
 import type { Group } from '@/lib/schemas/group'
+import { Link, useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
+import { Check, Settings } from 'lucide-react'
+import { useTransition } from 'react'
+import { toast } from 'sonner'
 import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { acceptGroupInvitation } from '@/lib/actions/groups'
-import { Check, Settings } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useTransition } from 'react'
-import { toast } from 'sonner'
+
+const PARAGRAPH_BREAK_REGEX = /\n/
+
+function formatJoinedAt(joinedAt: string) {
+  return new Date(joinedAt).toLocaleDateString()
+}
 
 interface GroupCardProps {
   group: Group
@@ -29,13 +33,14 @@ const GroupCard = ({
   } = group
   const [isAccepting, startTransition] = useTransition()
   const router = useRouter()
+  const acceptGroupInvitationFn = useServerFn(acceptGroupInvitation)
 
   const onAccept = async () => {
     startTransition(async () => {
-      const { success, message } = await acceptGroupInvitation(group.id)
+      const { success, message } = await acceptGroupInvitationFn({ data: { groupId: group.id } })
       if (success) {
         toast.success(message)
-        router.refresh()
+        await router.invalidate()
       }
       else {
         toast.error(message)
@@ -69,7 +74,7 @@ const GroupCard = ({
         <CardContent>
           <div className="space-y-2 line-clamp-4">
             {groupDescription
-              .split(/\n/)
+              .split(PARAGRAPH_BREAK_REGEX)
               .map((para, idx) => (
               // eslint-disable-next-line react/no-array-index-key -- unique key
                 <p key={idx} className="whitespace-pre-line leading-snug">
@@ -109,7 +114,7 @@ const GroupCard = ({
             )
           : (
               <span>
-                {`Joined at ${new Date(joinedAt).toLocaleDateString()}`}
+                {`Joined at ${formatJoinedAt(joinedAt)}`}
               </span>
             )}
       </CardFooter>
@@ -118,7 +123,7 @@ const GroupCard = ({
 
   return href !== undefined
     ? (
-        <Link href={href} prefetch={false}>
+        <Link to="/groups/$slug" params={{ slug: href }}>
           {CardContentComponent}
         </Link>
       )

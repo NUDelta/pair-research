@@ -1,10 +1,10 @@
-'use client'
-
+import { useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
+import { useTransition } from 'react'
+import { toast } from 'sonner'
 import { DoubleConfirmDialog } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { makePairs } from '@/lib/actions/task'
-import { useTransition } from 'react'
-import { toast } from 'sonner'
 
 interface Props {
   groupId: string
@@ -12,12 +12,15 @@ interface Props {
 
 const MakePairsButton = ({ groupId }: Props) => {
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+  const makePairsFn = useServerFn(makePairs)
 
   const handleMakePairs = async () => {
     startTransition(async () => {
-      const response = await makePairs(groupId)
+      const response = await makePairsFn({ data: { groupId } })
       if (response.success) {
         toast.success(response.message)
+        await router.invalidate()
       }
       else {
         if (response.data?.missingHelpCapacities) {

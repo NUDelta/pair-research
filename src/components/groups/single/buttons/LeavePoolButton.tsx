@@ -1,11 +1,10 @@
-'use client'
-
+import { useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
+import { useTransition } from 'react'
+import { toast } from 'sonner'
 import { DoubleConfirmDialog } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { deleteTask } from '@/lib/actions/task'
-import { useRouter } from 'next/navigation'
-import { useTransition } from 'react'
-import { toast } from 'sonner'
 
 interface LeavePoolButtonProps {
   taskId: string
@@ -18,13 +17,14 @@ const LeavePoolButton = ({
 }: LeavePoolButtonProps) => {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
+  const deleteTaskFn = useServerFn(deleteTask)
 
   const handleLeave = async () => {
     startTransition(async () => {
-      const { success, message } = await deleteTask(taskId, groupId)
+      const { success, message } = await deleteTaskFn({ data: { taskId, groupId } })
       if (success) {
         toast.success(message)
-        router.refresh()
+        await router.invalidate()
       }
       else {
         toast.error(message)

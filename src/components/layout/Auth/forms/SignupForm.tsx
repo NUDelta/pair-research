@@ -1,16 +1,15 @@
-'use client'
-
 import type { SignupValues } from '@/lib/validators/auth'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useServerFn } from '@tanstack/react-start'
+import { LoaderCircle } from 'lucide-react'
+import { useTransition } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { signup } from '@/lib/actions/auth'
 import { signupSchema } from '@/lib/validators/auth'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { LoaderCircle } from 'lucide-react'
-import { useTransition } from 'react'
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
 import AuthField from '../components/AuthField'
 import { OAuthButton } from '../components/OAuthButton'
 
@@ -38,6 +37,7 @@ const SignupForm = ({
       agreeToTerms: false,
     },
   })
+  const signupFn = useServerFn(signup)
   const [isPending, startTransition] = useTransition()
 
   const agreeToTerms = watch('agreeToTerms')
@@ -49,12 +49,8 @@ const SignupForm = ({
     }
 
     startTransition(async () => {
-      const formData = new FormData()
-      formData.append('email', values.email)
-      formData.append('password', values.password)
-      formData.append('name', values.name)
       try {
-        const result = await signup(formData)
+        const result = await signupFn({ data: values })
         if (result.success) {
           toast.warning(result.message)
           toggleOpen()

@@ -1,18 +1,16 @@
-'use client'
-
-import type { RoleValues } from '@/lib/validators/group'
 import type { Control } from 'react-hook-form'
+import type { GroupValues, RoleValues } from '@/lib/validators/group'
+import { Controller } from 'react-hook-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Controller } from 'react-hook-form'
 
 interface RoleField extends RoleValues {
   id: string
 }
 
 interface AssignedRoleSelectorProps {
-  control: Control<any>
+  control: Control<GroupValues>
   roleFields: RoleField[]
 }
 
@@ -36,7 +34,7 @@ const AssignedRoleSelector = ({
             rules={{ required: 'Please select a role' }}
             render={({ field }) => (
               <Select
-                value={field.value as string}
+                value={field.value}
                 onValueChange={field.onChange}
               >
                 <SelectTrigger id="assignedRole" className="w-full">

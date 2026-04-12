@@ -1,15 +1,14 @@
-'use client'
-
+import type { FormEvent } from 'react'
+import { useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
+import { SquarePen } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useCurrentUserTaskDescription } from '@/hooks'
 import { upsertTask } from '@/lib/actions/task'
-import { SquarePen } from 'lucide-react'
-import Form from 'next/form'
-import { useRouter } from 'next/navigation'
-import { useActionState, useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import TaskDescription from './TaskDescription'
 
 interface TaskEditorProps {
@@ -22,34 +21,54 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
   const [editing, setEditing] = useState(false)
   const { currentDescription } = useCurrentUserTaskDescription(groupId, currentUserId, initialDescription)
   const isJoined = currentDescription !== null && currentDescription.trim() !== ''
-  const [state, formAction, isPending] = useActionState(upsertTask, undefined)
-
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [draftDescription, setDraftDescription] = useState(currentDescription ?? '')
+  const [isPending, startTransition] = useTransition()
+  const upsertTaskFn = useServerFn(upsertTask)
   const router = useRouter()
 
-  useEffect(() => {
-    if (state?.success) {
-      toast.success(state?.message)
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setEditing(false)
-      router.refresh()
-    }
-    else if (!state?.success && state?.message !== undefined) {
-      toast.error(state?.message)
-    }
-  }, [state, router])
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setErrorMessage(null)
+
+    startTransition(async () => {
+      try {
+        const state = await upsertTaskFn({
+          data: {
+            groupId,
+            description: draftDescription,
+          },
+        })
+
+        if (state?.success) {
+          toast.success(state.message)
+          setEditing(false)
+          await router.invalidate()
+        }
+        else if (state?.message !== undefined) {
+          toast.error(state.message)
+          setErrorMessage(state.message)
+        }
+      }
+      catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update task'
+        toast.error(message)
+        setErrorMessage(message)
+      }
+    })
+  }
 
   return editing || isPending
     ? (
-        <Form action={formAction} className="space-y-3 sm:px-2" aria-label="Task Editor">
-          <input type="hidden" name="groupId" value={groupId} />
+        <form onSubmit={handleSubmit} className="space-y-3 sm:px-2" aria-label="Task Editor">
           <Textarea
-            name="description"
-            defaultValue={currentDescription ?? ''}
+            value={draftDescription}
+            onChange={event => setDraftDescription(event.target.value)}
             placeholder={currentDescription ?? 'Describe what you need help with...'}
             aria-label="Edit your task"
           />
-          {!state?.success && state?.schemaError !== undefined && (
-            <p className="text-sm text-red-500">{state?.schemaError}</p>
+          {errorMessage !== null && (
+            <p className="text-sm text-red-500">{errorMessage}</p>
           )}
           <div className="flex justify-end gap-2">
             <Button
@@ -57,13 +76,15 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
               variant="ghost"
               disabled={isPending}
               onClick={() => {
+                setDraftDescription(currentDescription ?? '')
+                setErrorMessage(null)
                 setEditing(false)
               }}
             >
               Cancel
             </Button>
             <p aria-live="polite" className="sr-only" role="status">
-              {state?.message}
+              {errorMessage ?? ''}
             </p>
             <Button type="submit" disabled={isPending}>
               {
@@ -75,7 +96,7 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
               }
             </Button>
           </div>
-        </Form>
+        </form>
       )
     : (
         <div className="flex justify-between items-center">
@@ -86,7 +107,11 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setDraftDescription(currentDescription ?? '')
+              setErrorMessage(null)
+              setEditing(true)
+            }}
             aria-label="Edit Task"
           >
             <SquarePen className="h-4 w-4" />

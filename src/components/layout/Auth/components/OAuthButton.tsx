@@ -1,11 +1,7 @@
-'use client'
-
+import { useState } from 'react'
 import { Spinner } from '@/components/common'
 import { Button } from '@/components/ui/button'
-import { SITE_BASE_URL } from '@/utils/constants'
 import { createClient } from '@/utils/supabase/client'
-import Image from 'next/image'
-import { useState } from 'react'
 
 export const OAuthButton = () => {
   const [loading, setLoading] = useState<boolean>(false)
@@ -16,7 +12,7 @@ export const OAuthButton = () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${SITE_BASE_URL}/auth/callback`,
+        redirectTo: `${globalThis.location.origin}/auth/callback`,
       },
     })
   }
@@ -34,14 +30,12 @@ export const OAuthButton = () => {
             )
           : (
               <>
-                <Image
+                <img
                   src="/images/google.webp"
                   alt="Google Icon"
                   width={20}
                   height={20}
                   className="h-5 w-5"
-                  unoptimized
-                  priority
                 />
                 Sign in with Google
               </>

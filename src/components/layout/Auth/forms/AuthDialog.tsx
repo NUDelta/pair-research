@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { LogoPicture } from '@/components/common'
 import {
   Dialog,
@@ -8,7 +9,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useState } from 'react'
 import LoginForm from './LoginForm'
 import SignupForm from './SignupForm'
 

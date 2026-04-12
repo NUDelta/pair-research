@@ -1,71 +1,76 @@
-'use server'
-
+import { createServerFn } from '@tanstack/react-start'
 import { prisma } from '@/lib/prismaClient'
 import { getUser } from '@/utils/supabase/server'
 
-export const acceptGroupInvitation = async (
-  groupId: string,
-): Promise<ActionResponse> => {
-  try {
-    const user = await getUser()
+export const acceptGroupInvitation = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => {
+    if (typeof data !== 'object' || data === null || !('groupId' in data)) {
+      throw new Error('Group ID is required')
+    }
 
-    // 1. Check if the user is actually beening invited or if already a member of this group
-    const invitedMember = await prisma.group_member.findFirst({
-      where: {
-        user_id: user.id,
-        group_id: groupId,
-      },
-      select: {
-        id: true,
-        group_id: true,
-        is_pending: true,
-        group: {
-          select: {
-            name: true,
+    return { groupId: String(data.groupId) }
+  })
+  .handler(async ({ data }): Promise<ActionResponse> => {
+    const { groupId } = data
+
+    try {
+      const user = await getUser()
+
+      const invitedMember = await prisma.group_member.findFirst({
+        where: {
+          user_id: user.id,
+          group_id: groupId,
+        },
+        select: {
+          id: true,
+          group_id: true,
+          is_pending: true,
+          group: {
+            select: {
+              name: true,
+            },
           },
         },
-      },
-    })
+      })
 
-    if (!invitedMember) {
+      if (!invitedMember) {
+        return {
+          success: false,
+          message: 'You are not actually invited to this group',
+        }
+      }
+      if (!invitedMember.is_pending) {
+        return {
+          success: false,
+          message: 'You have already accepted the invitation',
+        }
+      }
+
+      const result = await prisma.group_member.update({
+        where: { id: invitedMember.id },
+        data: {
+          is_pending: false,
+          joined_at: new Date(),
+        },
+      })
+
+      if (result.is_pending) {
+        return {
+          success: false,
+          message: `Failed to accept the invitation to ${invitedMember.group.name}`,
+        }
+      }
+
       return {
-        success: false,
-        message: 'You are not actually invited to this group',
+        success: true,
+        message: `You have accepted the invitation to ${invitedMember.group.name}`,
       }
     }
-    if (!invitedMember.is_pending) {
+    catch (error_) {
+      console.error('Error accepting group invitation:', error_)
       return {
         success: false,
-        message: 'You have already accepted the invitation',
+        message: 'Failed to accept the invitation',
       }
     }
-
-    // 2. Accept the invitation
-    const restult = await prisma.group_member.update({
-      where: { id: invitedMember.id },
-      data: {
-        is_pending: false,
-        joined_at: new Date(),
-      },
-    })
-
-    if (restult.is_pending) {
-      return {
-        success: false,
-        message: `Failed to accept the invitation to ${invitedMember.group.name}`,
-      }
-    }
-
-    return {
-      success: true,
-      message: `You have accepted the invitation to ${invitedMember.group.name}`,
-    }
-  }
-  catch (error_) {
-    console.error('Error accepting group invitation:', error_)
-    return {
-      success: false,
-      message: 'Failed to accept the invitation',
-    }
-  }
-}
+  })

@@ -1,5 +1,5 @@
-import { userSchema } from '@/lib/schemas/user'
 import { z } from 'zod'
+import { userSchema } from '@/lib/schemas/user'
 
 export const groupSchema = z.object({
   id: z.string().describe('Group ID'),

@@ -1,15 +1,13 @@
-'use client'
-
-import type { AccountFormValues } from '@/lib/validators/auth'
 import type { UseFormSetValue } from 'react-hook-form'
+import type { AccountFormValues } from '@/lib/validators/auth'
+import { CheckCircle } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { Spinner } from '@/components/common'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getInitials, optimizeAvatar } from '@/utils/avatar'
-import { CheckCircle } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 interface AvatarUploaderProps {
   fullName: string

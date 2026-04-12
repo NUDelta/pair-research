@@ -2,7 +2,14 @@
   "editor.wordWrap": "on",
   "search.exclude": {
     "**/node_modules": true,
-    "**/bower_components": true
+    "**/bower_components": true,
+    "**/routeTree.gen.ts": true
+  },
+  "files.watcherExclude": {
+    "**/routeTree.gen.ts": true
+  },
+  "files.readonlyInclude": {
+    "**/routeTree.gen.ts": true
   },
 
   // Disable the default formatter, use eslint instead

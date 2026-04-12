@@ -1,5 +1,4 @@
 import { Heart } from 'lucide-react'
-import Link from 'next/link'
 
 const Footer = () => {
   return (
@@ -9,26 +8,25 @@ const Footer = () => {
           Made with
           <Heart className="inline mx-1 w-4 h-4 text-red-400" aria-hidden="true" />
           by
-          <Link
+          <a
             href="http://delta.northwestern.edu/"
             className="ml-1.5 text-blue-500 underline-interactive"
             aria-label="Delta Lab Website"
             target="_blank"
             rel="noopener noreferrer"
-            prefetch={false}
           >
             Delta Lab
-          </Link>
+          </a>
         </p>
         <p className="flex-col text-center">
           Questions? Comments? Bug reports?
-          <Link
+          <a
             href="/contact"
             className="ml-1.5 text-blue-500 underline-interactive"
             aria-label="Send us a message"
           >
             Send us a message.
-          </Link>
+          </a>
         </p>
       </div>
     </footer>

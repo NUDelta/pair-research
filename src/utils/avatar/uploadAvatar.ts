@@ -1,7 +1,5 @@
-'use server'
-
-import { BUCKET, S3_BASE_URL, S3_REGION } from '@/utils/constants'
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { BUCKET, S3_BASE_URL, S3_REGION } from '@/utils/constants'
 
 const s3 = new S3Client({
   region: S3_REGION,

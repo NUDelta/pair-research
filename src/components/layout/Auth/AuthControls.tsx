@@ -1,5 +1,5 @@
-'use client'
-
+import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,15 +10,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuthProfile } from '@/hooks'
 import { getInitials } from '@/utils/avatar'
-import Link from 'next/link'
-import { useState } from 'react'
 import AuthControlsLoading from './AuthControlsLoading'
 import SignOutItem from './components/SignOutItem'
 import AuthDialog from './forms/AuthDialog'
 
 const AuthControls = () => {
-  const [isUserLoggedIn, setUserLoggedIn] = useState<boolean>(false)
-  const [AuthDialogOpen, setAuthDialogOpen] = useState<boolean>(false)
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false)
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState<boolean>(false)
 
   const {
     loading,
@@ -26,7 +24,7 @@ const AuthControls = () => {
       full_name: fullname,
       avatar_url: avatarUrl,
     },
-  } = useAuthProfile(setUserLoggedIn)
+  } = useAuthProfile(setIsUserLoggedIn)
 
   if (loading) {
     return <AuthControlsLoading />
@@ -37,8 +35,8 @@ const AuthControls = () => {
       {isUserLoggedIn
         ? (
             <div className="space-x-3 flex items-center my-auto">
-              <Button variant="outline" size="lg">
-                <Link href="/groups">Groups</Link>
+              <Button asChild variant="outline" size="lg">
+                <Link to="/groups">Groups</Link>
               </Button>
 
               <DropdownMenu>
@@ -57,9 +55,9 @@ const AuthControls = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link href="/account">Account Settings</Link>
+                    <Link to="/account">Account Settings</Link>
                   </DropdownMenuItem>
-                  <SignOutItem setUserLoggedIn={setUserLoggedIn} />
+                  <SignOutItem setUserLoggedIn={setIsUserLoggedIn} />
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -68,8 +66,8 @@ const AuthControls = () => {
             <>
               <AuthDialog
                 defaultTab="login"
-                open={AuthDialogOpen}
-                onOpenChange={() => setAuthDialogOpen(!AuthDialogOpen)}
+                open={isAuthDialogOpen}
+                onOpenChange={() => setIsAuthDialogOpen(!isAuthDialogOpen)}
               >
                 <Button variant="ghost" size="lg">
                   Sign in
@@ -77,8 +75,8 @@ const AuthControls = () => {
               </AuthDialog>
               <AuthDialog
                 defaultTab="signup"
-                open={AuthDialogOpen}
-                onOpenChange={() => setAuthDialogOpen(!AuthDialogOpen)}
+                open={isAuthDialogOpen}
+                onOpenChange={() => setIsAuthDialogOpen(!isAuthDialogOpen)}
               >
                 <Button variant="default" size="lg">
                   Sign up
