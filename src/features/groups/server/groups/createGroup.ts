@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { groupSchema } from '@/features/groups/schemas/groupForm'
 import { getUser } from '@/shared/supabase/server'
+import { buildCreateGroupData } from './buildCreateGroupData'
 
 export const createGroup = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => groupSchema.parse(data))
@@ -46,13 +47,11 @@ export const createGroup = createServerFn({ method: 'POST' })
       }, {} as Record<string, string>)
 
       const group = await prisma.group.create({
-        data: {
-          name: groupName,
-          description: groupDescription ?? null,
-          creator_id: user.id,
-          active: true,
-          created_at: new Date(),
-        },
+        data: buildCreateGroupData({
+          groupName,
+          groupDescription,
+          creatorId: user.id,
+        }),
       })
 
       const createdRoles = await Promise.all(
