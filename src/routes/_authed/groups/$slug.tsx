@@ -1,11 +1,10 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { LeavePoolButton, MakePairsButton } from '@/features/groups/components/detail/buttons'
+import { LeavePoolButton, MakePairsButton, ResetPoolButton } from '@/features/groups/components/detail/buttons'
 import OthersTasks from '@/features/groups/components/detail/OthersTasks'
 import Pairing from '@/features/groups/components/detail/Pairing'
 import TaskCard from '@/features/groups/components/detail/TaskCard'
 import SingleGroupPending from '@/features/groups/components/pending/SingleGroupPending'
 import { getSingleGroup } from '@/features/groups/server/groups'
-import { Button } from '@/shared/ui/button'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -51,9 +50,7 @@ function SingleGroupPage() {
           )}
           {groupInfo.isAdmin && (
             <>
-              <Button variant="destructive" aria-label="Reset Pool">
-                Reset Pool
-              </Button>
+              <ResetPoolButton groupId={groupInfo.id} />
               <MakePairsButton groupId={groupInfo.id} />
             </>
           )}

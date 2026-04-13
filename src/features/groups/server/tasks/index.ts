@@ -1,4 +1,5 @@
 export { deleteTask } from './deleteTask'
 export { makePairs } from './makePairs'
+export { resetPool } from './resetPool'
 export { upsertHelpCapacities } from './upsertHelpCapacities'
 export { upsertTask } from './upsertTask'
