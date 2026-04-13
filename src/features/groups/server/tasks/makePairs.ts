@@ -2,6 +2,7 @@ import type { MissingHelpCapacity } from '@/features/groups/lib/pairing'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { buildPairs, findMissingHelpCapacities } from '@/features/groups/lib/pairing'
+import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { getUser } from '@/shared/supabase/server'
 
 interface MakePairsResponse {
@@ -24,7 +25,7 @@ const makePairsInputSchema = z.object({
 })
 
 export const makePairs = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => makePairsInputSchema.parse(data))
+  .inputValidator((data: unknown) => parseValidatedInput(makePairsInputSchema, data))
   .handler(async ({ data }): Promise<MakePairsResponse> => {
     const { groupId, force } = data
 

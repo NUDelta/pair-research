@@ -111,20 +111,22 @@ export const useTaskRealtimeListener = (
     const userIdRaw = (payload.new as { user_id?: unknown }).user_id ?? (payload.old as { user_id?: unknown }).user_id
     const taskId = taskIdRaw !== undefined && taskIdRaw !== null ? String(taskIdRaw) : ''
     const userId = userIdRaw !== undefined && userIdRaw !== null ? String(userIdRaw) : ''
+    const previousPairingIdRaw = (payload.old as { pairing_id?: unknown }).pairing_id
+    const previousPairingId = previousPairingIdRaw !== undefined && previousPairingIdRaw !== null
+      ? String(previousPairingIdRaw)
+      : null
 
     if (taskId === undefined || taskId === '') {
       console.warn('Task ID is undefined or empty')
       return
     }
 
-    if (userId === currentUserId || userId === '') {
-      return
-    }
-
     // ! Supabase currently does not support DELETE event
     // ! We are using the `delete_pending` column to mark the task as deleted
     if (eventType === 'DELETE') {
-      handleTaskDelete(taskId)
+      if (userId !== currentUserId && userId !== '') {
+        handleTaskDelete(taskId)
+      }
       return
     }
 
@@ -139,16 +141,28 @@ export const useTaskRealtimeListener = (
     }
 
     if (taskRaw.delete_pending === true) {
-      handleTaskDelete(taskRaw.id)
+      if (userId !== currentUserId && userId !== '') {
+        handleTaskDelete(taskRaw.id)
+      }
+
+      if (previousPairingId !== null) {
+        await router.invalidate()
+      }
       return
     }
 
     // When a pairing is created, the task is deleted from the current user
     // and refresh the page to show the new pairing
     if (taskRaw.pairing_id !== null) {
-      toast.success('Task paired with another user! Refreshing...')
-      handleTaskDelete(taskRaw.id)
+      if (userId !== currentUserId && userId !== '') {
+        toast.success('Task paired with another user! Refreshing...')
+        handleTaskDelete(taskRaw.id)
+      }
       await router.invalidate()
+      return
+    }
+
+    if (userId === currentUserId || userId === '') {
       return
     }
 

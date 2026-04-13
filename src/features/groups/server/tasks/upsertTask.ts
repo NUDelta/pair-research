@@ -1,10 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { taskSchema } from '@/features/groups/schemas/taskForm'
 import { checkMembership } from '@/features/groups/server/checkMembership'
+import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { getUser } from '@/shared/supabase/server'
 
 export const upsertTask = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => taskSchema.parse(data))
+  .inputValidator((data: unknown) => parseValidatedInput(taskSchema, data))
   .handler(async ({ data }) => {
     try {
       const { groupId, description } = data

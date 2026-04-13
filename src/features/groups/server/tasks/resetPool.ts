@@ -58,22 +58,50 @@ export const resetPool = createServerFn({ method: 'POST' })
         }
       }
 
-      await prisma.task.updateMany({
+      const pairedTasks = await prisma.task.findMany({
         where: {
           pairing_id: activePairing.id,
         },
-        data: {
-          pairing_id: null,
+        select: {
+          id: true,
         },
       })
 
-      await prisma.group.update({
-        where: {
-          id: data.groupId,
-        },
-        data: {
-          active_pairing_id: null,
-        },
+      const pairedTaskIds = pairedTasks.map(task => task.id)
+
+      await prisma.$transaction(async (tx) => {
+        if (pairedTaskIds.length > 0) {
+          await tx.task.updateMany({
+            where: {
+              id: {
+                in: pairedTaskIds,
+              },
+            },
+            data: {
+              delete_pending: true,
+              updated_at: new Date(),
+            },
+          })
+        }
+
+        await tx.group.update({
+          where: {
+            id: data.groupId,
+          },
+          data: {
+            active_pairing_id: null,
+          },
+        })
+
+        if (pairedTaskIds.length > 0) {
+          await tx.task.deleteMany({
+            where: {
+              id: {
+                in: pairedTaskIds,
+              },
+            },
+          })
+        }
       })
 
       return {

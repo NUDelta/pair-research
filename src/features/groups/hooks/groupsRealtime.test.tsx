@@ -223,4 +223,38 @@ describe('groups realtime hooks', () => {
       expect(result.current.tasks).toEqual([])
     })
   })
+
+  it('invalidates the group route when a paired round is reset', async () => {
+    renderHook(() =>
+      useTaskRealtimeListener('group-1', 'user-1', []),
+    )
+
+    const taskHandler = postgresHandlers[0]
+    expect(taskHandler).toBeTypeOf('function')
+
+    await taskHandler({
+      schema: 'public',
+      table: 'task',
+      eventType: 'UPDATE',
+      commit_timestamp: '2026-04-13T10:00:00.000Z',
+      errors: [],
+      new: {
+        id: 'task-2',
+        description: 'Wrapped round task',
+        user_id: 'user-2',
+        group_id: 'group-1',
+        created_at: '2026-04-13T10:00:00.000Z',
+        pairing_id: 'pairing-1',
+        delete_pending: true,
+      },
+      old: {
+        id: 'task-2',
+        pairing_id: 'pairing-1',
+      },
+    })
+
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledTimes(1)
+    })
+  })
 })

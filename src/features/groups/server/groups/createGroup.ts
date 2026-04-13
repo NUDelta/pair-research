@@ -1,12 +1,12 @@
 import type { User } from '@supabase/supabase-js'
 import { createServerFn } from '@tanstack/react-start'
-import { z } from 'zod'
 import { groupSchema } from '@/features/groups/schemas/groupForm'
+import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { getUser } from '@/shared/supabase/server'
 import { buildCreateGroupData } from './buildCreateGroupData'
 
 export const createGroup = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => groupSchema.parse(data))
+  .inputValidator((data: unknown) => parseValidatedInput(groupSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const [{ prisma }, { createServiceRoleSupabase }] = await Promise.all([
@@ -163,10 +163,10 @@ export const createGroup = createServerFn({ method: 'POST' })
     }
     catch (error_) {
       console.error(error_)
-      if (error_ instanceof z.ZodError) {
+      if (error_ instanceof Error) {
         return {
           success: false,
-          message: error_.issues.map(issue => issue.message).join('\n'),
+          message: error_.message,
         }
       }
 

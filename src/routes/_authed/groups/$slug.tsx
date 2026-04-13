@@ -1,7 +1,9 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { LeavePoolButton, MakePairsButton, ResetPoolButton } from '@/features/groups/components/detail/buttons'
 import OthersTasks from '@/features/groups/components/detail/OthersTasks'
 import Pairing from '@/features/groups/components/detail/Pairing'
+import PairingSuccessConfetti from '@/features/groups/components/detail/PairingSuccessConfetti'
 import TaskCard from '@/features/groups/components/detail/TaskCard'
 import SingleGroupPending from '@/features/groups/components/pending/SingleGroupPending'
 import { getSingleGroup } from '@/features/groups/server/groups'
@@ -31,6 +33,7 @@ export const Route = createFileRoute('/_authed/groups/$slug')({
 function SingleGroupPage() {
   const { groupInfo, tasks, currentUserActivePairingTaskWithProfile } = Route.useLoaderData()
   const { userId: currentUserId } = groupInfo
+  const [showPairingConfetti, setShowPairingConfetti] = useState(false)
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
   const othersTasks = tasks.filter(task => task.userId !== currentUserId)
@@ -40,8 +43,28 @@ function SingleGroupPage() {
       ? 'in-pool'
       : 'not-in-pool'
 
+  useEffect(() => {
+    if (!groupInfo.hasActivePairing || typeof window === 'undefined') {
+      return
+    }
+
+    const storageKey = `groups:pairing-celebration:${groupInfo.id}`
+    const pairingCelebrationToken = window.sessionStorage.getItem(storageKey)
+
+    if (pairingCelebrationToken === null) {
+      return
+    }
+
+    window.sessionStorage.removeItem(storageKey)
+    // eslint-disable-next-line react/set-state-in-effect
+    setShowPairingConfetti(true)
+  }, [groupInfo.hasActivePairing, groupInfo.id])
+
   return (
     <div className="container mx-auto max-w-5xl space-y-6 p-6">
+      {showPairingConfetti && (
+        <PairingSuccessConfetti onComplete={() => setShowPairingConfetti(false)} />
+      )}
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold" aria-label="Group title">
           {groupInfo.name}
@@ -85,6 +108,8 @@ function SingleGroupPage() {
           currentUserTask !== undefined || currentUserActivePairingTaskWithProfile !== null
         }
         currentUserInPool={currentUserTask !== undefined}
+        hasActivePairing={groupInfo.hasActivePairing}
+        isAdmin={groupInfo.isAdmin}
         initialTasks={othersTasks}
       />
     </div>

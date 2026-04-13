@@ -7,6 +7,8 @@ interface OthersTasksProps {
   currentUserId: string
   currentUserHasTask?: boolean
   currentUserInPool?: boolean
+  hasActivePairing?: boolean
+  isAdmin?: boolean
   initialTasks?: Task[]
 }
 
@@ -15,6 +17,8 @@ const OthersTasks = ({
   currentUserId,
   currentUserHasTask,
   currentUserInPool,
+  hasActivePairing,
+  isAdmin,
   initialTasks,
 }: OthersTasksProps) => {
   const { tasks } = useTaskRealtimeListener(groupId, currentUserId, initialTasks)
@@ -27,6 +31,20 @@ const OthersTasks = ({
         canRate={currentUserInPool === true}
         currentUserInPool={currentUserInPool === true}
       />
+    )
+  }
+
+  if (hasActivePairing) {
+    return (
+      <div className="w-full py-12 flex flex-col items-center text-center text-muted-foreground">
+        <AlertCircle className="w-10 h-10 mb-2 text-gray-400" />
+        <p className="text-lg font-medium">This round is complete</p>
+        <p className="text-sm mt-1">
+          {isAdmin
+            ? 'Reset the pool when you are ready to start the next pairing round.'
+            : 'Wait for an admin to reset the pool before the next round begins.'}
+        </p>
+      </div>
     )
   }
 

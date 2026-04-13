@@ -40,7 +40,7 @@ const ResetPoolButton = ({ groupId }: ResetPoolButtonProps) => {
         </Button>
       )}
       title="Reset the current pool?"
-      description="This will remove the active pairing and place the paired tasks back into the open pool."
+      description="This will end the current round, clear its paired tasks and ratings, and prepare the group for a fresh pool."
       confirmText="Reset Pool"
       cancelText="Cancel"
       onConfirm={handleReset}
