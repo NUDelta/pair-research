@@ -1,7 +1,7 @@
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
-import { createRedirectResponse, getRequestOrigin, sanitizeRedirectPath } from '@/utils/supabase/authRedirect'
-import { createClient } from '@/utils/supabase/server'
+import { createRedirectResponse, getRequestOrigin, sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
+import { createClient } from '@/shared/supabase/server'
 
 export const Route = createFileRoute('/auth/confirm')({
   server: {

@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import GroupCard from '@/components/groups/GroupCard'
-import GroupsPagePending from '@/components/pending/GroupsPagePending'
-import { Button } from '@/components/ui/button'
-import { getUserGroups } from '@/lib/actions/groups'
+import GroupCard from '@/features/groups/components/GroupCard'
+import GroupsPagePending from '@/features/groups/components/pending/GroupsPagePending'
+import { getUserGroups } from '@/features/groups/server/groups'
+import { Button } from '@/shared/ui/button'
 
 export const Route = createFileRoute('/_authed/groups/')({
   loader: async () => getUserGroups(),

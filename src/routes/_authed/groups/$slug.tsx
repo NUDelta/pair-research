@@ -1,11 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { LeavePoolButton, MakePairsButton } from '@/components/groups/single/buttons'
-import OthersTasks from '@/components/groups/single/OthersTasks'
-import Pairing from '@/components/groups/single/Pairing'
-import TaskCard from '@/components/groups/single/TaskCard'
-import SingleGroupPending from '@/components/pending/SingleGroupPending'
-import { Button } from '@/components/ui/button'
-import { getSingleGroup } from '@/lib/actions/groups'
+import { LeavePoolButton, MakePairsButton } from '@/features/groups/components/detail/buttons'
+import OthersTasks from '@/features/groups/components/detail/OthersTasks'
+import Pairing from '@/features/groups/components/detail/Pairing'
+import TaskCard from '@/features/groups/components/detail/TaskCard'
+import SingleGroupPending from '@/features/groups/components/pending/SingleGroupPending'
+import { getSingleGroup } from '@/features/groups/server/groups'
+import { Button } from '@/shared/ui/button'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

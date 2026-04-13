@@ -1,15 +1,15 @@
 import type { ReactNode } from 'react'
 import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
 import { Toaster } from 'sonner'
-import GlobalErrorPage from '@/components/errors/GlobalErrorPage'
-import NotFoundPage from '@/components/errors/NotFoundPage'
-import { Footer, Header } from '@/components/layout'
-import { SITE_BASE_URL } from '@/utils/constants'
+import { Footer, Header } from '@/shared/components/layout'
+import { SITE_BASE_URL } from '@/shared/config/constants'
+import GlobalErrorPage from '@/shared/errors/GlobalErrorPage'
+import NotFoundPage from '@/shared/errors/NotFoundPage'
 import appleIcon from './apple-icon.png?url'
 import favicon from './favicon.ico?url'
 import icon0 from './icon0.svg?url'
 import icon1 from './icon1.png?url'
-import './globals.css'
+import '@/shared/styles/globals.css'
 
 export const Route = createRootRoute({
   head: () => {

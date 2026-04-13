@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { SITE_BASE_URL } from '@/utils/constants'
+import { SITE_BASE_URL } from '@/shared/config/constants'
 
 export const Route = createFileRoute('/sitemap.xml')({
   server: {

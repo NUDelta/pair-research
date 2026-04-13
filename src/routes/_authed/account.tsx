@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import AccountForm from '@/components/account/AccountForm'
-import AccountPagePending from '@/components/pending/AccountPagePending'
-import { getOrCreateProfile } from '@/lib/actions/profile/getOrCreateProfile'
+import AccountForm from '@/features/account/components/AccountForm'
+import AccountPagePending from '@/features/account/components/AccountPagePending'
+import { getOrCreateProfile } from '@/features/account/server/getOrCreateProfile'
 
 export const Route = createFileRoute('/_authed/account')({
   loader: async () => getOrCreateProfile(),

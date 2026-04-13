@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import CreateGroupForm from '@/components/groups/create'
-import CreateGroupPending from '@/components/pending/CreateGroupPending'
+import CreateGroupForm from '@/features/groups/components/create/CreateGroupForm'
+import CreateGroupPending from '@/features/groups/components/pending/CreateGroupPending'
 
 export const Route = createFileRoute('/_authed/groups/create')({
   pendingComponent: CreateGroupPending,
