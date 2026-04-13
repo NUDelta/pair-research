@@ -1,7 +1,7 @@
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import type { RealtimeChannel } from '@supabase/supabase-js'
+import type { TaskRealtimePayload } from './taskRealtimePayload'
 import { createClient } from '@/shared/supabase/client'
 
-type TaskRealtimePayload = RealtimePostgresChangesPayload<Record<string, unknown>>
 type TaskRealtimeListener = (payload: TaskRealtimePayload) => void | Promise<void>
 
 interface GroupTaskChannelEntry {
@@ -11,6 +11,10 @@ interface GroupTaskChannelEntry {
 
 const groupTaskChannels = new Map<string, GroupTaskChannelEntry>()
 
+/**
+ * Keeps one browser realtime channel per group tab and fans events out to every
+ * groups hook that cares about the same task stream.
+ */
 export function subscribeToGroupTaskChanges(groupId: string, listener: TaskRealtimeListener) {
   let entry = groupTaskChannels.get(groupId)
 

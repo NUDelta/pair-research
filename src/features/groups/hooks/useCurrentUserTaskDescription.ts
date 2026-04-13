@@ -1,7 +1,8 @@
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import type { TaskRealtimePayload } from './taskRealtimePayload'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/shared/supabase/client'
 import { subscribeToGroupTaskChanges } from './subscribeToGroupTaskChanges'
+import { parseTaskRealtimeRow } from './taskRealtimePayload'
 
 export const useCurrentUserTaskDescription = (
   groupId: string,
@@ -17,33 +18,11 @@ export const useCurrentUserTaskDescription = (
     setCurrentDescription(initialDescription ?? null)
   }, [initialDescription])
 
-  const isValidTaskRow = (data: unknown): data is TaskRow => {
-    return (
-      typeof data === 'object'
-      && data !== null
-      && 'id' in data
-      && 'description' in data
-      && 'user_id' in data
-      && 'group_id' in data
-      && 'pairing_id' in data
-      && 'created_at' in data
-    )
-  }
-
-  const handleUpsert = async (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
-    if (!isValidTaskRow(payload.new)) {
+  const handleUpsert = async (payload: TaskRealtimePayload) => {
+    const updatedTask = parseTaskRealtimeRow(payload.new)
+    if (updatedTask === null) {
       return
     }
-
-    const updatedTask: TaskRow = {
-      id: String(payload.new.id),
-      description: String(payload.new.description),
-      user_id: String(payload.new.user_id),
-      group_id: String(payload.new.group_id),
-      created_at: String(payload.new.created_at),
-      pairing_id: payload.new.pairing_id !== null ? String(payload.new.pairing_id) : null,
-      delete_pending: payload.new.delete_pending !== null ? Boolean(payload.new.delete_pending) : null,
-    } satisfies TaskRow
 
     if (updatedTask.group_id !== groupId || updatedTask.user_id !== currentUserId || updatedTask.pairing_id !== null) {
       return

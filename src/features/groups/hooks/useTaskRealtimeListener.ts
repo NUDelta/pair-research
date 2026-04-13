@@ -1,10 +1,11 @@
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import type { TaskRealtimePayload } from './taskRealtimePayload'
 import { useRouter } from '@tanstack/react-router'
 import { produce } from 'immer'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/shared/supabase/client'
 import { subscribeToGroupTaskChanges } from './subscribeToGroupTaskChanges'
+import { getTaskRealtimeIdentity, isTaskProfileRecord, parseTaskRealtimeRow } from './taskRealtimePayload'
 
 /**
  * Real-time subscription to tasks updates, inserts, and deletes
@@ -50,19 +51,13 @@ export const useTaskRealtimeListener = (
    * @param taskRaw
    */
   const handleTaskInsert = async (taskRaw: TaskRow) => {
-    const isProfileRecord = (
-      value: unknown,
-    ): value is { id: string, full_name: string | null, avatar_url: string | null } => {
-      return typeof value === 'object' && value !== null && 'id' in value && 'full_name' in value && 'avatar_url' in value
-    }
-
     const { data: profile, error } = await supabase
       .from('profile')
       .select('id, full_name, avatar_url')
       .eq('id', taskRaw.user_id)
       .single()
 
-    if (error || !isProfileRecord(profile)) {
+    if (error || !isTaskProfileRecord(profile)) {
       console.error(`Error fetching profile for the task: ${taskRaw.description}`, error)
       return
     }
@@ -104,19 +99,15 @@ export const useTaskRealtimeListener = (
     )
   }
 
-  const taskSubscriptionHandler = async (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
+  const taskSubscriptionHandler = async (payload: TaskRealtimePayload) => {
     const eventType = payload.eventType
+    const {
+      taskId,
+      userId,
+      previousPairingId,
+    } = getTaskRealtimeIdentity(payload)
 
-    const taskIdRaw = (payload.new as { id?: unknown }).id ?? (payload.old as { id?: unknown }).id
-    const userIdRaw = (payload.new as { user_id?: unknown }).user_id ?? (payload.old as { user_id?: unknown }).user_id
-    const taskId = taskIdRaw !== undefined && taskIdRaw !== null ? String(taskIdRaw) : ''
-    const userId = userIdRaw !== undefined && userIdRaw !== null ? String(userIdRaw) : ''
-    const previousPairingIdRaw = (payload.old as { pairing_id?: unknown }).pairing_id
-    const previousPairingId = previousPairingIdRaw !== undefined && previousPairingIdRaw !== null
-      ? String(previousPairingIdRaw)
-      : null
-
-    if (taskId === undefined || taskId === '') {
+    if (taskId === null || taskId.length === 0) {
       console.warn('Task ID is undefined or empty')
       return
     }
@@ -124,24 +115,19 @@ export const useTaskRealtimeListener = (
     // ! Supabase currently does not support DELETE event
     // ! We are using the `delete_pending` column to mark the task as deleted
     if (eventType === 'DELETE') {
-      if (userId !== currentUserId && userId !== '') {
+      if (userId !== currentUserId && userId !== null && userId.length > 0) {
         handleTaskDelete(taskId)
       }
       return
     }
 
-    const taskRaw: TaskRow = {
-      id: taskId,
-      description: String(payload.new.description),
-      user_id: userId,
-      group_id: String(payload.new.group_id),
-      created_at: String(payload.new.created_at),
-      pairing_id: payload.new.pairing_id !== null ? String(payload.new.pairing_id) : null,
-      delete_pending: payload.new.delete_pending !== null ? Boolean(payload.new.delete_pending) : null,
+    const taskRaw = parseTaskRealtimeRow(payload.new)
+    if (taskRaw === null) {
+      return
     }
 
     if (taskRaw.delete_pending === true) {
-      if (userId !== currentUserId && userId !== '') {
+      if (userId !== currentUserId && userId !== null && userId.length > 0) {
         handleTaskDelete(taskRaw.id)
       }
 
@@ -154,7 +140,7 @@ export const useTaskRealtimeListener = (
     // When a pairing is created, the task is deleted from the current user
     // and refresh the page to show the new pairing
     if (taskRaw.pairing_id !== null) {
-      if (userId !== currentUserId && userId !== '') {
+      if (userId !== currentUserId && userId !== null && userId.length > 0) {
         toast.success('Task paired with another user! Refreshing...')
         handleTaskDelete(taskRaw.id)
       }
@@ -162,7 +148,7 @@ export const useTaskRealtimeListener = (
       return
     }
 
-    if (userId === currentUserId || userId === '') {
+    if (userId === currentUserId || userId === null || userId.length === 0) {
       return
     }
 
