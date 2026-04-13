@@ -134,7 +134,7 @@ describe('groups realtime hooks', () => {
   it('removes a deleted task for other raters as soon as delete_pending is broadcast', async () => {
     const initialTasks: Task[] = [
       {
-        id: 'task-1',
+        id: '1',
         description: 'Draft review',
         userId: 'user-2',
         fullName: 'Teammate',
@@ -157,7 +157,7 @@ describe('groups realtime hooks', () => {
       commit_timestamp: '2026-04-13T10:00:00.000Z',
       errors: [],
       new: {
-        id: 'task-1',
+        id: 1,
         description: 'Draft review',
         user_id: 'user-2',
         group_id: 'group-1',

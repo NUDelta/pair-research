@@ -84,6 +84,7 @@ function SingleGroupPage() {
         currentUserHasTask={
           currentUserTask !== undefined || currentUserActivePairingTaskWithProfile !== null
         }
+        currentUserInPool={currentUserTask !== undefined}
         initialTasks={othersTasks}
       />
     </div>

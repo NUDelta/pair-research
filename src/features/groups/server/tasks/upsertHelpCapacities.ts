@@ -49,6 +49,27 @@ export const upsertHelpCapacities = createServerFn({ method: 'POST' })
         }
       }
 
+      const currentUserTask = await prisma.task.findFirst({
+        where: {
+          group_id: data.groupId,
+          user_id: user.id,
+          pairing_id: null,
+          delete_pending: {
+            not: true,
+          },
+        },
+        select: {
+          id: true,
+        },
+      })
+
+      if (currentUserTask === null) {
+        return {
+          success: false,
+          message: 'Join the current pool before rating other members',
+        }
+      }
+
       const allowedTasks = await prisma.task.findMany({
         where: {
           group_id: data.groupId,

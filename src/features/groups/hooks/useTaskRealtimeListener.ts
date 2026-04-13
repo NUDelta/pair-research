@@ -106,8 +106,10 @@ export const useTaskRealtimeListener = (
   const taskSubscriptionHandler = async (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
     const eventType = payload.eventType
 
-    const taskId = (payload.new as { id?: string }).id ?? (payload.old as { id?: string }).id ?? ''
-    const userId = (payload.new as { user_id?: string }).user_id ?? (payload.old as { user_id?: string }).user_id ?? ''
+    const taskIdRaw = (payload.new as { id?: unknown }).id ?? (payload.old as { id?: unknown }).id
+    const userIdRaw = (payload.new as { user_id?: unknown }).user_id ?? (payload.old as { user_id?: unknown }).user_id
+    const taskId = taskIdRaw !== undefined && taskIdRaw !== null ? String(taskIdRaw) : ''
+    const userId = userIdRaw !== undefined && userIdRaw !== null ? String(userIdRaw) : ''
 
     if (taskId === undefined || taskId === '') {
       console.warn('Task ID is undefined or empty')

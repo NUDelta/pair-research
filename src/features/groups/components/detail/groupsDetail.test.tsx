@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MakePairsButton from './buttons/MakePairsButton'
@@ -82,6 +82,8 @@ describe('groups detail controls', () => {
     render(
       <OthersTasksForm
         groupId="group-1"
+        canRate
+        currentUserInPool
         tasks={[
           {
             id: 'task-1',
@@ -134,5 +136,68 @@ describe('groups detail controls', () => {
       expect(screen.queryByText('Saving rating...')).not.toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: 'Rate 5' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('hides rating controls for users who are not currently in the pool', () => {
+    render(
+      <OthersTasksForm
+        groupId="group-1"
+        canRate={false}
+        currentUserInPool={false}
+        tasks={[
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate',
+            avatarUrl: null,
+            helpCapacity: 2,
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Rate 3' })).not.toBeInTheDocument()
+    expect(screen.getByText('Join the pool to unlock ratings. Only members with an active task in the current pool can rate others.')).toBeInTheDocument()
+  })
+
+  it('shows rating progress counts for users who are currently in the pool', () => {
+    render(
+      <OthersTasksForm
+        groupId="group-1"
+        canRate
+        currentUserInPool
+        tasks={[
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate',
+            avatarUrl: null,
+            helpCapacity: 2,
+          },
+          {
+            id: 'task-2',
+            description: 'Check citations',
+            userId: 'user-3',
+            fullName: 'Another teammate',
+            avatarUrl: null,
+            helpCapacity: null,
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.getByText('In Pool')).toBeInTheDocument()
+    expect(screen.getByText('Others To Rate')).toBeInTheDocument()
+    expect(screen.getByText('Rated')).toBeInTheDocument()
+    expect(screen.getByText('Remaining')).toBeInTheDocument()
+    const progressPanel = screen.getByText('In Pool').closest('div')?.parentElement?.parentElement
+    expect(progressPanel).not.toBeNull()
+    const panelQueries = within(progressPanel as HTMLElement)
+    expect(panelQueries.getByText('3')).toBeInTheDocument()
+    expect(panelQueries.getByText('2')).toBeInTheDocument()
+    expect(panelQueries.getAllByText('1')).toHaveLength(2)
+    expect(screen.getByText('Rate how ready you feel to help each person on a 1-5 scale. Higher means you feel more able to help.')).toBeInTheDocument()
   })
 })

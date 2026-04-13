@@ -6,6 +6,7 @@ interface OthersTasksProps {
   groupId: string
   currentUserId: string
   currentUserHasTask?: boolean
+  currentUserInPool?: boolean
   initialTasks?: Task[]
 }
 
@@ -13,6 +14,7 @@ const OthersTasks = ({
   groupId,
   currentUserId,
   currentUserHasTask,
+  currentUserInPool,
   initialTasks,
 }: OthersTasksProps) => {
   const { tasks } = useTaskRealtimeListener(groupId, currentUserId, initialTasks)
@@ -22,6 +24,8 @@ const OthersTasks = ({
       <OthersTasksForm
         groupId={groupId}
         tasks={tasks}
+        canRate={currentUserInPool === true}
+        currentUserInPool={currentUserInPool === true}
       />
     )
   }
@@ -35,6 +39,11 @@ const OthersTasks = ({
           ? 'Hang tight! Others may add their tasks soon.'
           : 'You can start by posting your own task.'}
       </p>
+      {currentUserInPool && (
+        <p className="mt-3 text-sm">
+          1 person is currently in the pool. There are 0 other users to rate right now.
+        </p>
+      )}
     </div>
   )
 }

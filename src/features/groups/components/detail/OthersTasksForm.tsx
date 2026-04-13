@@ -12,6 +12,8 @@ interface SaveState {
 interface OthersTasksFormProps {
   groupId: string
   tasks: Task[]
+  canRate: boolean
+  currentUserInPool: boolean
 }
 
 const getValidCapacity = (value: number | null | undefined) => {
@@ -32,6 +34,8 @@ const buildRatingsMap = (tasks: Task[]) => {
 const OthersTasksForm = ({
   groupId,
   tasks,
+  canRate,
+  currentUserInPool,
 }: OthersTasksFormProps) => {
   const upsertHelpCapacitiesFn = useServerFn(upsertHelpCapacities)
   const [ratings, setRatings] = useState<Record<string, number | undefined>>(() => buildRatingsMap(tasks))
@@ -152,6 +156,10 @@ const OthersTasksForm = ({
   }
 
   const handleRateChange = (taskId: string, capacity: number) => {
+    if (!canRate) {
+      return
+    }
+
     const savedCapacity = savedRatingsRef.current[taskId]
 
     if (
@@ -184,12 +192,39 @@ const OthersTasksForm = ({
     void flushQueuedRating(taskId)
   }
 
+  const ratedCount = tasks.filter(task => getValidCapacity(ratings[task.id]) !== undefined).length
+  const eligibleOthersCount = tasks.length
+  const remainingCount = eligibleOthersCount - ratedCount
+  const totalUsersInPool = currentUserInPool ? eligibleOthersCount + 1 : eligibleOthersCount
+
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
+      <div className="space-y-3">
         <h2 id="others-task-list" className="text-xl font-semibold">Others Currently In the Pool</h2>
+        {currentUserInPool && (
+          <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 sm:grid-cols-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">In Pool</p>
+              <p className="text-2xl font-semibold">{totalUsersInPool}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Others To Rate</p>
+              <p className="text-2xl font-semibold">{eligibleOthersCount}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Rated</p>
+              <p className="text-2xl font-semibold">{ratedCount}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Remaining</p>
+              <p className="text-2xl font-semibold">{remainingCount}</p>
+            </div>
+          </div>
+        )}
         <p className="text-sm text-muted-foreground">
-          Ratings save automatically when you click them.
+          {canRate
+            ? 'Rate how ready you feel to help each person on a 1-5 scale. Higher means you feel more able to help.'
+            : 'Join the pool to unlock ratings. Only members with an active task in the current pool can rate others.'}
         </p>
       </div>
       <div className="space-y-3">
@@ -204,7 +239,7 @@ const OthersTasksForm = ({
             savedRatingValue={savedRatings[task.id]}
             ratingStatus={saveStates[task.id]?.status ?? 'idle'}
             ratingMessage={saveStates[task.id]?.message ?? null}
-            onRateChange={value => handleRateChange(task.id, value)}
+            onRateChange={canRate ? value => handleRateChange(task.id, value) : undefined}
           />
         ))}
       </div>
