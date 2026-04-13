@@ -5,8 +5,8 @@ import OthersTasks from '@/features/groups/components/detail/OthersTasks'
 import Pairing from '@/features/groups/components/detail/Pairing'
 import PairingSuccessConfetti from '@/features/groups/components/detail/PairingSuccessConfetti'
 import TaskCard from '@/features/groups/components/detail/TaskCard'
-import { shouldCelebratePairingActivation } from '@/features/groups/lib/pairingCelebration'
 import SingleGroupPending from '@/features/groups/components/pending/SingleGroupPending'
+import { shouldCelebratePairingActivation } from '@/features/groups/lib/pairingCelebration'
 import { getSingleGroup } from '@/features/groups/server/groups'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
