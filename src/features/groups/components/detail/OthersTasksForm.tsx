@@ -1,7 +1,9 @@
+import type { TaskRatings } from './ratingSummary'
 import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { upsertHelpCapacities } from '@/features/groups/server/tasks'
+import { buildRatingsMap, getRatingSummary } from './ratingSummary'
 import TaskCard from './TaskCard'
 
 interface SaveState {
@@ -16,21 +18,6 @@ interface OthersTasksFormProps {
   currentUserInPool: boolean
 }
 
-const getValidCapacity = (value: number | null | undefined) => {
-  if (value !== undefined && value !== null && value >= 1 && value <= 5) {
-    return value
-  }
-
-  return undefined
-}
-
-const buildRatingsMap = (tasks: Task[]) => {
-  return tasks.reduce((acc, task) => {
-    acc[task.id] = getValidCapacity(task.helpCapacity)
-    return acc
-  }, {} as Record<string, number | undefined>)
-}
-
 const OthersTasksForm = ({
   groupId,
   tasks,
@@ -38,12 +25,12 @@ const OthersTasksForm = ({
   currentUserInPool,
 }: OthersTasksFormProps) => {
   const upsertHelpCapacitiesFn = useServerFn(upsertHelpCapacities)
-  const [ratings, setRatings] = useState<Record<string, number | undefined>>(() => buildRatingsMap(tasks))
-  const [savedRatings, setSavedRatings] = useState<Record<string, number | undefined>>(() => buildRatingsMap(tasks))
+  const [ratings, setRatings] = useState<TaskRatings>(() => buildRatingsMap(tasks))
+  const [savedRatings, setSavedRatings] = useState<TaskRatings>(() => buildRatingsMap(tasks))
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({})
   const inFlightTaskIdsRef = useRef(new Set<string>())
-  const queuedRatingsRef = useRef<Record<string, number | undefined>>({})
-  const savedRatingsRef = useRef<Record<string, number | undefined>>(buildRatingsMap(tasks))
+  const queuedRatingsRef = useRef<TaskRatings>({})
+  const savedRatingsRef = useRef<TaskRatings>(buildRatingsMap(tasks))
 
   useEffect(() => {
     const nextSavedRatings = buildRatingsMap(tasks)
@@ -52,7 +39,7 @@ const OthersTasksForm = ({
     setSavedRatings(nextSavedRatings)
     // eslint-disable-next-line react/set-state-in-effect
     setRatings((current) => {
-      const nextRatings: Record<string, number | undefined> = {}
+      const nextRatings: TaskRatings = {}
 
       for (const task of tasks) {
         const queuedRating = queuedRatingsRef.current[task.id]
@@ -192,12 +179,12 @@ const OthersTasksForm = ({
     void flushQueuedRating(taskId)
   }
 
-  const ratedCount = tasks.filter(task => getValidCapacity(ratings[task.id]) !== undefined).length
-  const eligibleOthersCount = tasks.length
-  const remainingCount = eligibleOthersCount - ratedCount
-  const ratingProgress = eligibleOthersCount === 0
-    ? 100
-    : Math.round((ratedCount / eligibleOthersCount) * 100)
+  const {
+    ratedCount,
+    eligibleOthersCount,
+    remainingCount,
+    progressPercent,
+  } = getRatingSummary(tasks, ratings)
 
   return (
     <div className="space-y-4">
@@ -231,7 +218,7 @@ const OthersTasksForm = ({
             >
               <div
                 className="h-full rounded-full bg-primary transition-[width]"
-                style={{ width: `${ratingProgress}%` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
           </div>
