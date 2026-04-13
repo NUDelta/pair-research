@@ -30,7 +30,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
               name: true,
               description: true,
               active_pairing_id: true,
-              pairing: {
+              pairing_group_active_pairing_idTopairing: {
                 select: {
                   id: true,
                   created_at: true,
@@ -83,21 +83,24 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         throw new Error('User is not a member of this group')
       }
 
+      const activePairing = membership.group.pairing_group_active_pairing_idTopairing
       const groupInfo = {
         id: groupId,
         name: membership.group.name,
         description: membership.group.description,
+        activePairingId: membership.group.active_pairing_id,
         userId,
         fullName: membership.profile.full_name,
         avatarUrl: membership.profile.avatar_url,
         isAdmin: membership.is_admin,
+        hasActivePairing: activePairing !== null,
         joinedAt: membership.joined_at.toISOString(),
       }
 
       let currentUserActivePairingTaskWithProfile: CurrentUserActivePair | null = null
 
-      if (membership.group.pairing[0]?.id !== null) {
-        const currentUserActivePairing = membership.group.pairing[0]?.pair.find(pair =>
+      if (activePairing?.id !== undefined) {
+        const currentUserActivePairing = activePairing.pair.find(pair =>
           pair.first_user === userId || pair.second_user === userId,
         )
 
@@ -106,7 +109,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
             ? currentUserActivePairing?.second_user
             : currentUserActivePairing?.first_user
 
-          const helpeePair = membership.group.pairing[0]?.pair.find(pair =>
+          const helpeePair = activePairing.pair.find(pair =>
             pair.first_user === helpeeUserId || pair.second_user === helpeeUserId,
           )
 
@@ -120,7 +123,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
             ? currentUserActivePairing?.first_user
             : currentUserActivePairing?.second_user
 
-          const helperPair = membership.group.pairing[0]?.pair.find(pair =>
+          const helperPair = activePairing.pair.find(pair =>
             pair.first_user === helperUserId || pair.second_user === helperUserId,
           )
 
@@ -130,15 +133,15 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
               : helperPair.profile_pair_second_userToprofile
             : undefined
 
-          const helpeeTask = membership.group.pairing[0]?.task.find(task =>
+          const helpeeTask = activePairing.task.find(task =>
             task.user_id === helpeeUserId,
           )
-          const helperTask = membership.group.pairing[0]?.task.find(task =>
+          const helperTask = activePairing.task.find(task =>
             task.user_id === helperUserId,
           )
 
           currentUserActivePairingTaskWithProfile = {
-            id: String(membership.group.pairing[0]?.id),
+            id: String(activePairing.id),
             helpeeId: helpeeUserId ?? '',
             helpeeFullName: helpeeUserProfile?.full_name ?? null,
             helpeeAvatarUrl: helpeeUserProfile?.avatar_url ?? null,
@@ -157,6 +160,9 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         where: {
           group_id: groupId,
           pairing_id: null,
+          delete_pending: {
+            not: true,
+          },
         },
         select: {
           id: true,

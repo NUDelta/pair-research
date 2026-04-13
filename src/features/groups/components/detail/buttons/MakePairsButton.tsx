@@ -8,16 +8,21 @@ import { Button } from '@/shared/ui/button'
 
 interface Props {
   groupId: string
+  eligibleTaskCount: number
 }
 
-const MakePairsButton = ({ groupId }: Props) => {
+const MakePairsButton = ({ groupId, eligibleTaskCount }: Props) => {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
   const makePairsFn = useServerFn(makePairs)
+  const isDisabled = eligibleTaskCount < 2 || isPending
+  const disabledReason = eligibleTaskCount === 0
+    ? 'The pool is empty. At least two active tasks are required to make pairs.'
+    : 'At least two active tasks are required to make pairs.'
 
-  const handleMakePairs = async () => {
+  const handleMakePairs = async (force = false) => {
     startTransition(async () => {
-      const response = await makePairsFn({ data: { groupId } })
+      const response = await makePairsFn({ data: { groupId, force } })
       if (response.success) {
         toast.success(response.message)
         await router.invalidate()
@@ -45,7 +50,7 @@ const MakePairsButton = ({ groupId }: Props) => {
               duration: 10000,
               action: {
                 label: 'Proceed',
-                onClick: async () => handleMakePairs(),
+                onClick: async () => handleMakePairs(true),
               },
             },
           )
@@ -61,9 +66,10 @@ const MakePairsButton = ({ groupId }: Props) => {
     <DoubleConfirmDialog
       trigger={(
         <Button
-          disabled={isPending}
+          disabled={isDisabled}
           aria-busy={isPending}
           aria-label="Make Pairs"
+          title={isDisabled ? disabledReason : undefined}
         >
           {isPending ? 'Making pairs...' : 'Make Pairs'}
         </Button>

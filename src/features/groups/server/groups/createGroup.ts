@@ -1,11 +1,12 @@
 import type { User } from '@supabase/supabase-js'
 import { createServerFn } from '@tanstack/react-start'
-import { z } from 'zod'
 import { groupSchema } from '@/features/groups/schemas/groupForm'
+import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { getUser } from '@/shared/supabase/server'
+import { buildCreateGroupData } from './buildCreateGroupData'
 
 export const createGroup = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => groupSchema.parse(data))
+  .inputValidator((data: unknown) => parseValidatedInput(groupSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const [{ prisma }, { createServiceRoleSupabase }] = await Promise.all([
@@ -20,24 +21,37 @@ export const createGroup = createServerFn({ method: 'POST' })
         assignedRole,
         members,
       } = data
+      const creatorEmail = user.email?.trim().toLowerCase()
+      const seenMemberEmails = new Set<string>()
+      const normalizedMembers = members
+        .map(member => ({
+          email: member.email.trim().toLowerCase(),
+          title: member.title.trim(),
+        }))
+        .filter((member) => {
+          if (member.email.length === 0 || member.email === creatorEmail || seenMemberEmails.has(member.email)) {
+            return false
+          }
+
+          seenMemberEmails.add(member.email)
+          return true
+        })
 
       if (!roles.some(role => role.title === assignedRole)) {
         throw new Error('Assigned role must be one of the roles')
       }
 
-      const memberEmailTitlesMap = members.reduce((acc, member) => {
+      const memberEmailTitlesMap = normalizedMembers.reduce((acc, member) => {
         acc[member.email] = member.title
         return acc
       }, {} as Record<string, string>)
 
       const group = await prisma.group.create({
-        data: {
-          name: groupName,
-          description: groupDescription ?? null,
-          creator_id: user.id,
-          active: true,
-          created_at: new Date(),
-        },
+        data: buildCreateGroupData({
+          groupName,
+          groupDescription,
+          creatorId: user.id,
+        }),
       })
 
       const createdRoles = await Promise.all(
@@ -69,7 +83,7 @@ export const createGroup = createServerFn({ method: 'POST' })
       const existingUsers = await prisma.profile.findMany({
         where: {
           email: {
-            in: members.map(m => m.email),
+            in: normalizedMembers.map(member => member.email),
           },
         },
         select: {
@@ -78,7 +92,7 @@ export const createGroup = createServerFn({ method: 'POST' })
         },
       })
 
-      const newUsers = members.filter(
+      const newUsers = normalizedMembers.filter(
         m => !existingUsers.some(u => u.email === m.email),
       )
 
@@ -149,10 +163,10 @@ export const createGroup = createServerFn({ method: 'POST' })
     }
     catch (error_) {
       console.error(error_)
-      if (error_ instanceof z.ZodError) {
+      if (error_ instanceof Error) {
         return {
           success: false,
-          message: error_.issues.map(issue => issue.message).join('\n'),
+          message: error_.message,
         }
       }
 

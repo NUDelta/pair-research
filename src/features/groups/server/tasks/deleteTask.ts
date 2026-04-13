@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { checkMembership } from '@/features/groups/server/checkMembership'
 import { getUser } from '@/shared/supabase/server'
 
 export const deleteTask = createServerFn({ method: 'POST' })
@@ -22,6 +23,14 @@ export const deleteTask = createServerFn({ method: 'POST' })
       const { prisma } = await import('@/shared/lib/prismaClient')
       const user = await getUser()
       const id = BigInt(data.taskId)
+      const membership = await checkMembership(user.id, data.groupId)
+
+      if (!membership) {
+        return {
+          success: false,
+          message: 'You are not a member in this group',
+        }
+      }
 
       const task = await prisma.task.findUnique({
         where: { id },
@@ -38,6 +47,20 @@ export const deleteTask = createServerFn({ method: 'POST' })
         return {
           success: false,
           message: 'You are not allowed to delete this task',
+        }
+      }
+
+      if (task.group_id !== data.groupId) {
+        return {
+          success: false,
+          message: 'Task does not belong to this group',
+        }
+      }
+
+      if (task.pairing_id !== null) {
+        return {
+          success: false,
+          message: 'You cannot leave the pool while your task is part of an active pairing',
         }
       }
 

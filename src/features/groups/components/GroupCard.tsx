@@ -31,6 +31,10 @@ const GroupCard = ({
     isPending,
     joinedAt,
   } = group
+  const descriptionParagraphs = (groupDescription ?? '')
+    .split(PARAGRAPH_BREAK_REGEX)
+    .map(para => para.trim())
+    .filter(para => para.length > 0)
   const [isAccepting, startTransition] = useTransition()
   const router = useRouter()
   const acceptGroupInvitationFn = useServerFn(acceptGroupInvitation)
@@ -72,16 +76,20 @@ const GroupCard = ({
           )}
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 line-clamp-4">
-            {groupDescription
-              .split(PARAGRAPH_BREAK_REGEX)
-              .map((para, idx) => (
-              // eslint-disable-next-line react/no-array-index-key -- unique key
-                <p key={idx} className="whitespace-pre-line leading-snug">
-                  {para.trim()}
-                </p>
-              ))}
-          </div>
+          {descriptionParagraphs.length > 0
+            ? (
+                <div className="space-y-2 line-clamp-4">
+                  {descriptionParagraphs.map((para, idx) => (
+                  // eslint-disable-next-line react/no-array-index-key -- derived from paragraph order
+                    <p key={idx} className="whitespace-pre-line leading-snug">
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              )
+            : (
+                <p className="text-sm text-muted-foreground">No description provided.</p>
+              )}
         </CardContent>
       </div>
       <CardFooter className="text-sm text-muted-foreground">

@@ -49,8 +49,54 @@ export const upsertHelpCapacities = createServerFn({ method: 'POST' })
         }
       }
 
+      const currentUserTask = await prisma.task.findFirst({
+        where: {
+          group_id: data.groupId,
+          user_id: user.id,
+          pairing_id: null,
+          delete_pending: {
+            not: true,
+          },
+        },
+        select: {
+          id: true,
+        },
+      })
+
+      if (currentUserTask === null) {
+        return {
+          success: false,
+          message: 'Join the current pool before rating other members',
+        }
+      }
+
+      const allowedTasks = await prisma.task.findMany({
+        where: {
+          group_id: data.groupId,
+          user_id: {
+            not: user.id,
+          },
+          pairing_id: null,
+          delete_pending: {
+            not: true,
+          },
+        },
+        select: {
+          id: true,
+        },
+      })
+      const allowedTaskIds = new Set(allowedTasks.map(task => String(task.id)))
+      const scopedUpdates = validUpdates.filter(update => allowedTaskIds.has(update.taskId))
+
+      if (scopedUpdates.length === 0) {
+        return {
+          success: false,
+          message: 'No valid group tasks to update.',
+        }
+      }
+
       await Promise.all(
-        validUpdates.map(async ({ taskId, capacity }) =>
+        scopedUpdates.map(async ({ taskId, capacity }) =>
           prisma.task_help_capacity.upsert({
             where: {
               task_id_user_id: {

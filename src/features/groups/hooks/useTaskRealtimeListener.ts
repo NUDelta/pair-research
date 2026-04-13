@@ -1,9 +1,11 @@
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import type { TaskRealtimePayload } from './taskRealtimePayload'
 import { useRouter } from '@tanstack/react-router'
 import { produce } from 'immer'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/shared/supabase/client'
+import { subscribeToGroupTaskChanges } from './subscribeToGroupTaskChanges'
+import { getTaskRealtimeIdentity, isTaskProfileRecord, parseTaskRealtimeRow } from './taskRealtimePayload'
 
 /**
  * Real-time subscription to tasks updates, inserts, and deletes
@@ -20,6 +22,12 @@ export const useTaskRealtimeListener = (
   const router = useRouter()
   const supabase = createClient()
   const [tasks, setTasks] = useState<Task[]>(initialTasks || [])
+
+  useEffect(() => {
+    // Reset local realtime state when the loader refreshes for this group.
+    // eslint-disable-next-line react/set-state-in-effect
+    setTasks(initialTasks ?? [])
+  }, [groupId, initialTasks])
 
   /**
    * Handle task updates in the database
@@ -49,21 +57,29 @@ export const useTaskRealtimeListener = (
       .eq('id', taskRaw.user_id)
       .single()
 
-    if (error || profile === null) {
+    if (error || !isTaskProfileRecord(profile)) {
       console.error(`Error fetching profile for the task: ${taskRaw.description}`, error)
       return
     }
 
     setTasks(current =>
       produce(current, (draft) => {
-        draft.push({
+        const existingIndex = draft.findIndex(task => task.id === taskRaw.id)
+        const nextTask = {
           id: taskRaw.id,
           description: taskRaw.description,
           userId: String(profile.id),
-          fullName: String(profile.full_name),
-          avatarUrl: String(profile.avatar_url),
-          helpCapacity: 0,
-        })
+          fullName: profile.full_name,
+          avatarUrl: profile.avatar_url,
+          helpCapacity: existingIndex === -1 ? null : draft[existingIndex]?.helpCapacity ?? null,
+        } satisfies Task
+
+        if (existingIndex !== -1) {
+          draft[existingIndex] = nextTask
+          return
+        }
+
+        draft.push(nextTask)
       }),
     )
   }
@@ -83,48 +99,56 @@ export const useTaskRealtimeListener = (
     )
   }
 
-  const taskSubscriptionHandler = async (payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
+  const taskSubscriptionHandler = async (payload: TaskRealtimePayload) => {
     const eventType = payload.eventType
+    const {
+      taskId,
+      userId,
+      previousPairingId,
+    } = getTaskRealtimeIdentity(payload)
 
-    const taskId = (payload.new as { id?: string }).id ?? (payload.old as { id?: string }).id ?? ''
-    const userId = (payload.new as { user_id?: string }).user_id ?? (payload.old as { user_id?: string }).user_id ?? ''
-
-    if (taskId === undefined || taskId === '') {
+    if (taskId === null || taskId.length === 0) {
       console.warn('Task ID is undefined or empty')
-      return
-    }
-
-    if (userId === currentUserId || userId === '') {
       return
     }
 
     // ! Supabase currently does not support DELETE event
     // ! We are using the `delete_pending` column to mark the task as deleted
     if (eventType === 'DELETE') {
-      handleTaskDelete(taskId)
+      if (userId !== currentUserId && userId !== null && userId.length > 0) {
+        handleTaskDelete(taskId)
+      }
       return
     }
 
-    const taskRaw: TaskRow = {
-      id: taskId,
-      description: String(payload.new.description),
-      user_id: userId,
-      group_id: String(payload.new.group_id),
-      created_at: String(payload.new.created_at),
-      pairing_id: payload.new.pairing_id !== null ? String(payload.new.pairing_id) : null,
-      delete_pending: payload.new.delete_pending !== null ? Boolean(payload.new.delete_pending) : null,
+    const taskRaw = parseTaskRealtimeRow(payload.new)
+    if (taskRaw === null) {
+      return
     }
 
     if (taskRaw.delete_pending === true) {
-      handleTaskDelete(taskRaw.id)
+      if (userId !== currentUserId && userId !== null && userId.length > 0) {
+        handleTaskDelete(taskRaw.id)
+      }
+
+      if (previousPairingId !== null) {
+        await router.invalidate()
+      }
+      return
     }
 
     // When a pairing is created, the task is deleted from the current user
     // and refresh the page to show the new pairing
     if (taskRaw.pairing_id !== null) {
-      toast.success('Task paired with another user! Refreshing...')
-      handleTaskDelete(taskRaw.id)
+      if (userId !== currentUserId && userId !== null && userId.length > 0) {
+        toast.success('Task paired with another user! Refreshing...')
+        handleTaskDelete(taskRaw.id)
+      }
       await router.invalidate()
+      return
+    }
+
+    if (userId === currentUserId || userId === null || userId.length === 0) {
       return
     }
 
@@ -142,22 +166,10 @@ export const useTaskRealtimeListener = (
   }
 
   useEffect(() => {
-    const subscription = supabase
-      .channel('realtime-single-group-others-tasks')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'task',
-        filter: `group_id=eq.${groupId}`,
-      }, taskSubscriptionHandler)
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(subscription)
-    }
+    return subscribeToGroupTaskChanges(groupId, taskSubscriptionHandler)
     // Ignore async function as dependency
     // eslint-disable-next-line react/exhaustive-deps
-  }, [supabase, groupId])
+  }, [groupId, currentUserId])
 
   return { tasks }
 }
