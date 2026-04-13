@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MakePairsButton from './buttons/MakePairsButton'
@@ -161,7 +161,7 @@ describe('groups detail controls', () => {
     expect(screen.getByText('Join the pool to unlock ratings. Only members with an active task in the current pool can rate others.')).toBeInTheDocument()
   })
 
-  it('shows rating progress counts for users who are currently in the pool', () => {
+  it('shows a compact rating progress summary for users who are currently in the pool', () => {
     render(
       <OthersTasksForm
         groupId="group-1"
@@ -188,16 +188,10 @@ describe('groups detail controls', () => {
       />,
     )
 
-    expect(screen.getByText('In Pool')).toBeInTheDocument()
-    expect(screen.getByText('Others To Rate')).toBeInTheDocument()
-    expect(screen.getByText('Rated')).toBeInTheDocument()
-    expect(screen.getByText('Remaining')).toBeInTheDocument()
-    const progressPanel = screen.getByText('In Pool').closest('div')?.parentElement?.parentElement
-    expect(progressPanel).not.toBeNull()
-    const panelQueries = within(progressPanel as HTMLElement)
-    expect(panelQueries.getByText('3')).toBeInTheDocument()
-    expect(panelQueries.getByText('2')).toBeInTheDocument()
-    expect(panelQueries.getAllByText('1')).toHaveLength(2)
+    expect(screen.getByText((_, element) => element?.textContent === 'Rated 1 of 2 people')).toBeInTheDocument()
+    expect(screen.getByText('1 left')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Ratings completed' })).toHaveAttribute('aria-valuenow', '1')
+    expect(screen.getByRole('progressbar', { name: 'Ratings completed' })).toHaveAttribute('aria-valuemax', '2')
     expect(screen.getByText('Rate how ready you feel to help each person on a 1-5 scale. Higher means you feel more able to help.')).toBeInTheDocument()
   })
 })

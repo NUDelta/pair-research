@@ -41,7 +41,7 @@ const OthersTasks = ({
       </p>
       {currentUserInPool && (
         <p className="mt-3 text-sm">
-          1 person is currently in the pool. There are 0 other users to rate right now.
+          You&apos;re the only person in the pool right now.
         </p>
       )}
     </div>

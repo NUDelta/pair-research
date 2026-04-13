@@ -131,6 +131,57 @@ describe('groups realtime hooks', () => {
     })
   })
 
+  it('shares one group task channel across the current-user and others-task hooks', async () => {
+    const initialTasks: Task[] = [
+      {
+        id: 'task-1',
+        description: 'Initial task',
+        userId: 'user-2',
+        fullName: 'Teammate',
+        avatarUrl: null,
+        helpCapacity: null,
+      },
+    ]
+
+    const { result, unmount } = renderHook(() => ({
+      others: useTaskRealtimeListener('group-1', 'user-1', initialTasks),
+      currentUser: useCurrentUserTaskDescription('group-1', 'user-1', null),
+    }))
+
+    expect(channel).toHaveBeenCalledTimes(1)
+    expect(subscribe).toHaveBeenCalledTimes(1)
+    expect(postgresHandlers).toHaveLength(1)
+
+    const sharedHandler = postgresHandlers[0]
+    expect(sharedHandler).toBeTypeOf('function')
+
+    await sharedHandler({
+      schema: 'public',
+      table: 'task',
+      eventType: 'UPDATE',
+      commit_timestamp: '2026-04-13T10:00:00.000Z',
+      errors: [],
+      new: {
+        id: 'task-2',
+        description: 'Updated own task',
+        user_id: 'user-1',
+        group_id: 'group-1',
+        created_at: '2026-04-13T10:00:00.000Z',
+        pairing_id: null,
+        delete_pending: false,
+      },
+      old: {},
+    })
+
+    await waitFor(() => {
+      expect(result.current.currentUser.currentDescription).toBe('Updated own task')
+    })
+    expect(result.current.others.tasks).toEqual(initialTasks)
+
+    unmount()
+    expect(removeChannel).toHaveBeenCalledTimes(1)
+  })
+
   it('removes a deleted task for other raters as soon as delete_pending is broadcast', async () => {
     const initialTasks: Task[] = [
       {

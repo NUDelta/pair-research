@@ -195,29 +195,44 @@ const OthersTasksForm = ({
   const ratedCount = tasks.filter(task => getValidCapacity(ratings[task.id]) !== undefined).length
   const eligibleOthersCount = tasks.length
   const remainingCount = eligibleOthersCount - ratedCount
-  const totalUsersInPool = currentUserInPool ? eligibleOthersCount + 1 : eligibleOthersCount
+  const ratingProgress = eligibleOthersCount === 0
+    ? 100
+    : Math.round((ratedCount / eligibleOthersCount) * 100)
 
   return (
     <div className="space-y-4">
       <div className="space-y-3">
         <h2 id="others-task-list" className="text-xl font-semibold">Others Currently In the Pool</h2>
         {currentUserInPool && (
-          <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 sm:grid-cols-4">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">In Pool</p>
-              <p className="text-2xl font-semibold">{totalUsersInPool}</p>
+          <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-sm font-medium">
+                Rated
+                {' '}
+                <span className="text-base font-semibold">{ratedCount}</span>
+                {' '}
+                of
+                {' '}
+                <span className="text-base font-semibold">{eligibleOthersCount}</span>
+                {' '}
+                people
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {remainingCount === 0 ? 'All caught up' : `${remainingCount} left`}
+              </p>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Others To Rate</p>
-              <p className="text-2xl font-semibold">{eligibleOthersCount}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Rated</p>
-              <p className="text-2xl font-semibold">{ratedCount}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Remaining</p>
-              <p className="text-2xl font-semibold">{remainingCount}</p>
+            <div
+              className="h-2 overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+              aria-label="Ratings completed"
+              aria-valuemin={0}
+              aria-valuemax={eligibleOthersCount}
+              aria-valuenow={ratedCount}
+            >
+              <div
+                className="h-full rounded-full bg-primary transition-[width]"
+                style={{ width: `${ratingProgress}%` }}
+              />
             </div>
           </div>
         )}

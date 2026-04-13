@@ -4,6 +4,7 @@ import { produce } from 'immer'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/shared/supabase/client'
+import { subscribeToGroupTaskChanges } from './subscribeToGroupTaskChanges'
 
 /**
  * Real-time subscription to tasks updates, inserts, and deletes
@@ -165,22 +166,10 @@ export const useTaskRealtimeListener = (
   }
 
   useEffect(() => {
-    const subscription = supabase
-      .channel(`realtime-single-group-others-tasks:${groupId}:${currentUserId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'task',
-        filter: `group_id=eq.${groupId}`,
-      }, taskSubscriptionHandler)
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(subscription)
-    }
+    return subscribeToGroupTaskChanges(groupId, taskSubscriptionHandler)
     // Ignore async function as dependency
     // eslint-disable-next-line react/exhaustive-deps
-  }, [supabase, groupId])
+  }, [groupId, currentUserId])
 
   return { tasks }
 }

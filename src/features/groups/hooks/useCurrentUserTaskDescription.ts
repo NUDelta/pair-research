@@ -1,6 +1,7 @@
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/shared/supabase/client'
+import { subscribeToGroupTaskChanges } from './subscribeToGroupTaskChanges'
 
 export const useCurrentUserTaskDescription = (
   groupId: string,
@@ -71,21 +72,9 @@ export const useCurrentUserTaskDescription = (
   }
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`realtime-my-task:${groupId}:${currentUserId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'task',
-        filter: `user_id=eq.${currentUserId}`,
-      }, handleUpsert)
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return subscribeToGroupTaskChanges(groupId, handleUpsert)
     // eslint-disable-next-line react/exhaustive-deps
-  }, [supabase, groupId, currentUserId])
+  }, [groupId, currentUserId])
 
   return { currentDescription, setCurrentDescription }
 }
