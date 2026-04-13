@@ -83,6 +83,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         throw new Error('User is not a member of this group')
       }
 
+      const activePairing = membership.group.pairing_group_active_pairing_idTopairing
       const groupInfo = {
         id: groupId,
         name: membership.group.name,
@@ -91,11 +92,11 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         fullName: membership.profile.full_name,
         avatarUrl: membership.profile.avatar_url,
         isAdmin: membership.is_admin,
+        hasActivePairing: activePairing !== null,
         joinedAt: membership.joined_at.toISOString(),
       }
 
       let currentUserActivePairingTaskWithProfile: CurrentUserActivePair | null = null
-      const activePairing = membership.group.pairing_group_active_pairing_idTopairing
 
       if (activePairing?.id !== undefined) {
         const currentUserActivePairing = activePairing.pair.find(pair =>

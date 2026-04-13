@@ -21,6 +21,25 @@ export const upsertTask = createServerFn({ method: 'POST' })
         }
       }
 
+      const existingTask = await prisma.task.findUnique({
+        where: {
+          user_id_group_id: {
+            user_id: user.id,
+            group_id: groupId,
+          },
+        },
+        select: {
+          pairing_id: true,
+        },
+      })
+
+      if (existingTask?.pairing_id !== null && existingTask?.pairing_id !== undefined) {
+        return {
+          success: false,
+          message: 'You already have a task in the current active pairing',
+        }
+      }
+
       const task = await prisma.task.upsert({
         where: {
           user_id_group_id: {
@@ -30,6 +49,7 @@ export const upsertTask = createServerFn({ method: 'POST' })
         },
         update: {
           description,
+          delete_pending: false,
           updated_at: new Date(),
         },
         create: {

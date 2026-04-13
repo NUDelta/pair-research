@@ -50,8 +50,9 @@ function SingleGroupPage() {
           )}
           {groupInfo.isAdmin && (
             <>
-              <ResetPoolButton groupId={groupInfo.id} />
-              <MakePairsButton groupId={groupInfo.id} />
+              {groupInfo.hasActivePairing
+                ? <ResetPoolButton groupId={groupInfo.id} />
+                : <MakePairsButton groupId={groupInfo.id} />}
             </>
           )}
         </div>
@@ -62,9 +63,11 @@ function SingleGroupPage() {
       )}
 
       <TaskCard
-        currentUserId={currentUserId}
-        groupId={groupInfo.id}
-        description={currentUserTask?.description}
+        currentUserId={currentUserActivePairingTaskWithProfile === null ? currentUserId : undefined}
+        groupId={currentUserActivePairingTaskWithProfile === null ? groupInfo.id : undefined}
+        description={currentUserActivePairingTaskWithProfile === null
+          ? currentUserTask?.description
+          : 'You are currently in an active pairing. Reset the pool before changing your task.'}
         userAvatar={groupInfo.avatarUrl}
         fullName={groupInfo.fullName}
       />
@@ -72,7 +75,9 @@ function SingleGroupPage() {
       <OthersTasks
         groupId={groupInfo.id}
         currentUserId={currentUserId}
-        currentUserHasTask={currentUserTask !== undefined}
+        currentUserHasTask={
+          currentUserTask !== undefined || currentUserActivePairingTaskWithProfile !== null
+        }
         initialTasks={othersTasks}
       />
     </div>

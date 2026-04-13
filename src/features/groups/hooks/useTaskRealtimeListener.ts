@@ -21,6 +21,12 @@ export const useTaskRealtimeListener = (
   const supabase = createClient()
   const [tasks, setTasks] = useState<Task[]>(initialTasks || [])
 
+  useEffect(() => {
+    // Reset local realtime state when the loader refreshes for this group.
+    // eslint-disable-next-line react/set-state-in-effect
+    setTasks(initialTasks ?? [])
+  }, [groupId, initialTasks])
+
   /**
    * Handle task updates in the database
    * @param taskRaw
@@ -43,27 +49,41 @@ export const useTaskRealtimeListener = (
    * @param taskRaw
    */
   const handleTaskInsert = async (taskRaw: TaskRow) => {
+    const isProfileRecord = (
+      value: unknown,
+    ): value is { id: string, full_name: string | null, avatar_url: string | null } => {
+      return typeof value === 'object' && value !== null && 'id' in value && 'full_name' in value && 'avatar_url' in value
+    }
+
     const { data: profile, error } = await supabase
       .from('profile')
       .select('id, full_name, avatar_url')
       .eq('id', taskRaw.user_id)
       .single()
 
-    if (error || profile === null) {
+    if (error || !isProfileRecord(profile)) {
       console.error(`Error fetching profile for the task: ${taskRaw.description}`, error)
       return
     }
 
     setTasks(current =>
       produce(current, (draft) => {
-        draft.push({
+        const existingIndex = draft.findIndex(task => task.id === taskRaw.id)
+        const nextTask = {
           id: taskRaw.id,
           description: taskRaw.description,
           userId: String(profile.id),
-          fullName: String(profile.full_name),
-          avatarUrl: String(profile.avatar_url),
-          helpCapacity: 0,
-        })
+          fullName: profile.full_name,
+          avatarUrl: profile.avatar_url,
+          helpCapacity: existingIndex === -1 ? null : draft[existingIndex]?.helpCapacity ?? null,
+        } satisfies Task
+
+        if (existingIndex !== -1) {
+          draft[existingIndex] = nextTask
+          return
+        }
+
+        draft.push(nextTask)
       }),
     )
   }
@@ -143,7 +163,7 @@ export const useTaskRealtimeListener = (
 
   useEffect(() => {
     const subscription = supabase
-      .channel('realtime-single-group-others-tasks')
+      .channel(`realtime-single-group-others-tasks:${groupId}:${currentUserId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

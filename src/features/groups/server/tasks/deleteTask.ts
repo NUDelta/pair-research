@@ -57,6 +57,13 @@ export const deleteTask = createServerFn({ method: 'POST' })
         }
       }
 
+      if (task.pairing_id !== null) {
+        return {
+          success: false,
+          message: 'You cannot leave the pool while your task is part of an active pairing',
+        }
+      }
+
       const tasksInGroup = await prisma.task.findMany({
         where: {
           group_id: data.groupId,

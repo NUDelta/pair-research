@@ -10,6 +10,12 @@ export const useCurrentUserTaskDescription = (
   const supabase = createClient()
   const [currentDescription, setCurrentDescription] = useState<string | null>(initialDescription ?? null)
 
+  useEffect(() => {
+    // Mirror loader refreshes into local realtime state.
+    // eslint-disable-next-line react/set-state-in-effect
+    setCurrentDescription(initialDescription ?? null)
+  }, [initialDescription])
+
   const isValidTaskRow = (data: unknown): data is TaskRow => {
     return (
       typeof data === 'object'
@@ -66,7 +72,7 @@ export const useCurrentUserTaskDescription = (
 
   useEffect(() => {
     const channel = supabase
-      .channel('realtime-my-task')
+      .channel(`realtime-my-task:${groupId}:${currentUserId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
