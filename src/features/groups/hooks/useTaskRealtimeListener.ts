@@ -137,6 +137,7 @@ export const useTaskRealtimeListener = (
 
     if (taskRaw.delete_pending === true) {
       handleTaskDelete(taskRaw.id)
+      return
     }
 
     // When a pairing is created, the task is deleted from the current user

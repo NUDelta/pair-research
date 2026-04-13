@@ -34,6 +34,11 @@ function SingleGroupPage() {
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
   const othersTasks = tasks.filter(task => task.userId !== currentUserId)
+  const currentUserPoolStatus = currentUserActivePairingTaskWithProfile !== null
+    ? 'paired'
+    : currentUserTask !== undefined
+      ? 'in-pool'
+      : 'not-in-pool'
 
   return (
     <div className="container mx-auto max-w-5xl space-y-6 p-6">
@@ -52,7 +57,7 @@ function SingleGroupPage() {
             <>
               {groupInfo.hasActivePairing
                 ? <ResetPoolButton groupId={groupInfo.id} />
-                : <MakePairsButton groupId={groupInfo.id} />}
+                : <MakePairsButton groupId={groupInfo.id} eligibleTaskCount={tasks.length} />}
             </>
           )}
         </div>
@@ -70,6 +75,7 @@ function SingleGroupPage() {
           : 'You are currently in an active pairing. Reset the pool before changing your task.'}
         userAvatar={groupInfo.avatarUrl}
         fullName={groupInfo.fullName}
+        poolStatus={currentUserPoolStatus}
       />
 
       <OthersTasks

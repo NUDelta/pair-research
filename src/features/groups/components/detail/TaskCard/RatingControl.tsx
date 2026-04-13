@@ -1,51 +1,76 @@
-import type { Control } from 'react-hook-form'
-import { useController } from 'react-hook-form'
-
-interface CapacitiesFormValues {
-  capacities: Record<string, number | undefined>
-}
+import { cn } from '@/shared/lib/utils'
 
 interface RatingControlProps {
   taskId?: string
-  control?: Control<CapacitiesFormValues>
+  value?: number
+  savedValue?: number
+  status?: 'idle' | 'saving' | 'error'
+  message?: string | null
+  onChange: (value: number) => void
 }
 
-const RatingControl = ({ taskId, control }: RatingControlProps) => {
-  const {
-    field: { value, onChange },
-    formState,
-  } = useController<CapacitiesFormValues>({
-    name: `capacities.${String(taskId)}`,
-    control,
-    defaultValue: 0,
-  })
-
-  const defaultValue = formState.defaultValues?.capacities?.[String(taskId)] ?? 0
-
+const RatingControl = ({
+  taskId,
+  value,
+  savedValue,
+  status = 'idle',
+  message,
+  onChange,
+}: RatingControlProps) => {
   return (
-    <div className="flex items-center gap-2">
-      <fieldset className="flex items-center gap-1" aria-label="Rate your ability to help">
+    <div
+      className={cn(
+        'flex flex-col items-start gap-2 rounded-md px-3 py-2 transition-colors',
+        status === 'saving' && 'bg-amber-50',
+        status === 'error' && 'bg-rose-50',
+      )}
+    >
+      <fieldset
+        className="flex items-center gap-1"
+        aria-label="Rate your ability to help"
+        aria-busy={status === 'saving'}
+      >
         <legend className="sr-only">Help Rating</legend>
         {[1, 2, 3, 4, 5].map((n) => {
           const isSelected = value === n
-          const isDefault = defaultValue === n
+          const isSaved = savedValue === n
 
           return (
             <button
               key={n}
               type="button"
-              className={`rounded-full w-8 h-8 text-sm border
-              ${isSelected ? 'bg-primary text-white hover:bg-primary' : 'bg-gray-100 hover:bg-gray-200'}
-              ${isDefault ? 'border-primary/50' : 'border-transparent'}
-              focus:outline-none focus:ring-2 focus:ring-primary`}
+              className={cn(
+                'h-8 w-8 rounded-full border text-sm focus:outline-none focus:ring-2 focus:ring-primary',
+                isSelected ? 'bg-primary text-white hover:bg-primary' : 'bg-gray-100 hover:bg-gray-200',
+                isSaved ? 'border-primary/50' : 'border-transparent',
+                status === 'saving' && isSelected && 'bg-amber-300 text-amber-950 hover:bg-amber-300',
+                status === 'error' && isSelected && 'bg-rose-200 text-rose-950 hover:bg-rose-200',
+              )}
               onClick={() => onChange(n)}
               aria-label={`Rate ${n}`}
+              aria-pressed={isSelected}
+              data-task-id={taskId}
             >
               {n}
             </button>
           )
         })}
       </fieldset>
+      <p
+        className={cn(
+          'min-h-4 text-xs',
+          status === 'saving' && 'text-amber-800',
+          status === 'error' && 'text-rose-700',
+          status === 'idle' && 'text-transparent',
+        )}
+        aria-live="polite"
+      >
+        {status === 'saving'
+          ? 'Saving rating...'
+          : status === 'error'
+            ? (message ?? 'Failed to save rating.')
+            : '\u00A0'}
+      </p>
     </div>
   )
 }

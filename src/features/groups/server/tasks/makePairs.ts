@@ -94,6 +94,13 @@ export const makePairs = createServerFn({ method: 'POST' })
         },
       })
 
+      if (tasks.length === 0) {
+        return {
+          success: false,
+          message: 'The pool is empty. Add at least two active tasks before making pairs',
+        }
+      }
+
       if (tasks.length < 2) {
         return {
           success: false,

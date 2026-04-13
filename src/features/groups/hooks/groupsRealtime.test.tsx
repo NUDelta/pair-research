@@ -1,3 +1,4 @@
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCurrentUserTaskDescription } from './useCurrentUserTaskDescription'
@@ -11,11 +12,18 @@ const {
   channel,
   mockedUseRouter,
   from,
+  postgresHandlers,
 } = vi.hoisted(() => {
   const removeChannel = vi.fn()
   const invalidate = vi.fn()
   const subscribe = vi.fn(() => ({ unsubscribe: vi.fn() }))
-  const on = vi.fn(function on() {
+  const postgresHandlers: Array<(payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => unknown> = []
+  const on = vi.fn(function on(
+    _event: string,
+    _config: Record<string, unknown>,
+    handler: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => unknown,
+  ) {
+    postgresHandlers.push(handler)
     return { on, subscribe }
   })
   const channel = vi.fn(() => ({ on, subscribe }))
@@ -35,6 +43,7 @@ const {
     channel,
     mockedUseRouter,
     from,
+    postgresHandlers,
   }
 })
 
@@ -59,6 +68,7 @@ describe('groups realtime hooks', () => {
     invalidate.mockClear()
     mockedUseRouter.mockClear()
     from.mockClear()
+    postgresHandlers.length = 0
   })
 
   it('syncs other tasks from refreshed loader data', async () => {
@@ -118,6 +128,48 @@ describe('groups realtime hooks', () => {
 
     await waitFor(() => {
       expect(result.current.currentDescription).toBeNull()
+    })
+  })
+
+  it('removes a deleted task for other raters as soon as delete_pending is broadcast', async () => {
+    const initialTasks: Task[] = [
+      {
+        id: 'task-1',
+        description: 'Draft review',
+        userId: 'user-2',
+        fullName: 'Teammate',
+        avatarUrl: null,
+        helpCapacity: 3,
+      },
+    ]
+
+    const { result } = renderHook(() =>
+      useTaskRealtimeListener('group-1', 'user-1', initialTasks),
+    )
+
+    const taskHandler = postgresHandlers[0]
+    expect(taskHandler).toBeTypeOf('function')
+
+    await taskHandler({
+      schema: 'public',
+      table: 'task',
+      eventType: 'UPDATE',
+      commit_timestamp: '2026-04-13T10:00:00.000Z',
+      errors: [],
+      new: {
+        id: 'task-1',
+        description: 'Draft review',
+        user_id: 'user-2',
+        group_id: 'group-1',
+        created_at: '2026-04-13T10:00:00.000Z',
+        pairing_id: null,
+        delete_pending: true,
+      },
+      old: {},
+    })
+
+    await waitFor(() => {
+      expect(result.current.tasks).toEqual([])
     })
   })
 })
