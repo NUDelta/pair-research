@@ -20,12 +20,27 @@ export const createGroup = createServerFn({ method: 'POST' })
         assignedRole,
         members,
       } = data
+      const creatorEmail = user.email?.trim().toLowerCase()
+      const seenMemberEmails = new Set<string>()
+      const normalizedMembers = members
+        .map(member => ({
+          email: member.email.trim().toLowerCase(),
+          title: member.title.trim(),
+        }))
+        .filter((member) => {
+          if (member.email.length === 0 || member.email === creatorEmail || seenMemberEmails.has(member.email)) {
+            return false
+          }
+
+          seenMemberEmails.add(member.email)
+          return true
+        })
 
       if (!roles.some(role => role.title === assignedRole)) {
         throw new Error('Assigned role must be one of the roles')
       }
 
-      const memberEmailTitlesMap = members.reduce((acc, member) => {
+      const memberEmailTitlesMap = normalizedMembers.reduce((acc, member) => {
         acc[member.email] = member.title
         return acc
       }, {} as Record<string, string>)
@@ -69,7 +84,7 @@ export const createGroup = createServerFn({ method: 'POST' })
       const existingUsers = await prisma.profile.findMany({
         where: {
           email: {
-            in: members.map(m => m.email),
+            in: normalizedMembers.map(member => member.email),
           },
         },
         select: {
@@ -78,7 +93,7 @@ export const createGroup = createServerFn({ method: 'POST' })
         },
       })
 
-      const newUsers = members.filter(
+      const newUsers = normalizedMembers.filter(
         m => !existingUsers.some(u => u.email === m.email),
       )
 

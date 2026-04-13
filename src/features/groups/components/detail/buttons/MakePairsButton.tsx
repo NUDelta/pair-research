@@ -15,9 +15,9 @@ const MakePairsButton = ({ groupId }: Props) => {
   const router = useRouter()
   const makePairsFn = useServerFn(makePairs)
 
-  const handleMakePairs = async () => {
+  const handleMakePairs = async (force = false) => {
     startTransition(async () => {
-      const response = await makePairsFn({ data: { groupId } })
+      const response = await makePairsFn({ data: { groupId, force } })
       if (response.success) {
         toast.success(response.message)
         await router.invalidate()
@@ -45,7 +45,7 @@ const MakePairsButton = ({ groupId }: Props) => {
               duration: 10000,
               action: {
                 label: 'Proceed',
-                onClick: async () => handleMakePairs(),
+                onClick: async () => handleMakePairs(true),
               },
             },
           )
