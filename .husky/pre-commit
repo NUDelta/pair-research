@@ -1,1 +1,2 @@
 npx nano-staged
+pnpm run typecheck

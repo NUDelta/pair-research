@@ -1,2 +1,4 @@
 pnpm run lint:fix
+pnpm run typecheck
+pnpm run test
 pnpm build

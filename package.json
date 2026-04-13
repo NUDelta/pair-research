@@ -17,6 +17,7 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install --with-deps chromium",
+    "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prepare": "husky && pnpm run prisma:generate"
   },
