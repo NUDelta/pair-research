@@ -15,9 +15,19 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "prisma.config.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "e2e/**/*.ts",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "prisma.config.ts"
+  ],
   "exclude": ["node_modules"]
 }
