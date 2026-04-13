@@ -88,6 +88,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         id: groupId,
         name: membership.group.name,
         description: membership.group.description,
+        activePairingId: membership.group.active_pairing_id,
         userId,
         fullName: membership.profile.full_name,
         avatarUrl: membership.profile.avatar_url,

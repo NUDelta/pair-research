@@ -6,7 +6,7 @@ interface PairingSuccessConfettiProps {
 }
 
 const COLORS = ['#f97316', '#eab308', '#22c55e', '#0ea5e9', '#ef4444']
-const PIECES = Array.from({ length: 28 }, (_, index) => ({
+const PIECES = Array.from({ length: 32 }, (_, index) => ({
   id: index,
   left: 4 + (index * 3.3) % 92,
   rotation: (index * 29) % 360,

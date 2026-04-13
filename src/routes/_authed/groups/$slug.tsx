@@ -1,10 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LeavePoolButton, MakePairsButton, ResetPoolButton } from '@/features/groups/components/detail/buttons'
 import OthersTasks from '@/features/groups/components/detail/OthersTasks'
 import Pairing from '@/features/groups/components/detail/Pairing'
 import PairingSuccessConfetti from '@/features/groups/components/detail/PairingSuccessConfetti'
 import TaskCard from '@/features/groups/components/detail/TaskCard'
+import { shouldCelebratePairingActivation } from '@/features/groups/lib/pairingCelebration'
 import SingleGroupPending from '@/features/groups/components/pending/SingleGroupPending'
 import { getSingleGroup } from '@/features/groups/server/groups'
 
@@ -34,6 +35,7 @@ function SingleGroupPage() {
   const { groupInfo, tasks, currentUserActivePairingTaskWithProfile } = Route.useLoaderData()
   const { userId: currentUserId } = groupInfo
   const [showPairingConfetti, setShowPairingConfetti] = useState(false)
+  const previousActivePairingIdRef = useRef<string | null>(groupInfo.activePairingId ?? null)
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
   const othersTasks = tasks.filter(task => task.userId !== currentUserId)
@@ -44,21 +46,16 @@ function SingleGroupPage() {
       : 'not-in-pool'
 
   useEffect(() => {
-    if (!groupInfo.hasActivePairing || typeof window === 'undefined') {
-      return
+    const previousActivePairingId = previousActivePairingIdRef.current
+    const nextActivePairingId = groupInfo.activePairingId ?? null
+
+    if (shouldCelebratePairingActivation(previousActivePairingId, nextActivePairingId)) {
+      // eslint-disable-next-line react/set-state-in-effect
+      setShowPairingConfetti(true)
     }
 
-    const storageKey = `groups:pairing-celebration:${groupInfo.id}`
-    const pairingCelebrationToken = window.sessionStorage.getItem(storageKey)
-
-    if (pairingCelebrationToken === null) {
-      return
-    }
-
-    window.sessionStorage.removeItem(storageKey)
-    // eslint-disable-next-line react/set-state-in-effect
-    setShowPairingConfetti(true)
-  }, [groupInfo.hasActivePairing, groupInfo.id])
+    previousActivePairingIdRef.current = nextActivePairingId
+  }, [groupInfo.activePairingId])
 
   return (
     <div className="container mx-auto max-w-5xl space-y-6 p-6">

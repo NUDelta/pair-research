@@ -24,12 +24,6 @@ const MakePairsButton = ({ groupId, eligibleTaskCount }: Props) => {
     startTransition(async () => {
       const response = await makePairsFn({ data: { groupId, force } })
       if (response.success) {
-        if (typeof window !== 'undefined') {
-          window.sessionStorage.setItem(
-            `groups:pairing-celebration:${groupId}`,
-            response.data?.pairingId ?? `${Date.now()}`,
-          )
-        }
         toast.success(response.message)
         await router.invalidate()
       }
