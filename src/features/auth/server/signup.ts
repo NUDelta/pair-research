@@ -1,16 +1,35 @@
+import type { TurnstileAwareActionResponse } from '@/shared/turnstile/constants'
 import { createServerFn } from '@tanstack/react-start'
 import { gravatarLink } from '@/features/auth/lib'
 import { signupSchema } from '@/features/auth/schemas/auth'
 import { SITE_BASE_URL } from '@/shared/config/constants'
 import { createClient } from '@/shared/supabase/server'
+import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
+import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
+import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
 
-type SignupResponse = ActionResponse & {
+const signupRequestSchema = signupSchema.merge(turnstileTokenSchema)
+
+type SignupResponse = TurnstileAwareActionResponse & {
   sessionEstablished?: boolean
 }
 
 export const signup = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => signupSchema.parse(data))
+  .inputValidator((data: unknown) => signupRequestSchema.parse(data))
   .handler(async ({ data }): Promise<SignupResponse> => {
+    const turnstile = await verifyTurnstileToken({
+      action: 'signup',
+      skipVerification: isTurnstileVerificationBypassed(),
+      token: data.turnstileToken,
+    })
+
+    if (!turnstile.success) {
+      return createTurnstileErrorResponse(
+        turnstile.message,
+        turnstile.code ?? TURNSTILE_ERROR_CODES.failed,
+      )
+    }
+
     const supabase = await createClient()
     const trimmedName = data.name.trim()
     const trimmedEmail = data.email.trim()

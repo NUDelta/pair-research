@@ -1,14 +1,19 @@
 import { expect, test } from '@playwright/test'
-import { authStorageStatePath, getPlaywrightAuthCredentials } from './helpers/auth'
+import { authStorageStatePath, enableTurnstileBypass, getPlaywrightAuthCredentials } from './helpers/auth'
 
 const authCredentials = getPlaywrightAuthCredentials()
 const groupsPathPattern = /\/groups$/
 const signInTriggerPattern = /^Sign in$/i
 const signInSubmitPattern = /^sign in$/i
 
-test('create authenticated storage state from the email/password login flow', async ({ page }) => {
+test('create authenticated storage state from the email/password login flow', async ({ page, baseURL }) => {
   test.skip(authCredentials === null, 'Set PLAYWRIGHT_AUTH_EMAIL and PLAYWRIGHT_AUTH_PASSWORD to enable authenticated e2e.')
 
+  if (baseURL == null || baseURL === '') {
+    throw new Error('Playwright baseURL is required for auth setup.')
+  }
+
+  await enableTurnstileBypass(page.context(), baseURL)
   await page.goto('/')
   await page.locator('header').locator('button').filter({ hasText: signInTriggerPattern }).first().click()
 
