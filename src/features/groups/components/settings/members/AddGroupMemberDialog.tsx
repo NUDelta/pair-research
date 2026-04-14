@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 interface AddGroupMemberDialogProps {
   groupId: string
   roles: GroupSettingsRole[]
+  triggerClassName?: string
 }
 
 const inviteMemberFormSchema = addGroupMemberSchema.omit({ groupId: true })
@@ -28,6 +29,7 @@ type InviteMemberFormValues = Infer<typeof inviteMemberFormSchema>
 export default function AddGroupMemberDialog({
   groupId,
   roles,
+  triggerClassName,
 }: AddGroupMemberDialogProps) {
   const router = useRouter()
   const addGroupMemberFn = useServerFn(addGroupMember)
@@ -95,7 +97,7 @@ export default function AddGroupMemberDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button disabled={roles.length === 0}>
+        <Button disabled={roles.length === 0} className={triggerClassName}>
           <UserPlusIcon data-icon="inline-start" />
           Add member
         </Button>

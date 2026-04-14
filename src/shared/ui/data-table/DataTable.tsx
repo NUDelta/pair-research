@@ -75,7 +75,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-3 px-6 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 px-4 pb-4 sm:px-6 sm:flex-row sm:items-center sm:justify-between">
         {filterColumnId === undefined
           ? <div />
           : (
@@ -87,7 +87,7 @@ export function DataTable<TData, TValue>({
               />
             )}
         {renderToolbar !== undefined && (
-          <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+          <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
             {renderToolbar(table)}
           </div>
         )}

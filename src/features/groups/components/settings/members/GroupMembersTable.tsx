@@ -19,6 +19,8 @@ interface GroupMembersTableProps {
   roles: GroupSettingsRole[]
 }
 
+type MemberPendingActions = Record<string, { access?: boolean, remove?: boolean, role?: boolean }>
+
 export default function GroupMembersTable({
   creatorId,
   currentUserId,
@@ -33,7 +35,7 @@ export default function GroupMembersTable({
   const removeGroupMemberFn = useServerFn(removeGroupMember)
   const updateGroupMemberFn = useServerFn(updateGroupMember)
   const [memberOverrides, setMemberOverrides] = useState<Record<string, { isAdmin: boolean, roleId: string }>>({})
-  const [pendingUserIds, setPendingUserIds] = useState<string[]>([])
+  const [pendingActions, setPendingActions] = useState<MemberPendingActions>({})
   const [isBulkRemoving, startBulkRemoveTransition] = useTransition()
   const [isBulkUpdatingRole, startBulkUpdateRoleTransition] = useTransition()
 
@@ -60,11 +62,33 @@ export default function GroupMembersTable({
     [memberOverrides, members],
   )
 
-  const pendingUserIdSet = useMemo(() => new Set(pendingUserIds), [pendingUserIds])
+  const setMemberPendingAction = useCallback((
+    userId: string,
+    action: 'access' | 'remove' | 'role',
+    isPending: boolean,
+  ) => {
+    setPendingActions((current) => {
+      const nextState = {
+        ...(current[userId] ?? {}),
+        [action]: isPending,
+      }
+
+      if (!nextState.access && !nextState.remove && !nextState.role) {
+        const { [userId]: _removed, ...rest } = current
+        return rest
+      }
+
+      return {
+        ...current,
+        [userId]: nextState,
+      }
+    })
+  }, [])
 
   const persistMemberUpdate = useCallback(async (
     member: GroupSettingsMember,
     nextState: { isAdmin: boolean, roleId: string },
+    action: 'access' | 'role',
   ) => {
     const previousState = memberState[member.userId] ?? {
       isAdmin: member.isAdmin,
@@ -75,7 +99,7 @@ export default function GroupMembersTable({
       ...current,
       [member.userId]: nextState,
     }))
-    setPendingUserIds(current => current.includes(member.userId) ? current : [...current, member.userId])
+    setMemberPendingAction(member.userId, action, true)
 
     const response = await updateGroupMemberFn({
       data: {
@@ -86,7 +110,7 @@ export default function GroupMembersTable({
       },
     })
 
-    setPendingUserIds(current => current.filter(userId => userId !== member.userId))
+    setMemberPendingAction(member.userId, action, false)
 
     if (!response.success) {
       setMemberOverrides(current => ({
@@ -105,10 +129,10 @@ export default function GroupMembersTable({
     }
 
     await router.invalidate()
-  }, [currentUserId, groupId, memberState, navigate, router, updateGroupMemberFn])
+  }, [currentUserId, groupId, memberState, navigate, router, setMemberPendingAction, updateGroupMemberFn])
 
   const removeMember = useCallback(async (member: GroupSettingsMember) => {
-    setPendingUserIds(current => current.includes(member.userId) ? current : [...current, member.userId])
+    setMemberPendingAction(member.userId, 'remove', true)
 
     const response = await removeGroupMemberFn({
       data: {
@@ -117,7 +141,7 @@ export default function GroupMembersTable({
       },
     })
 
-    setPendingUserIds(current => current.filter(userId => userId !== member.userId))
+    setMemberPendingAction(member.userId, 'remove', false)
 
     if (!response.success) {
       toast.error(response.message)
@@ -126,7 +150,7 @@ export default function GroupMembersTable({
 
     toast.success(response.message)
     await router.invalidate()
-  }, [groupId, removeGroupMemberFn, router])
+  }, [groupId, removeGroupMemberFn, router, setMemberPendingAction])
 
   const columns = useMemo(
     () => createGroupMemberColumns({
@@ -140,7 +164,7 @@ export default function GroupMembersTable({
         void persistMemberUpdate(member, {
           ...state,
           isAdmin: nextIsAdmin,
-        })
+        }, 'access')
       },
       onRemove: removeMember,
       onRoleChange: (member, nextRoleId) => {
@@ -152,13 +176,13 @@ export default function GroupMembersTable({
         void persistMemberUpdate(member, {
           ...state,
           roleId: nextRoleId,
-        })
+        }, 'role')
       },
-      pendingUserIds: pendingUserIdSet,
+      pendingActions,
       roles,
       rowState: memberState,
     }),
-    [creatorId, memberState, pendingUserIdSet, persistMemberUpdate, removeMember, roles],
+    [creatorId, memberState, pendingActions, persistMemberUpdate, removeMember, roles],
   )
 
   return (
@@ -173,7 +197,7 @@ export default function GroupMembersTable({
       </CardHeader>
       <CardContent className="flex flex-col gap-4 px-0 pb-0">
         {hasActivePairing && (
-          <div className="mx-6 rounded-lg border border-dashed px-4 py-3">
+          <div className="mx-4 rounded-lg border border-dashed px-4 py-3 sm:mx-6">
             <p className="font-medium">Active pairing in progress</p>
             <p className="text-sm text-muted-foreground">
               Confirmed members stay locked until the pool is reset. Pending invitations can still be removed.

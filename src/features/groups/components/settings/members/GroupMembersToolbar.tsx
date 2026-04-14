@@ -1,10 +1,21 @@
 import type { GroupSettingsRole } from '../types'
 import type { GroupMemberTableRow } from './memberTableRows'
-import { useState } from 'react'
+import { MoreHorizontalIcon, Trash2Icon } from 'lucide-react'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import DoubleConfirmDialog from '@/shared/ui/DoubleConfirmDialog'
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import AddGroupMemberDialog from './AddGroupMemberDialog'
 
 interface GroupMembersToolbarProps {
@@ -30,68 +41,73 @@ export default function GroupMembersToolbar({
   selectedMembers,
   selectedRemovableMembers,
 }: GroupMembersToolbarProps) {
-  const [bulkRoleId, setBulkRoleId] = useState(roles[0]?.id ?? '')
-  const resolvedBulkRoleId = roles.some(role => role.id === bulkRoleId) ? bulkRoleId : (roles[0]?.id ?? '')
-
   return (
     <>
-      {selectedMembers.length > 0 && (
-        <>
+      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+        {selectedMembers.length > 0 && (
           <Badge variant="secondary">
             {selectedMembers.length}
             {' '}
             selected
           </Badge>
-          <Select
-            value={resolvedBulkRoleId}
-            onValueChange={setBulkRoleId}
-            disabled={isBulkUpdatingRole || roles.length === 0}
-          >
-            <SelectTrigger className="min-w-[180px]">
-              <SelectValue placeholder="Choose a role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {roles.map(role => (
-                  <SelectItem key={role.id} value={role.id}>
-                    {role.title}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            onClick={() => {
-              void onBulkRoleUpdate(resolvedBulkRoleId)
-            }}
-            disabled={resolvedBulkRoleId.length === 0 || isBulkUpdatingRole}
-          >
-            Apply role
-          </Button>
-          <DoubleConfirmDialog
-            title={`Remove ${selectedRemovableMembers.length} selected ${selectedRemovableMembers.length === 1 ? 'member' : 'members'}?`}
-            description={hasNonRemovableSelected
-              ? 'Only removable members will be processed. Selected creators, yourself, or confirmed members blocked by an active pairing will be skipped.'
-              : 'This will remove the selected members from the group and revoke any pending invitations in the selection.'}
-            confirmText="Remove selected"
-            pendingText="Removing selected..."
-            onConfirm={onBulkRemove}
-            trigger={(
-              <Button
-                variant="outline"
-                disabled={selectedRemovableMembers.length === 0 || isBulkRemoving}
-                title={selectedRemovableMembers.length === 0
-                  ? 'Select at least one removable member.'
-                  : undefined}
-              >
-                Remove selected
-              </Button>
-            )}
-          />
-        </>
-      )}
-      <AddGroupMemberDialog groupId={groupId} roles={roles} />
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex-1 sm:flex-none"
+              disabled={selectedMembers.length === 0 || isBulkUpdatingRole || isBulkRemoving}
+            >
+              <MoreHorizontalIcon data-icon="inline-start" />
+              Bulk actions
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64">
+            <DropdownMenuLabel>Bulk actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger disabled={roles.length === 0}>
+                  Change role
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {roles.map(role => (
+                    <DropdownMenuItem
+                      key={role.id}
+                      onSelect={() => void onBulkRoleUpdate(role.id)}
+                    >
+                      {role.title}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DoubleConfirmDialog
+                title={`Remove ${selectedRemovableMembers.length} selected ${selectedRemovableMembers.length === 1 ? 'member' : 'members'}?`}
+                description={hasNonRemovableSelected
+                  ? 'Only removable members will be processed. Selected creators, yourself, or confirmed members blocked by an active pairing will be skipped.'
+                  : 'This will remove the selected members from the group and revoke any pending invitations in the selection.'}
+                confirmText="Remove selected"
+                pendingText="Removing selected..."
+                onConfirm={onBulkRemove}
+                trigger={(
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start px-2"
+                    disabled={selectedRemovableMembers.length === 0 || isBulkRemoving}
+                    title={selectedRemovableMembers.length === 0
+                      ? 'Select at least one removable member.'
+                      : undefined}
+                  >
+                    <Trash2Icon data-icon="inline-start" />
+                    Remove selected
+                  </Button>
+                )}
+              />
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <AddGroupMemberDialog groupId={groupId} roles={roles} triggerClassName="flex-1 sm:flex-none" />
+      </div>
     </>
   )
 }

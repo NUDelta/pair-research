@@ -16,12 +16,16 @@ import { Label } from '@/shared/ui/label'
 
 interface CreateGroupRoleDialogProps {
   groupId: string
+  triggerClassName?: string
 }
 
 const createRoleFormSchema = createGroupRoleSchema.omit({ groupId: true })
 type CreateRoleFormValues = Infer<typeof createRoleFormSchema>
 
-export default function CreateGroupRoleDialog({ groupId }: CreateGroupRoleDialogProps) {
+export default function CreateGroupRoleDialog({
+  groupId,
+  triggerClassName,
+}: CreateGroupRoleDialogProps) {
   const router = useRouter()
   const createGroupRoleFn = useServerFn(createGroupRole)
   const [open, setOpen] = useState(false)
@@ -65,7 +69,7 @@ export default function CreateGroupRoleDialog({ groupId }: CreateGroupRoleDialog
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className={triggerClassName}>
           <PlusIcon data-icon="inline-start" />
           Add role
         </Button>

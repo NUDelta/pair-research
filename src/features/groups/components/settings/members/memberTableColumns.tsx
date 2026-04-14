@@ -20,7 +20,7 @@ interface CreateGroupMemberColumnsOptions {
   onAccessChange: (member: GroupMemberTableRow, nextIsAdmin: boolean) => void
   onRemove: (member: GroupMemberTableRow) => Promise<void>
   onRoleChange: (member: GroupMemberTableRow, nextRoleId: string) => void
-  pendingUserIds: ReadonlySet<string>
+  pendingActions: Readonly<Record<string, { access?: boolean, remove?: boolean, role?: boolean }>>
   roles: GroupSettingsRole[]
   rowState: Record<string, { isAdmin: boolean, roleId: string }>
 }
@@ -30,7 +30,7 @@ export function createGroupMemberColumns({
   onAccessChange,
   onRemove,
   onRoleChange,
-  pendingUserIds,
+  pendingActions,
   roles,
   rowState,
 }: CreateGroupMemberColumnsOptions) {
@@ -86,13 +86,16 @@ export function createGroupMemberColumns({
           roleId: row.original.roleId,
           isAdmin: row.original.isAdmin,
         }
+        const pendingState = pendingActions[row.original.userId] ?? {}
+        const isBusy = Boolean(pendingState.role || pendingState.access || pendingState.remove)
 
         return (
           <MemberRoleSelect
             value={state.roleId}
             roles={roles}
             memberName={row.original.displayName}
-            isPending={pendingUserIds.has(row.original.userId)}
+            isBusy={isBusy}
+            isPending={pendingState.role === true}
             onChange={value => onRoleChange(row.original, value)}
           />
         )
@@ -106,13 +109,16 @@ export function createGroupMemberColumns({
           roleId: row.original.roleId,
           isAdmin: row.original.isAdmin,
         }
+        const pendingState = pendingActions[row.original.userId] ?? {}
+        const isBusy = Boolean(pendingState.role || pendingState.access || pendingState.remove)
 
         return (
           <MemberAccessSelect
             isAdmin={state.isAdmin}
             disabled={row.original.userId === creatorId}
             memberName={row.original.displayName}
-            isPending={pendingUserIds.has(row.original.userId)}
+            isBusy={isBusy}
+            isPending={pendingState.access === true}
             onChange={value => onAccessChange(row.original, value)}
           />
         )
@@ -142,31 +148,36 @@ export function createGroupMemberColumns({
       id: 'actions',
       enableHiding: false,
       enableSorting: false,
-      header: () => <div className="text-right">Actions</div>,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <DoubleConfirmDialog
-            title={`Remove ${row.original.displayName}?`}
-            description={row.original.isPending
-              ? 'This will revoke the pending invitation.'
-              : 'This will remove the member from the group and disable any current pool task they still have.'}
-            confirmText="Remove member"
-            pendingText="Removing member..."
-            onConfirm={async () => onRemove(row.original)}
-            trigger={(
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`Remove ${row.original.displayName}`}
-                disabled={!row.original.canRemove || pendingUserIds.has(row.original.userId)}
-                title={row.original.removeDisabledReason === null ? undefined : row.original.removeDisabledReason}
-              >
-                <Trash2Icon />
-              </Button>
-            )}
-          />
-        </div>
-      ),
+      header: () => <div className="text-right sm:text-right">Actions</div>,
+      cell: ({ row }) => {
+        const pendingState = pendingActions[row.original.userId] ?? {}
+        const isBusy = Boolean(pendingState.role || pendingState.access || pendingState.remove)
+
+        return (
+          <div className="flex justify-end">
+            <DoubleConfirmDialog
+              title={`Remove ${row.original.displayName}?`}
+              description={row.original.isPending
+                ? 'This will revoke the pending invitation.'
+                : 'This will remove the member from the group and disable any current pool task they still have.'}
+              confirmText="Remove member"
+              pendingText="Removing member..."
+              onConfirm={async () => onRemove(row.original)}
+              trigger={(
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove ${row.original.displayName}`}
+                  disabled={!row.original.canRemove || isBusy}
+                  title={row.original.removeDisabledReason === null ? undefined : row.original.removeDisabledReason}
+                >
+                  <Trash2Icon />
+                </Button>
+              )}
+            />
+          </div>
+        )
+      },
     }),
   ] as ColumnDef<GroupMemberTableRow>[]
 }

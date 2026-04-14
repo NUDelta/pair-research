@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 
 interface MemberRoleSelectProps {
   disabled?: boolean
+  isBusy?: boolean
   isPending: boolean
   memberName: string
   onChange: (value: string) => void
@@ -13,6 +14,7 @@ interface MemberRoleSelectProps {
 
 export default function MemberRoleSelect({
   disabled = false,
+  isBusy = false,
   isPending,
   memberName,
   onChange,
@@ -20,9 +22,9 @@ export default function MemberRoleSelect({
   value,
 }: MemberRoleSelectProps) {
   return (
-    <div className="flex min-w-[180px] items-center gap-2">
-      <Select value={value} onValueChange={onChange} disabled={disabled || isPending}>
-        <SelectTrigger aria-label={`Role for ${memberName}`}>
+    <div className="flex min-w-0 items-center gap-2 sm:min-w-[180px]">
+      <Select value={value} onValueChange={onChange} disabled={disabled || isBusy}>
+        <SelectTrigger aria-label={`Role for ${memberName}`} className="w-full">
           <SelectValue placeholder="Choose a role" />
         </SelectTrigger>
         <SelectContent>

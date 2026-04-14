@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 interface MemberAccessSelectProps {
   disabled?: boolean
   isAdmin: boolean
+  isBusy?: boolean
   isPending: boolean
   memberName: string
   onChange: (nextIsAdmin: boolean) => void
@@ -12,18 +13,19 @@ interface MemberAccessSelectProps {
 export default function MemberAccessSelect({
   disabled = false,
   isAdmin,
+  isBusy = false,
   isPending,
   memberName,
   onChange,
 }: MemberAccessSelectProps) {
   return (
-    <div className="flex min-w-[140px] items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2 sm:min-w-[140px]">
       <Select
         value={isAdmin ? 'admin' : 'member'}
         onValueChange={value => onChange(value === 'admin')}
-        disabled={disabled || isPending}
+        disabled={disabled || isBusy}
       >
-        <SelectTrigger aria-label={`Access for ${memberName}`}>
+        <SelectTrigger aria-label={`Access for ${memberName}`} className="w-full">
           <SelectValue placeholder="Choose access" />
         </SelectTrigger>
         <SelectContent>
