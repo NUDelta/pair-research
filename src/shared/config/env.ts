@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const supabaseUrlSchema = z.url().nonempty()
+const supabaseUrlSchema = z.string().url().nonempty()
 const supabasePublishableKeySchema = z.string().nonempty()
 
 export function getSupabasePublicEnv() {

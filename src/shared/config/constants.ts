@@ -1,7 +1,7 @@
 // Global Constants
 import { z } from 'zod'
 
-const siteBaseUrlSchema = z.url().nonempty()
+const siteBaseUrlSchema = z.string().url().nonempty()
 const parsedSiteBaseUrl = siteBaseUrlSchema.safeParse(import.meta.env.VITE_SITE_BASE_URL ?? '')
 
 // ! NO trailing slash at the end of the URL
