@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "vite dev",
-    "dev:test": "vite dev --host 127.0.0.1",
+    "dev:e2e": "vite dev --host 127.0.0.1 --strictPort",
     "build": "pnpm run prisma:generate && vite build",
     "start": "node .output/server/index.mjs",
     "lint": "eslint .",
@@ -15,7 +15,8 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:auth": "playwright test --project=setup-auth --project=authenticated-chromium",
+    "test:e2e:headed": "playwright test --project=chromium --headed",
     "test:e2e:install": "playwright install --with-deps chromium",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",

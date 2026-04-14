@@ -14,9 +14,11 @@ import AuthControlsLoading from './AuthControlsLoading'
 import AuthDialog from './AuthDialog'
 import SignOutItem from './SignOutItem'
 
+type AuthDialogTab = 'login' | 'signup' | null
+
 const AuthControls = () => {
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false)
-  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState<boolean>(false)
+  const [openAuthDialog, setOpenAuthDialog] = useState<AuthDialogTab>(null)
 
   const {
     loading,
@@ -66,9 +68,10 @@ const AuthControls = () => {
         : (
             <>
               <AuthDialog
+                key={`login-${openAuthDialog === 'login' ? 'open' : 'closed'}`}
                 defaultTab="login"
-                open={isAuthDialogOpen}
-                onOpenChange={() => setIsAuthDialogOpen(!isAuthDialogOpen)}
+                open={openAuthDialog === 'login'}
+                onOpenChange={open => setOpenAuthDialog(open ? 'login' : null)}
                 onAuthSuccess={refreshProfile}
               >
                 <Button variant="ghost" size="lg">
@@ -76,9 +79,10 @@ const AuthControls = () => {
                 </Button>
               </AuthDialog>
               <AuthDialog
+                key={`signup-${openAuthDialog === 'signup' ? 'open' : 'closed'}`}
                 defaultTab="signup"
-                open={isAuthDialogOpen}
-                onOpenChange={() => setIsAuthDialogOpen(!isAuthDialogOpen)}
+                open={openAuthDialog === 'signup'}
+                onOpenChange={open => setOpenAuthDialog(open ? 'signup' : null)}
                 onAuthSuccess={refreshProfile}
               >
                 <Button variant="default" size="lg">

@@ -3,20 +3,36 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { getOrCreateProfile } from '@/features/account/server/getOrCreateProfile'
 import { createClient } from '@/shared/supabase/client'
+import { getBrowserE2EAuthMode, isE2EAnonymousAuthMode, isMissingSupabaseSessionError } from '../lib/e2eAuth'
+
+const emptyProfile = {
+  full_name: null,
+  avatar_url: null,
+} as const
 
 export const useAuthProfile = (
   setUserLoggedIn: (value: boolean) => void,
 ) => {
-  const supabaseAuth = createClient().auth
+  const e2eAuthMode = getBrowserE2EAuthMode()
+  const anonymousE2E = isE2EAnonymousAuthMode(e2eAuthMode)
+  const supabaseAuth = anonymousE2E ? undefined : createClient().auth
   const getOrCreateProfileFn = useServerFn(getOrCreateProfile)
 
   const [loading, setLoading] = useState(true)
-  const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>({
-    full_name: null,
-    avatar_url: null,
-  })
+  const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>(emptyProfile)
+
+  const setLoggedOut = useCallback(() => {
+    setUserLoggedIn(false)
+    setProfile(emptyProfile)
+    setLoading(false)
+  }, [setUserLoggedIn])
 
   const fetchProfile = useCallback(async () => {
+    if (!supabaseAuth) {
+      setLoggedOut()
+      return
+    }
+
     setLoading(true)
     try {
       const url = new URL(globalThis.location.href)
@@ -40,12 +56,8 @@ export const useAuthProfile = (
       } = await supabaseAuth.getUser()
 
       if (userError || !user) {
-        setUserLoggedIn(false)
-        setProfile({
-          full_name: null,
-          avatar_url: null,
-        })
-        if (userError) {
+        setLoggedOut()
+        if (userError && !isMissingSupabaseSessionError(userError)) {
           throw new Error(userError.message)
         }
         return
@@ -68,13 +80,26 @@ export const useAuthProfile = (
     finally {
       setLoading(false)
     }
-  }, [getOrCreateProfileFn, setUserLoggedIn, supabaseAuth])
+  }, [getOrCreateProfileFn, setLoggedOut, setUserLoggedIn, supabaseAuth])
 
   useEffect(() => {
+    if (anonymousE2E) {
+      setLoggedOut()
+      return
+    }
+
+    if (!supabaseAuth) {
+      return
+    }
+
     void fetchProfile()
-  }, [fetchProfile])
+  }, [anonymousE2E, fetchProfile, setLoggedOut, supabaseAuth])
 
   useEffect(() => {
+    if (!supabaseAuth) {
+      return
+    }
+
     const {
       data: { subscription },
     } = supabaseAuth.onAuthStateChange(() => {

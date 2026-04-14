@@ -1,17 +1,10 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { defineConfig, devices } from '@playwright/test'
 
-const port = 3000
-const rootDir = path.dirname(fileURLToPath(import.meta.url))
+const port = Number(process.env.PLAYWRIGHT_PORT ?? '3000')
 const baseURLFromEnv = process.env.PLAYWRIGHT_BASE_URL
-const authStorageStatePathFromEnv = process.env.PLAYWRIGHT_STORAGE_STATE
 const isCI = process.env.CI != null && process.env.CI !== ''
 const hasExternalBaseURL = baseURLFromEnv != null && baseURLFromEnv !== ''
 const baseURL = baseURLFromEnv ?? `http://127.0.0.1:${port}`
-const authStorageStatePath = authStorageStatePathFromEnv
-  ?? path.resolve(rootDir, 'e2e/.auth/user.json')
 
 export default defineConfig({
   testDir: './e2e',
@@ -26,17 +19,14 @@ export default defineConfig({
   outputDir: 'output/playwright/test-results',
   use: {
     baseURL,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    storageState: fs.existsSync(authStorageStatePath)
-      ? authStorageStatePath
-      : undefined,
   },
   webServer: hasExternalBaseURL
     ? undefined
     : {
-        command: 'pnpm dev:test',
+        command: 'pnpm dev:e2e',
         url: baseURL,
         reuseExistingServer: !isCI,
         timeout: 120000,
@@ -44,6 +34,22 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: ['**/auth.setup.ts', '**/authenticated/**'],
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'setup-auth',
+      testMatch: ['**/auth.setup.ts'],
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'authenticated-chromium',
+      dependencies: ['setup-auth'],
+      testMatch: ['**/authenticated/**/*.spec.ts'],
       use: {
         ...devices['Desktop Chrome'],
       },
