@@ -118,6 +118,7 @@ const LoginForm = ({
                 notice: 'check-email',
               })
             : undefined}
+          actionLabel={activeNoticeVariant === 'check-email' ? 'Back to sign up' : undefined}
           email={activeNoticeEmail}
           variant={activeNoticeVariant}
         />

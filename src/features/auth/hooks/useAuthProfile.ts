@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { getOrCreateProfile } from '@/features/account/server/getOrCreateProfile'
 import { createClient } from '@/shared/supabase/client'
+import { isAuthFeedbackSource } from '../lib/authFeedback'
 import { getBrowserE2EAuthMode, isE2EAnonymousAuthMode, isMissingSupabaseSessionError } from '../lib/e2eAuth'
 
 const emptyProfile = {
@@ -40,9 +41,12 @@ export const useAuthProfile = (
       const url = new URL(globalThis.location.href)
       const from = url.searchParams.get('from')
       const error = url.searchParams.get('error')
+      const shouldClearFrom = isAuthFeedbackSource(from)
 
-      if ((error !== null && error.trim() !== '') || (from !== null && from.trim() !== '')) {
-        url.searchParams.delete('from')
+      if ((error !== null && error.trim() !== '') || shouldClearFrom) {
+        if (shouldClearFrom) {
+          url.searchParams.delete('from')
+        }
         url.searchParams.delete('error')
         const nextHref = `${url.pathname}${url.search}${url.hash}`
         globalThis.history.replaceState(null, '', nextHref)
