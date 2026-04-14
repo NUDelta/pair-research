@@ -41,12 +41,16 @@ You will need the following information to be set up in the `.env` file:
 - `S3_SECRET_KEY`: This is the secret key for your Supabase storage bucket.
 - `SUPABASE_URL`: Optional server-side Supabase project URL. If omitted, the server falls back to `VITE_SUPABASE_URL`.
 - `SUPABASE_SECRET_KEY`: This is the server-only Supabase secret key for admin operations. You need it to create new users and send invitations when they are invited to join a group but not yet registered.
+- `RESEND_API_KEY`: This is the server-only Resend API key for sending emails. You need it to send auth confirmation emails and other transactional emails.
+- `RESEND_EMAIL_DOMAIN`: This is the email domain for Resend emails.
+- `CLOUDFLARE_TURNSTILE_SECRET_KEY`: This is the server-only Cloudflare Turnstile secret key for verifying captcha responses.
 
 Below are public client variables. These can live in `.env.local` for local development:
 
 - `VITE_SUPABASE_URL`: This is the URL to your Supabase instance. It should be in the format `https://your-project-ref.supabase.co`.
 - `VITE_SUPABASE_PUBLISHABLE_KEY`: This is the browser-safe Supabase publishable key.
 - `VITE_SITE_BASE_URL`: Optional canonical site URL used for sitemap generation in production and for auth email confirmation redirects.
+- `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`: This is the public client Cloudflare Turnstile site key for verifying captcha responses.
 
 Sample `.env` file:
 

@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 const siteBaseUrlSchema = z.string().url().nonempty()
 const parsedSiteBaseUrl = siteBaseUrlSchema.safeParse(import.meta.env.VITE_SITE_BASE_URL ?? '')
+const apiKeySchema = z.string().nonempty()
 
 // ! NO trailing slash at the end of the URL
 export const SITE_BASE_URL
@@ -19,3 +20,9 @@ export const BUCKET = 'avatars'
 // ! [Note]: This is the limitation for the user to upload.
 // ! However, all their uploaded images will be auto-optimized to smaller sizes.
 export const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+
+export const RESEND_API_KEY = apiKeySchema.safeParse(import.meta.env.VITE_RESEND_API_KEY ?? '').success ? apiKeySchema.safeParse(import.meta.env.VITE_RESEND_API_KEY ?? '').data : ''
+export const RESEND_EMAIL_DOMAIN = '@notify.pairresearch.io'
+
+export const CLOUDFLARE_TURNSTILE_SITE_KEY = apiKeySchema.safeParse(import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY ?? '').success ? apiKeySchema.safeParse(import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY ?? '').data : ''
+export const CLOUDFLARE_TURNSTILE_SECRET_KEY = apiKeySchema.safeParse(import.meta.env.CLOUDFLARE_TURNSTILE_SECRET_KEY ?? '').success ? apiKeySchema.safeParse(import.meta.env.CLOUDFLARE_TURNSTILE_SECRET_KEY ?? '').data : ''
