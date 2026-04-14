@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Separator } from '@/shared/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import GroupBasicsFormCard from './GroupBasicsFormCard'
+import GroupMembersTable from './GroupMembersTable'
 
 interface GroupSettingsPageProps {
   settings: GroupSettingsData
@@ -150,19 +151,14 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
             <GroupBasicsFormCard group={settings.group} />
           </TabsContent>
           <TabsContent value="members" className="mt-0 flex flex-col gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Member management</CardTitle>
-                <CardDescription>
-                  Invite people, update roles, and manage admin access from this section.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                  Member management is being added as a dedicated workspace for this settings page.
-                </div>
-              </CardContent>
-            </Card>
+            <GroupMembersTable
+              creatorId={settings.group.creatorId}
+              currentUserId={settings.currentUserId}
+              groupId={settings.group.id}
+              hasActivePairing={settings.group.activePairingId !== null}
+              members={settings.members}
+              roles={settings.roles}
+            />
           </TabsContent>
         </div>
       </Tabs>
