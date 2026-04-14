@@ -1,12 +1,10 @@
 import type { GroupSettingsMember, GroupSettingsRole } from '../types'
-import { UsersIcon } from 'lucide-react'
 import { useMemo } from 'react'
-import { Badge } from '@/shared/ui/badge'
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
-import CreateGroupRoleDialog from './CreateGroupRoleDialog'
-import DeleteGroupRoleDialog from './DeleteGroupRoleDialog'
-import EditGroupRoleDialog from './EditGroupRoleDialog'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import { DataTable } from '@/shared/ui/data-table'
+import GroupRolesToolbar from './GroupRolesToolbar'
+import { createRoleTableColumns } from './roleTableColumns'
+import { buildGroupRoleTableRows } from './roleTableRows'
 
 interface GroupRolesSectionProps {
   groupId: string
@@ -19,22 +17,8 @@ export default function GroupRolesSection({
   members,
   roles,
 }: GroupRolesSectionProps) {
-  const roleRows = useMemo(
-    () =>
-      roles.map((role) => {
-        const assignedMembers = members.filter(member => member.roleId === role.id)
-        const activeMembers = assignedMembers.filter(member => !member.isPending)
-        const pendingMembers = assignedMembers.filter(member => member.isPending)
-
-        return {
-          ...role,
-          activeMemberCount: activeMembers.length,
-          assignedMemberCount: assignedMembers.length,
-          pendingMemberCount: pendingMembers.length,
-        }
-      }),
-    [members, roles],
-  )
+  const data = useMemo(() => buildGroupRoleTableRows(roles, members), [members, roles])
+  const columns = useMemo(() => createRoleTableColumns({ groupId, roles }), [groupId, roles])
 
   return (
     <Card>
@@ -42,72 +26,29 @@ export default function GroupRolesSection({
         <div className="flex flex-col gap-1">
           <CardTitle>Roles</CardTitle>
           <CardDescription>
-            Manage the role definitions used across this group.
+            Rename roles inline and manage bulk role consolidation from the table.
           </CardDescription>
         </div>
-        <CardAction>
-          <CreateGroupRoleDialog groupId={groupId} />
-        </CardAction>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Role</TableHead>
-              <TableHead>Assigned members</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {roleRows.length > 0
-              ? roleRows.map(role => (
-                  <TableRow key={role.id}>
-                    <TableCell className="font-medium">{role.title}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <UsersIcon />
-                        <span>
-                          {role.assignedMemberCount}
-                          {' '}
-                          total
-                        </span>
-                        {role.pendingMemberCount > 0 && (
-                          <Badge variant="secondary">
-                            {role.pendingMemberCount}
-                            {' '}
-                            pending
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={role.activeMemberCount > 0 ? 'outline' : 'secondary'}>
-                        {role.activeMemberCount > 0 ? `${role.activeMemberCount} active` : 'Unassigned'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <EditGroupRoleDialog groupId={groupId} role={role} />
-                        <DeleteGroupRoleDialog
-                          assignedMemberCount={role.assignedMemberCount}
-                          groupId={groupId}
-                          role={role}
-                          roles={roles}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                      No roles found for this group.
-                    </TableCell>
-                  </TableRow>
-                )}
-          </TableBody>
-        </Table>
+      <CardContent className="px-0 pb-0">
+        <DataTable
+          columns={columns}
+          data={data}
+          emptyMessage="No roles found for this group."
+          filterColumnId="title"
+          filterPlaceholder="Filter roles..."
+          getRowId={row => row.id}
+          renderToolbar={table => (
+            <GroupRolesToolbar
+              groupId={groupId}
+              roles={roles}
+              selectedRoles={table.getFilteredSelectedRowModel().rows.map(row => ({
+                id: row.original.id,
+                title: row.original.title,
+              }))}
+            />
+          )}
+        />
       </CardContent>
     </Card>
   )

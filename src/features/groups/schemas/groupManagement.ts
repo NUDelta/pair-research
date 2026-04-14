@@ -56,6 +56,22 @@ export const bulkUpdateGroupMemberRolesSchema = z.object({
   roleId: roleIdSchema,
 })
 
+export const bulkManageGroupRolesSchema = z.object({
+  groupId: groupIdSchema,
+  roleIds: z.array(roleIdSchema).min(1, 'Select at least one role').max(100, 'Select at most 100 roles at a time'),
+  action: z.enum(['merge', 'remove']),
+  targetRoleId: roleIdSchema.optional(),
+  targetRoleTitle: roleTitleSchema.optional(),
+}).superRefine((value, context) => {
+  if ((value.targetRoleId === undefined) === (value.targetRoleTitle === undefined)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['targetRoleId'],
+      message: 'Choose an existing destination role or provide a new role name.',
+    })
+  }
+})
+
 export const createGroupRoleSchema = z.object({
   groupId: groupIdSchema,
   title: roleTitleSchema,
