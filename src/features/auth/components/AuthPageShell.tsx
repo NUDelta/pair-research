@@ -6,7 +6,9 @@ interface AuthPageShellProps {
   alternateLabel: string
   alternatePrompt: string
   children: ReactNode
-  mode: 'login' | 'signup'
+  description?: string
+  mode?: 'login' | 'signup'
+  title?: string
 }
 
 export default function AuthPageShell({
@@ -14,8 +16,15 @@ export default function AuthPageShell({
   alternateLabel,
   alternatePrompt,
   children,
+  description,
   mode,
+  title,
 }: AuthPageShellProps) {
+  const resolvedTitle = title ?? (mode === 'login' ? 'Sign in to continue' : 'Create your account')
+  const resolvedDescription = description ?? (mode === 'login'
+    ? 'Use Google or your email and password. '
+    : 'Use Google or email to get started.')
+
   return (
     <div className="flex items-center justify-center px-4 pb-6 sm:px-6 lg:px-8">
       <div className="absolute inset-0 -z-20" />
@@ -27,12 +36,10 @@ export default function AuthPageShell({
             <div className="space-y-3">
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
-                  {mode === 'login' ? 'Sign in to continue' : 'Create your account'}
+                  {resolvedTitle}
                 </h2>
                 <p className="text-sm leading-6 text-slate-600">
-                  {mode === 'login'
-                    ? 'Use Google or your email and password. '
-                    : 'Use Google or email to get started.'}
+                  {resolvedDescription}
                 </p>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import ForgotPasswordForm from './ForgotPasswordForm'
 import LoginForm from './LoginForm'
 import SignupForm from './SignupForm'
 
@@ -109,6 +110,23 @@ describe('auth forms turnstile gating', () => {
     expect(submitButton).toBeDisabled()
 
     await user.click(screen.getByRole('checkbox'))
+    expect(submitButton).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: /reset turnstile/i }))
+    expect(submitButton).toBeDisabled()
+  })
+
+  it('keeps forgot-password disabled until turnstile is verified', async () => {
+    const user = userEvent.setup()
+
+    render(<ForgotPasswordForm />)
+
+    await user.type(screen.getByLabelText('Email'), 'learner@example.com')
+
+    const submitButton = screen.getByRole('button', { name: /send reset link/i })
+    expect(submitButton).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: /verify turnstile/i }))
     expect(submitButton).toBeEnabled()
 
     await user.click(screen.getByRole('button', { name: /reset turnstile/i }))

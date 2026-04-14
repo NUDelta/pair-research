@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { authPageSearchSchema, buildAuthPageHref } from './authSearch'
+import { authPageSearchSchema, buildAuthPageHref, buildResetPasswordHref, resetPasswordSearchSchema } from './authSearch'
 
 describe('authPageSearchSchema', () => {
   it('keeps safe in-app next paths', () => {
@@ -42,5 +42,36 @@ describe('buildAuthPageHref', () => {
       nextPath: '/groups',
       notice: 'check-email',
     })).toBe('/login?email=person%40example.com&next=%2Fgroups&notice=check-email')
+  })
+})
+
+describe('resetPasswordSearchSchema', () => {
+  it('keeps safe next paths and recovery markers', () => {
+    expect(resetPasswordSearchSchema.parse({
+      next: '/groups?view=mine',
+      recovery: '1',
+    })).toEqual({
+      next: '/groups?view=mine',
+      recovery: '1',
+    })
+  })
+
+  it('falls back to /groups for external next paths', () => {
+    expect(resetPasswordSearchSchema.parse({
+      next: 'https://evil.example/reset',
+      recovery: '1',
+    })).toEqual({
+      next: '/groups',
+      recovery: '1',
+    })
+  })
+})
+
+describe('buildResetPasswordHref', () => {
+  it('includes the recovery marker when requested', () => {
+    expect(buildResetPasswordHref({
+      nextPath: '/groups',
+      recovery: true,
+    })).toBe('/reset-password?next=%2Fgroups&recovery=1')
   })
 })

@@ -42,6 +42,7 @@ const LoginForm = ({
     formState: { errors, isValid },
     setError,
     clearErrors,
+    getValues,
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
@@ -104,7 +105,12 @@ const LoginForm = ({
   }
 
   const handleForgotPassword = async () => {
-    toast.warning('Not implemented yet.')
+    await navigate({
+      href: buildAuthPageHref('/forgot-password', {
+        email: getValues('email').trim(),
+        nextPath,
+      }),
+    })
   }
 
   return (

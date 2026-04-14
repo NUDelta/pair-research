@@ -13,6 +13,14 @@ export const authPageSearchSchema = z.object({
   notice: authNoticeSchema.optional(),
 })
 
+export const resetPasswordSearchSchema = z.object({
+  next: z
+    .string()
+    .optional()
+    .transform(value => value === undefined ? undefined : sanitizeRedirectPath(value, '/groups')),
+  recovery: z.enum(['1']).optional(),
+})
+
 interface BuildAuthPageHrefOptions {
   email?: string
   nextPath?: string
@@ -20,7 +28,7 @@ interface BuildAuthPageHrefOptions {
 }
 
 export function buildAuthPageHref(
-  path: '/login' | '/signup',
+  path: '/forgot-password' | '/login' | '/signup',
   options: BuildAuthPageHrefOptions = {},
 ) {
   const searchParams = new URLSearchParams()
@@ -40,4 +48,25 @@ export function buildAuthPageHref(
   return searchParams.size > 0
     ? `${path}?${searchParams.toString()}`
     : path
+}
+
+interface BuildResetPasswordHrefOptions {
+  nextPath?: string
+  recovery?: boolean
+}
+
+export function buildResetPasswordHref(options: BuildResetPasswordHrefOptions = {}) {
+  const searchParams = new URLSearchParams()
+
+  if (options.nextPath !== undefined && options.nextPath !== '') {
+    searchParams.set('next', options.nextPath)
+  }
+
+  if (options.recovery) {
+    searchParams.set('recovery', '1')
+  }
+
+  return searchParams.size > 0
+    ? `/reset-password?${searchParams.toString()}`
+    : '/reset-password'
 }
