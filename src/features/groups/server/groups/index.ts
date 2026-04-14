@@ -1,5 +1,6 @@
 export { acceptGroupInvitation } from './acceptGroupInvitation'
 export { addGroupMember } from './addGroupMember'
+export { bulkUpdateGroupMemberRoles } from './bulkUpdateGroupMemberRoles'
 export { createGroup } from './createGroup'
 export { getGroupSettings } from './getGroupSettings'
 export { getSingleGroup } from './getSingleGroup'

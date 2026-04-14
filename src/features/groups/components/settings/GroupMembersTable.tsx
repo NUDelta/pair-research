@@ -6,7 +6,7 @@ import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-tabl
 import { SlidersHorizontalIcon, Trash2Icon, UsersIcon } from 'lucide-react'
 import { useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { removeGroupMember } from '@/features/groups/server/groups'
+import { bulkUpdateGroupMemberRoles, removeGroupMember } from '@/features/groups/server/groups'
 import { getInitials } from '@/shared/lib/avatar'
 import { DoubleConfirmDialog, Spinner } from '@/shared/ui'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
@@ -23,6 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import AddGroupMemberDialog from './AddGroupMemberDialog'
 import EditGroupMemberDialog from './EditGroupMemberDialog'
@@ -59,10 +60,13 @@ export default function GroupMembersTable({
   members,
   roles,
 }: GroupMembersTableProps) {
+  const bulkUpdateGroupMemberRolesFn = useServerFn(bulkUpdateGroupMemberRoles)
   const router = useRouter()
   const removeGroupMemberFn = useServerFn(removeGroupMember)
+  const [bulkRoleId, setBulkRoleId] = useState(roles[0]?.id ?? '')
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [isBulkUpdatingRole, startBulkUpdateRoleTransition] = useTransition()
   const [isBulkRemoving, startBulkRemoveTransition] = useTransition()
 
   const data = useMemo<GroupMemberTableRow[]>(
@@ -113,7 +117,6 @@ export default function GroupMembersTable({
           <Checkbox
             aria-label={`Select ${row.original.displayName}`}
             checked={row.getIsSelected()}
-            disabled={!row.getCanSelect()}
             onCheckedChange={value => row.toggleSelected(value === true)}
           />
         ),
@@ -176,7 +179,7 @@ export default function GroupMembersTable({
         enableHiding: false,
         header: () => <div className="text-right">Actions</div>,
         cell: ({ row }) => (
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-1">
             <EditGroupMemberDialog
               creatorId={creatorId}
               currentUserId={currentUserId}
@@ -209,13 +212,13 @@ export default function GroupMembersTable({
               }}
               trigger={(
                 <Button
-                  variant="destructive"
-                  size="sm"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove ${row.original.displayName}`}
                   disabled={!row.original.canRemove}
                   title={row.original.removeDisabledReason === null ? undefined : row.original.removeDisabledReason}
                 >
-                  <Trash2Icon data-icon="inline-start" />
-                  Remove
+                  <Trash2Icon />
                 </Button>
               )}
             />
@@ -231,7 +234,6 @@ export default function GroupMembersTable({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: row => row.userId,
-    enableRowSelection: row => row.original.canRemove,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
@@ -241,13 +243,36 @@ export default function GroupMembersTable({
   })
 
   const selectedMembers = table.getSelectedRowModel().rows.map(row => row.original)
+  const selectedRemovableMembers = selectedMembers.filter(member => member.canRemove)
+  const hasNonRemovableSelected = selectedMembers.some(member => !member.canRemove)
+
+  const onBulkRoleUpdate = async () => {
+    startBulkUpdateRoleTransition(async () => {
+      const response = await bulkUpdateGroupMemberRolesFn({
+        data: {
+          groupId,
+          roleId: bulkRoleId,
+          userIds: selectedMembers.map(member => member.userId),
+        },
+      })
+
+      if (!response.success) {
+        toast.error(response.message)
+        return
+      }
+
+      toast.success(response.message)
+      setRowSelection({})
+      await router.invalidate()
+    })
+  }
 
   const onBulkRemove = async () => {
     startBulkRemoveTransition(async () => {
       let removedCount = 0
       const failures: string[] = []
 
-      for (const member of selectedMembers) {
+      for (const member of selectedRemovableMembers) {
         const response = await removeGroupMemberFn({
           data: {
             groupId,
@@ -343,30 +368,63 @@ export default function GroupMembersTable({
               </span>
               <span className="text-sm text-muted-foreground">
                 {selectedMembers.length > 0
-                  ? `${selectedMembers.length} removable ${selectedMembers.length === 1 ? 'member' : 'members'} selected`
+                  ? `${selectedMembers.length} ${selectedMembers.length === 1 ? 'member' : 'members'} selected for bulk actions`
                   : 'Use row selection for bulk management.'}
               </span>
             </div>
           </div>
-          <DoubleConfirmDialog
-            title={`Remove ${selectedMembers.length} selected ${selectedMembers.length === 1 ? 'member' : 'members'}?`}
-            description="This removes the selected invitations or members using the same server-side safety rules as row-level removal."
-            confirmText="Remove selected"
-            pendingText="Removing members..."
-            onConfirm={onBulkRemove}
-            trigger={(
-              <Button variant="destructive" disabled={selectedMembers.length === 0 || isBulkRemoving}>
-                {isBulkRemoving
-                  ? <Spinner text="Removing..." />
-                  : (
-                      <>
-                        <Trash2Icon data-icon="inline-start" />
-                        Remove selected
-                      </>
-                    )}
-              </Button>
-            )}
-          />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Select value={bulkRoleId} onValueChange={setBulkRoleId}>
+              <SelectTrigger className="w-[220px]" aria-label="Bulk role selection">
+                <SelectValue placeholder="Choose a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {roles.map(role => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              disabled={selectedMembers.length === 0 || bulkRoleId.length === 0 || isBulkUpdatingRole}
+              onClick={() => {
+                void onBulkRoleUpdate()
+              }}
+            >
+              {isBulkUpdatingRole
+                ? <Spinner text="Updating roles..." />
+                : 'Apply role'}
+            </Button>
+            <DoubleConfirmDialog
+              title={`Remove ${selectedRemovableMembers.length} selected ${selectedRemovableMembers.length === 1 ? 'member' : 'members'}?`}
+              description={hasNonRemovableSelected
+                ? 'Some selected members cannot be removed because of creator, self-removal, or active pairing rules. Adjust the selection before removing members.'
+                : 'This removes the selected invitations or members using the same server-side safety rules as row-level removal.'}
+              confirmText="Remove selected"
+              pendingText="Removing members..."
+              onConfirm={onBulkRemove}
+              trigger={(
+                <Button
+                  variant="outline"
+                  disabled={selectedMembers.length === 0 || hasNonRemovableSelected || isBulkRemoving}
+                  title={hasNonRemovableSelected ? 'Only fully removable selections can be bulk removed.' : undefined}
+                >
+                  {isBulkRemoving
+                    ? <Spinner text="Removing..." />
+                    : (
+                        <>
+                          <Trash2Icon data-icon="inline-start" />
+                          Remove selected
+                        </>
+                      )}
+                </Button>
+              )}
+            />
+          </div>
         </div>
 
         <Table>

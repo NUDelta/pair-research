@@ -45,6 +45,12 @@ export const updateGroupMemberSchema = z.object({
   isAdmin: z.boolean(),
 })
 
+export const bulkUpdateGroupMemberRolesSchema = z.object({
+  groupId: groupIdSchema,
+  userIds: z.array(userIdSchema).min(1, 'Select at least one member').max(100, 'Select at most 100 members at a time'),
+  roleId: roleIdSchema,
+})
+
 export const removeGroupMemberSchema = z.object({
   groupId: groupIdSchema,
   userId: userIdSchema,

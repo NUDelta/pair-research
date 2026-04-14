@@ -20,6 +20,11 @@ interface MemberRemovalRuleInput {
   targetUserId: string
 }
 
+interface BulkMemberRoleUpdateRuleInput {
+  members: GroupManagementMember[]
+  targetUserIds: string[]
+}
+
 export function countConfirmedAdmins(members: GroupManagementMember[]) {
   return members.filter(member => member.isAdmin && !member.isPending).length
 }
@@ -74,6 +79,23 @@ export function getMemberRemovalError({
 
   if (hasActivePairing && !targetMember.isPending) {
     return 'Reset the active pairing before removing a confirmed member.'
+  }
+
+  return null
+}
+
+export function getBulkMemberRoleUpdateError({
+  members,
+  targetUserIds,
+}: BulkMemberRoleUpdateRuleInput): string | null {
+  if (targetUserIds.length === 0) {
+    return 'Select at least one member to update.'
+  }
+
+  const memberIds = new Set(members.map(member => member.userId))
+
+  if (targetUserIds.some(userId => !memberIds.has(userId))) {
+    return 'One or more selected members are no longer in this group.'
   }
 
   return null
