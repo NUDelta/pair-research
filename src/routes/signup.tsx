@@ -1,11 +1,19 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import AuthEmailStatusNotice from '@/features/auth/components/AuthEmailStatusNotice'
 import AuthPageShell from '@/features/auth/components/AuthPageShell'
 import SignupForm from '@/features/auth/components/SignupForm'
 import { authPageSearchSchema, buildAuthPageHref } from '@/features/auth/schemas/authSearch'
+import { getCurrentUser } from '@/features/auth/server'
 
 export const Route = createFileRoute('/signup')({
   validateSearch: search => authPageSearchSchema.parse(search),
+  beforeLoad: async ({ search }) => {
+    const user = await getCurrentUser()
+
+    if (user) {
+      throw redirect({ href: search.next ?? '/groups' })
+    }
+  },
   head: () => ({
     meta: [{ title: 'Sign up | Pair Research' }],
   }),
