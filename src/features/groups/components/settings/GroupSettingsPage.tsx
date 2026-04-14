@@ -1,6 +1,13 @@
 import type { GroupSettingsData } from './types'
 import { Link } from '@tanstack/react-router'
-import { ArrowLeftIcon, FolderCogIcon, Settings2Icon, ShieldCheckIcon, UsersIcon } from 'lucide-react'
+import {
+  ArrowLeftIcon,
+  FolderCogIcon,
+  KeyRoundIcon,
+  Settings2Icon,
+  ShieldCheckIcon,
+  UsersIcon,
+} from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -17,7 +24,7 @@ interface GroupSettingsPageProps {
 export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) {
   const confirmedMembers = settings.members.filter(member => !member.isPending)
   const adminMembers = confirmedMembers.filter(member => member.isAdmin)
-  const [activeSection, setActiveSection] = useState<'general' | 'members'>('general')
+  const [activeSection, setActiveSection] = useState<'general' | 'members' | 'roles'>('general')
   const sections = [
     {
       value: 'general' as const,
@@ -30,6 +37,12 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
       title: 'Members',
       description: 'Invite people and manage access',
       icon: UsersIcon,
+    },
+    {
+      value: 'roles' as const,
+      title: 'Roles',
+      description: 'Manage role definitions and assignments',
+      icon: KeyRoundIcon,
     },
   ]
 
@@ -59,19 +72,19 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
       <Tabs
         value={activeSection}
         onValueChange={(value) => {
-          if (value === 'general' || value === 'members') {
+          if (value === 'general' || value === 'members' || value === 'roles') {
             setActiveSection(value)
           }
         }}
         orientation="vertical"
-        className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]"
+        className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]"
       >
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Settings</CardTitle>
               <CardDescription>
-                Navigate between the group management sections.
+                Navigate between the management sections for this group workspace.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -107,7 +120,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <div className="grid gap-3">
+              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                 <div className="rounded-lg border p-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <UsersIcon />
@@ -121,6 +134,13 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
                     Admins
                   </div>
                   <p className="mt-2 text-2xl font-semibold">{adminMembers.length}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <KeyRoundIcon />
+                    Roles
+                  </div>
+                  <p className="mt-2 text-2xl font-semibold">{settings.roles.length}</p>
                 </div>
               </div>
               <Separator />
@@ -148,9 +168,25 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
 
         <div className="min-w-0">
           <TabsContent value="general" className="mt-0 flex flex-col gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>General</CardTitle>
+                <CardDescription>
+                  Update the shared group profile and naming used across the app.
+                </CardDescription>
+              </CardHeader>
+            </Card>
             <GroupBasicsFormCard group={settings.group} />
           </TabsContent>
           <TabsContent value="members" className="mt-0 flex flex-col gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Members</CardTitle>
+                <CardDescription>
+                  Manage membership, invitations, access levels, and bulk updates.
+                </CardDescription>
+              </CardHeader>
+            </Card>
             <GroupMembersTable
               creatorId={settings.group.creatorId}
               currentUserId={settings.currentUserId}
@@ -159,6 +195,21 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
               members={settings.members}
               roles={settings.roles}
             />
+          </TabsContent>
+          <TabsContent value="roles" className="mt-0 flex flex-col gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Roles</CardTitle>
+                <CardDescription>
+                  Create, rename, and retire role definitions used by group members.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  Role management will live here as a first-class section of the settings workspace.
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </div>
       </Tabs>
