@@ -5,6 +5,7 @@ const baseURLFromEnv = process.env.PLAYWRIGHT_BASE_URL
 const isCI = process.env.CI != null && process.env.CI !== ''
 const hasExternalBaseURL = baseURLFromEnv != null && baseURLFromEnv !== ''
 const baseURL = baseURLFromEnv ?? `http://127.0.0.1:${port}`
+const reuseExistingServer = process.env.PLAYWRIGHT_REUSE_EXISTING_SERVER === '1'
 
 export default defineConfig({
   testDir: './e2e',
@@ -28,7 +29,7 @@ export default defineConfig({
     : {
         command: 'pnpm dev:e2e',
         url: baseURL,
-        reuseExistingServer: !isCI,
+        reuseExistingServer: !isCI && reuseExistingServer,
         timeout: 120000,
       },
   projects: [
