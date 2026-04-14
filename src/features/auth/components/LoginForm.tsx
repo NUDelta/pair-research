@@ -75,8 +75,9 @@ const LoginForm = ({
           setPendingConfirmationEmail(null)
           await onAuthSuccess?.()
           await router.invalidate()
-          toast.success(result.message)
-          await navigate({ href: sanitizeRedirectPath(nextPath, '/groups') })
+          const redirectUrl = new URL(sanitizeRedirectPath(nextPath, '/groups'), globalThis.location.origin)
+          redirectUrl.searchParams.set('from', 'auth-login')
+          globalThis.location.assign(redirectUrl.toString())
         }
         else {
           turnstileRef.current?.reset()

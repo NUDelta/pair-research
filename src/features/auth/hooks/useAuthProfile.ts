@@ -2,6 +2,7 @@ import { useServerFn } from '@tanstack/react-start'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { getOrCreateProfile } from '@/features/account/server/getOrCreateProfile'
+import { getAuthProfileSnapshot } from '@/features/auth/lib/authProfile'
 import { createClient } from '@/shared/supabase/client'
 import { isAuthFeedbackSource } from '../lib/authFeedback'
 import { getBrowserE2EAuthMode, isE2EAnonymousAuthMode, isMissingSupabaseSessionError } from '../lib/e2eAuth'
@@ -59,6 +60,9 @@ export const useAuthProfile = (
       if (from === 'auth-callback') {
         toast.success('Logged in successfully')
       }
+      if (from === 'auth-login') {
+        toast.success('Logged in successfully')
+      }
       if (from === 'auth-confirm') {
         toast.success('Email verified successfully')
       }
@@ -76,8 +80,15 @@ export const useAuthProfile = (
         return
       }
 
-      const result = await getOrCreateProfileFn()
-      setProfile(result)
+      try {
+        const result = await getOrCreateProfileFn()
+        setProfile(result)
+      }
+      catch (profileError) {
+        console.error('Failed to fetch server profile, falling back to auth metadata:', profileError)
+        setProfile(getAuthProfileSnapshot(user))
+      }
+
       setUserLoggedIn(true)
     }
     catch (error_) {

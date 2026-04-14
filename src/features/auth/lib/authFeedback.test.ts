@@ -5,6 +5,7 @@ describe('isAuthFeedbackSource', () => {
   it('accepts auth callback markers owned by the auth flow', () => {
     expect(isAuthFeedbackSource('auth-callback')).toBe(true)
     expect(isAuthFeedbackSource('auth-confirm')).toBe(true)
+    expect(isAuthFeedbackSource('auth-login')).toBe(true)
   })
 
   it('rejects unrelated route context markers', () => {

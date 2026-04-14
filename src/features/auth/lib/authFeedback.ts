@@ -1,4 +1,4 @@
-export const AUTH_FEEDBACK_SOURCES = ['auth-callback', 'auth-confirm'] as const
+export const AUTH_FEEDBACK_SOURCES = ['auth-callback', 'auth-confirm', 'auth-login'] as const
 
 export type AuthFeedbackSource = (typeof AUTH_FEEDBACK_SOURCES)[number]
 
