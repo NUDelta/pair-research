@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { getSupabasePublicEnv } from '@/shared/config/env'
 
-const supabaseUrlSchema = z.url().nonempty()
+const supabaseUrlSchema = z.string().url().nonempty()
 const supabaseSecretKeySchema = z.string().nonempty()
 
 export const createServiceRoleSupabase = () => {

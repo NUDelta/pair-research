@@ -19,6 +19,8 @@ import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
 import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
 import { Route as AuthedGroupsCreateRouteImport } from './routes/_authed/groups/create'
 import { Route as AuthedGroupsSlugRouteImport } from './routes/_authed/groups/$slug'
+import { Route as AuthedGroupsSlugIndexRouteImport } from './routes/_authed/groups/$slug/index'
+import { Route as AuthedGroupsSlugSettingsRouteImport } from './routes/_authed/groups/$slug/settings'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -69,6 +71,17 @@ const AuthedGroupsSlugRoute = AuthedGroupsSlugRouteImport.update({
   path: '/groups/$slug',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedGroupsSlugIndexRoute = AuthedGroupsSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedGroupsSlugRoute,
+} as any)
+const AuthedGroupsSlugSettingsRoute =
+  AuthedGroupsSlugSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthedGroupsSlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -77,9 +90,11 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthedAccountRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/confirm': typeof AuthConfirmRoute
-  '/groups/$slug': typeof AuthedGroupsSlugRoute
+  '/groups/$slug': typeof AuthedGroupsSlugRouteWithChildren
   '/groups/create': typeof AuthedGroupsCreateRoute
   '/groups/': typeof AuthedGroupsIndexRoute
+  '/groups/$slug/settings': typeof AuthedGroupsSlugSettingsRoute
+  '/groups/$slug/': typeof AuthedGroupsSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -88,9 +103,10 @@ export interface FileRoutesByTo {
   '/account': typeof AuthedAccountRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/confirm': typeof AuthConfirmRoute
-  '/groups/$slug': typeof AuthedGroupsSlugRoute
   '/groups/create': typeof AuthedGroupsCreateRoute
   '/groups': typeof AuthedGroupsIndexRoute
+  '/groups/$slug/settings': typeof AuthedGroupsSlugSettingsRoute
+  '/groups/$slug': typeof AuthedGroupsSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,9 +117,11 @@ export interface FileRoutesById {
   '/_authed/account': typeof AuthedAccountRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/confirm': typeof AuthConfirmRoute
-  '/_authed/groups/$slug': typeof AuthedGroupsSlugRoute
+  '/_authed/groups/$slug': typeof AuthedGroupsSlugRouteWithChildren
   '/_authed/groups/create': typeof AuthedGroupsCreateRoute
   '/_authed/groups/': typeof AuthedGroupsIndexRoute
+  '/_authed/groups/$slug/settings': typeof AuthedGroupsSlugSettingsRoute
+  '/_authed/groups/$slug/': typeof AuthedGroupsSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +135,8 @@ export interface FileRouteTypes {
     | '/groups/$slug'
     | '/groups/create'
     | '/groups/'
+    | '/groups/$slug/settings'
+    | '/groups/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -125,9 +145,10 @@ export interface FileRouteTypes {
     | '/account'
     | '/auth/callback'
     | '/auth/confirm'
-    | '/groups/$slug'
     | '/groups/create'
     | '/groups'
+    | '/groups/$slug/settings'
+    | '/groups/$slug'
   id:
     | '__root__'
     | '/'
@@ -140,6 +161,8 @@ export interface FileRouteTypes {
     | '/_authed/groups/$slug'
     | '/_authed/groups/create'
     | '/_authed/groups/'
+    | '/_authed/groups/$slug/settings'
+    | '/_authed/groups/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,19 +246,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsSlugRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/groups/$slug/': {
+      id: '/_authed/groups/$slug/'
+      path: '/'
+      fullPath: '/groups/$slug/'
+      preLoaderRoute: typeof AuthedGroupsSlugIndexRouteImport
+      parentRoute: typeof AuthedGroupsSlugRoute
+    }
+    '/_authed/groups/$slug/settings': {
+      id: '/_authed/groups/$slug/settings'
+      path: '/settings'
+      fullPath: '/groups/$slug/settings'
+      preLoaderRoute: typeof AuthedGroupsSlugSettingsRouteImport
+      parentRoute: typeof AuthedGroupsSlugRoute
+    }
   }
 }
 
+interface AuthedGroupsSlugRouteChildren {
+  AuthedGroupsSlugSettingsRoute: typeof AuthedGroupsSlugSettingsRoute
+  AuthedGroupsSlugIndexRoute: typeof AuthedGroupsSlugIndexRoute
+}
+
+const AuthedGroupsSlugRouteChildren: AuthedGroupsSlugRouteChildren = {
+  AuthedGroupsSlugSettingsRoute: AuthedGroupsSlugSettingsRoute,
+  AuthedGroupsSlugIndexRoute: AuthedGroupsSlugIndexRoute,
+}
+
+const AuthedGroupsSlugRouteWithChildren =
+  AuthedGroupsSlugRoute._addFileChildren(AuthedGroupsSlugRouteChildren)
+
 interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRoute
-  AuthedGroupsSlugRoute: typeof AuthedGroupsSlugRoute
+  AuthedGroupsSlugRoute: typeof AuthedGroupsSlugRouteWithChildren
   AuthedGroupsCreateRoute: typeof AuthedGroupsCreateRoute
   AuthedGroupsIndexRoute: typeof AuthedGroupsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccountRoute: AuthedAccountRoute,
-  AuthedGroupsSlugRoute: AuthedGroupsSlugRoute,
+  AuthedGroupsSlugRoute: AuthedGroupsSlugRouteWithChildren,
   AuthedGroupsCreateRoute: AuthedGroupsCreateRoute,
   AuthedGroupsIndexRoute: AuthedGroupsIndexRoute,
 }

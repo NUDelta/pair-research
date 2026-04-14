@@ -23,7 +23,9 @@ export const useAuthProfile = (
 
   const setLoggedOut = useCallback(() => {
     setUserLoggedIn(false)
+    // eslint-disable-next-line react/set-state-in-effect
     setProfile(emptyProfile)
+    // eslint-disable-next-line react/set-state-in-effect
     setLoading(false)
   }, [setUserLoggedIn])
 

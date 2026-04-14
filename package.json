@@ -42,6 +42,7 @@
     "@tanstack/devtools-vite": "^0.6.0",
     "@tanstack/react-router": "^1.168.18",
     "@tanstack/react-start": "^1.167.32",
+    "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "immer": "^11.1.4",
@@ -52,7 +53,7 @@
     "react-hook-form": "^7.72.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
-    "zod": "^4.3.6"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^8.1.1",
@@ -86,6 +87,11 @@
     "**/*.{js,jsx,ts,tsx,json,yml,md,mdx,css,html}": [
       "eslint --fix"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "zod": "^3.25.76"
+    }
   },
   "browserslist": {
     "production": [

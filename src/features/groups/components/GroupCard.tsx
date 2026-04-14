@@ -63,15 +63,18 @@ const GroupCard = ({
             <Button
               variant="ghost"
               size="icon"
+              type="button"
               onClick={(event_) => {
                 event_.preventDefault()
                 event_.stopPropagation()
-                toast.warning('Settings feature is not implemented yet.')
+                void router.navigate({
+                  to: '/groups/$slug/settings',
+                  params: { slug: group.id },
+                })
               }}
               aria-label="Settings"
             >
-              {/* TODO: implement setting features here */}
-              <Settings className="h-4 w-4" aria-hidden="true" />
+              <Settings aria-hidden="true" />
             </Button>
           )}
         </CardHeader>
