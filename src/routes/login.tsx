@@ -12,16 +12,20 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
-  const { next } = Route.useSearch()
+  const { email, next, notice } = Route.useSearch()
 
   return (
     <AuthPageShell
       mode="login"
       alternatePrompt="Need an account?"
       alternateLabel="Create one"
-      alternateHref={buildAuthPageHref('/signup', next)}
+      alternateHref={buildAuthPageHref('/signup', { email, nextPath: next })}
     >
-      <LoginForm nextPath={next} />
+      <LoginForm
+        defaultEmail={email}
+        nextPath={next}
+        notice={notice}
+      />
     </AuthPageShell>
   )
 }

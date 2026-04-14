@@ -3,23 +3,25 @@ import type { TurnstileFieldHandle } from '@/shared/turnstile/TurnstileField'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { CheckCircle2, LoaderCircle, Mail } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 import { useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
 import { signupFormSchema } from '@/features/auth/schemas/auth'
+import { buildAuthPageHref } from '@/features/auth/schemas/authSearch'
 import { signup } from '@/features/auth/server'
 import { TURNSTILE_ERROR_CODES } from '@/shared/turnstile/constants'
 import TurnstileField from '@/shared/turnstile/TurnstileField'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Label } from '@/shared/ui/label'
+import AuthEmailStatusNotice from './AuthEmailStatusNotice'
 import AuthField from './AuthField'
 import { OAuthButton } from './OAuthButton'
 
 interface SignupFormProps {
-  loginHref?: string
+  defaultEmail?: string
   nextPath?: string
   onAuthSuccess?: () => Promise<void> | void
 }
@@ -29,7 +31,7 @@ type SignupFormInput = SignupFormValues & {
 }
 
 const SignupForm = ({
-  loginHref = '/login',
+  defaultEmail = '',
   nextPath = '/groups',
   onAuthSuccess,
 }: SignupFormProps) => {
@@ -48,7 +50,7 @@ const SignupForm = ({
     mode: 'onChange',
     defaultValues: {
       name: '',
-      email: '',
+      email: defaultEmail,
       password: '',
       confirmPassword: '',
       agreeToTerms: false,
@@ -122,40 +124,16 @@ const SignupForm = ({
 
   if (pendingConfirmationEmail !== null) {
     return (
-      <div className="space-y-5 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/90 p-5 text-slate-900">
-        <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-emerald-500/12 p-3 text-emerald-700">
-            <CheckCircle2 className="size-5" aria-hidden="true" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">
-              Check your inbox
-            </h3>
-            <p className="text-sm leading-6 text-slate-700">
-              We sent a confirmation link to
-              {' '}
-              <span className="font-semibold">{pendingConfirmationEmail}</span>
-              . Confirm your email, then come back to sign in.
-            </p>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-emerald-200 bg-white/70 p-4 text-sm leading-6 text-slate-700">
-          <div className="flex items-center gap-2 font-medium text-slate-900">
-            <Mail className="size-4 text-emerald-700" aria-hidden="true" />
-            Next step
-          </div>
-          <p className="mt-2">
-            If the message does not show up in a minute, check spam or retry sign up with the same email.
-          </p>
-        </div>
-
-        <Button asChild className="h-12 w-full rounded-xl text-sm font-semibold">
-          <a href={loginHref}>
-            Go to sign in
-          </a>
-        </Button>
-      </div>
+      <AuthEmailStatusNotice
+        actionHref={buildAuthPageHref('/login', {
+          email: pendingConfirmationEmail,
+          nextPath,
+          notice: 'check-email',
+        })}
+        actionLabel="Go to sign in"
+        email={pendingConfirmationEmail}
+        variant="check-email"
+      />
     )
   }
 

@@ -1,45 +1,57 @@
 import type { LoginValues } from '@/features/auth/schemas/auth'
+import type { AuthNotice } from '@/features/auth/schemas/authSearch'
 import type { TurnstileFieldHandle } from '@/shared/turnstile/TurnstileField'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { LoaderCircle } from 'lucide-react'
-import { useRef, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
+import { LOGIN_ERROR_CODES } from '@/features/auth/lib/loginResponse'
 import { loginSchema } from '@/features/auth/schemas/auth'
+import { buildAuthPageHref } from '@/features/auth/schemas/authSearch'
 import { login } from '@/features/auth/server'
 import { TURNSTILE_ERROR_CODES } from '@/shared/turnstile/constants'
 import TurnstileField from '@/shared/turnstile/TurnstileField'
 import { Button } from '@/shared/ui/button'
+import AuthEmailStatusNotice from './AuthEmailStatusNotice'
 import AuthField from './AuthField'
 import { OAuthButton } from './OAuthButton'
 
 interface LoginFormProps {
+  defaultEmail?: string
   nextPath?: string
+  notice?: AuthNotice
   onAuthSuccess?: () => Promise<void> | void
 }
 
 const LoginForm = ({
+  defaultEmail = '',
   nextPath = '/groups',
+  notice,
   onAuthSuccess,
 }: LoginFormProps) => {
   const turnstileRef = useRef<TurnstileFieldHandle>(null)
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
     formState: { errors, isValid },
     setError,
+    clearErrors,
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: defaultEmail, password: '' },
   })
   const loginFn = useServerFn(login)
   const [isPending, startTransition] = useTransition()
   const navigate = useNavigate()
   const router = useRouter()
+  const activeNoticeVariant = pendingConfirmationEmail !== null ? 'check-email' : notice
+  const activeNoticeEmail = pendingConfirmationEmail ?? defaultEmail
 
   const onSubmit = async (values: LoginValues) => {
     const turnstileToken = await turnstileRef.current?.ensureToken()
@@ -58,6 +70,7 @@ const LoginForm = ({
         })
 
         if (result.success) {
+          setPendingConfirmationEmail(null)
           await onAuthSuccess?.()
           await router.invalidate()
           toast.success(result.message)
@@ -65,9 +78,17 @@ const LoginForm = ({
         }
         else {
           turnstileRef.current?.reset()
+          if (result.code === LOGIN_ERROR_CODES.emailNotConfirmed) {
+            setPendingConfirmationEmail(values.email.trim())
+            clearErrors('root')
+            toast.warning('Confirm your email to finish signing in.')
+            return
+          }
+
           if (result.code === TURNSTILE_ERROR_CODES.failed || result.code === TURNSTILE_ERROR_CODES.required) {
             turnstileRef.current?.requireInteractiveChallenge(result.message)
           }
+          setPendingConfirmationEmail(null)
           toast.error(result.message)
           setError('root', { message: result.message })
         }
@@ -87,6 +108,20 @@ const LoginForm = ({
 
   return (
     <div className="space-y-5">
+      {activeNoticeVariant !== undefined && (
+        <AuthEmailStatusNotice
+          actionHref={activeNoticeVariant === 'check-email'
+            ? buildAuthPageHref('/signup', {
+                email: activeNoticeEmail,
+                nextPath,
+                notice: 'check-email',
+              })
+            : undefined}
+          email={activeNoticeEmail}
+          variant={activeNoticeVariant}
+        />
+      )}
+
       <OAuthButton nextPath={nextPath} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

@@ -8,6 +8,18 @@ describe('authPageSearchSchema', () => {
     })
   })
 
+  it('keeps email and notice state for auth notices', () => {
+    expect(authPageSearchSchema.parse({
+      email: 'person@example.com',
+      next: '/groups',
+      notice: 'check-email',
+    })).toEqual({
+      email: 'person@example.com',
+      next: '/groups',
+      notice: 'check-email',
+    })
+  })
+
   it('falls back to /groups for external next paths', () => {
     expect(authPageSearchSchema.parse({ next: 'https://evil.example/login' })).toEqual({
       next: '/groups',
@@ -21,6 +33,14 @@ describe('buildAuthPageHref', () => {
   })
 
   it('preserves next when building auth links', () => {
-    expect(buildAuthPageHref('/signup', '/groups/my-group')).toBe('/signup?next=%2Fgroups%2Fmy-group')
+    expect(buildAuthPageHref('/signup', { nextPath: '/groups/my-group' })).toBe('/signup?next=%2Fgroups%2Fmy-group')
+  })
+
+  it('includes notice state when building login links', () => {
+    expect(buildAuthPageHref('/login', {
+      email: 'person@example.com',
+      nextPath: '/groups',
+      notice: 'check-email',
+    })).toBe('/login?email=person%40example.com&next=%2Fgroups&notice=check-email')
   })
 })

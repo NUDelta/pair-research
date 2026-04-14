@@ -52,6 +52,13 @@ export const useAuthProfile = (
         toast.error(error)
       }
 
+      if (from === 'auth-callback') {
+        toast.success('Logged in successfully')
+      }
+      if (from === 'auth-confirm') {
+        toast.success('Email verified successfully')
+      }
+
       const {
         data: { user },
         error: userError,
@@ -63,13 +70,6 @@ export const useAuthProfile = (
           throw new Error(userError.message)
         }
         return
-      }
-
-      if (from === 'auth-callback') {
-        toast.success('Logged in successfully')
-      }
-      if (from === 'auth-confirm') {
-        toast.success('Email confirmed successfully')
       }
 
       const result = await getOrCreateProfileFn()
