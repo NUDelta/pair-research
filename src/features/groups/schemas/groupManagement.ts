@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const groupNameRegex = /^[\p{L}\p{N}_\- ]+$/u
 const groupDescriptionRegex = /^[^<>]*$/
+const roleTitleRegex = /^[\p{L}\p{N}_\- ]+$/u
 
 const groupIdSchema = z.string().uuid('Group ID must be a valid UUID')
 const userIdSchema = z.string().uuid('User ID must be a valid UUID')
@@ -19,6 +20,10 @@ const groupNameSchema = z.string().trim().min(2, 'Group name is required').max(5
 const groupDescriptionSchema = z.string().trim().max(500, 'Group description must be less than 500 characters').refine(
   description => description.length === 0 || (description.length >= 5 && groupDescriptionRegex.test(description)),
   'Group description must be 5–500 characters and contain valid characters',
+)
+const roleTitleSchema = z.string().trim().min(2, 'Role title is required').max(50, 'Role title must be less than 50 characters').regex(
+  roleTitleRegex,
+  'Role title can only contain letters, numbers, underscores, hyphens, and spaces',
 )
 
 export const groupSettingsParamsSchema = z.object({
@@ -49,6 +54,17 @@ export const bulkUpdateGroupMemberRolesSchema = z.object({
   groupId: groupIdSchema,
   userIds: z.array(userIdSchema).min(1, 'Select at least one member').max(100, 'Select at most 100 members at a time'),
   roleId: roleIdSchema,
+})
+
+export const createGroupRoleSchema = z.object({
+  groupId: groupIdSchema,
+  title: roleTitleSchema,
+})
+
+export const updateGroupRoleSchema = z.object({
+  groupId: groupIdSchema,
+  roleId: roleIdSchema,
+  title: roleTitleSchema,
 })
 
 export const removeGroupMemberSchema = z.object({

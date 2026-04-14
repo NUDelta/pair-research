@@ -16,6 +16,7 @@ import { Separator } from '@/shared/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import GroupBasicsFormCard from './GroupBasicsFormCard'
 import GroupMembersTable from './GroupMembersTable'
+import GroupRolesSection from './GroupRolesSection'
 
 interface GroupSettingsPageProps {
   settings: GroupSettingsData
@@ -204,12 +205,12 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
                   Create, rename, and retire role definitions used by group members.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                  Role management will live here as a first-class section of the settings workspace.
-                </div>
-              </CardContent>
             </Card>
+            <GroupRolesSection
+              groupId={settings.group.id}
+              members={settings.members}
+              roles={settings.roles}
+            />
           </TabsContent>
         </div>
       </Tabs>
