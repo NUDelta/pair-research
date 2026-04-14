@@ -67,6 +67,12 @@ export const updateGroupRoleSchema = z.object({
   title: roleTitleSchema,
 })
 
+export const deleteGroupRoleSchema = z.object({
+  groupId: groupIdSchema,
+  roleId: roleIdSchema,
+  replacementRoleId: roleIdSchema.optional(),
+})
+
 export const removeGroupMemberSchema = z.object({
   groupId: groupIdSchema,
   userId: userIdSchema,

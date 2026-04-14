@@ -25,6 +25,13 @@ interface BulkMemberRoleUpdateRuleInput {
   targetUserIds: string[]
 }
 
+interface GroupRoleDeleteRuleInput {
+  members: Array<{ roleId: string }>
+  replacementRoleId?: string
+  roleIds: string[]
+  targetRoleId: string
+}
+
 export function countConfirmedAdmins(members: GroupManagementMember[]) {
   return members.filter(member => member.isAdmin && !member.isPending).length
 }
@@ -96,6 +103,41 @@ export function getBulkMemberRoleUpdateError({
 
   if (targetUserIds.some(userId => !memberIds.has(userId))) {
     return 'One or more selected members are no longer in this group.'
+  }
+
+  return null
+}
+
+export function getGroupRoleDeleteError({
+  members,
+  replacementRoleId,
+  roleIds,
+  targetRoleId,
+}: GroupRoleDeleteRuleInput): string | null {
+  if (!roleIds.includes(targetRoleId)) {
+    return 'Role not found.'
+  }
+
+  if (roleIds.length <= 1) {
+    return 'Create another role before deleting the last remaining role.'
+  }
+
+  const assignedMemberCount = members.filter(member => member.roleId === targetRoleId).length
+
+  if (assignedMemberCount === 0) {
+    return null
+  }
+
+  if (replacementRoleId === undefined) {
+    return 'Choose a replacement role for members assigned to this role.'
+  }
+
+  if (replacementRoleId === targetRoleId) {
+    return 'Choose a different replacement role.'
+  }
+
+  if (!roleIds.includes(replacementRoleId)) {
+    return 'Replacement role not found.'
   }
 
   return null

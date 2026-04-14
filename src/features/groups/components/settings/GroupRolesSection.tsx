@@ -1,11 +1,11 @@
 import type { GroupSettingsMember, GroupSettingsRole } from './types'
-import { KeyRoundIcon, Trash2Icon, UsersIcon } from 'lucide-react'
+import { KeyRoundIcon, UsersIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import CreateGroupRoleDialog from './CreateGroupRoleDialog'
+import DeleteGroupRoleDialog from './DeleteGroupRoleDialog'
 import EditGroupRoleDialog from './EditGroupRoleDialog'
 
 interface GroupRolesSectionProps {
@@ -109,10 +109,12 @@ export default function GroupRolesSection({
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <EditGroupRoleDialog groupId={groupId} role={role} />
-                        <Button variant="outline" size="sm" disabled title="Role deletion with reassignment is added next.">
-                          <Trash2Icon data-icon="inline-start" />
-                          Delete
-                        </Button>
+                        <DeleteGroupRoleDialog
+                          assignedMemberCount={role.assignedMemberCount}
+                          groupId={groupId}
+                          role={role}
+                          roles={roles}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
