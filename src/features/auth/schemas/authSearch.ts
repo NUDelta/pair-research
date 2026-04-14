@@ -18,7 +18,10 @@ export const resetPasswordSearchSchema = z.object({
     .string()
     .optional()
     .transform(value => value === undefined ? undefined : sanitizeRedirectPath(value, '/groups')),
-  recovery: z.enum(['1']).optional(),
+  recovery: z
+    .union([z.literal('1'), z.literal(1)])
+    .transform(() => '1' as const)
+    .optional(),
 })
 
 interface BuildAuthPageHrefOptions {

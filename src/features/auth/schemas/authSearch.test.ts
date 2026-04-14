@@ -56,6 +56,16 @@ describe('resetPasswordSearchSchema', () => {
     })
   })
 
+  it('normalizes numeric recovery markers from TanStack search parsing', () => {
+    expect(resetPasswordSearchSchema.parse({
+      next: '/groups',
+      recovery: 1,
+    })).toEqual({
+      next: '/groups',
+      recovery: '1',
+    })
+  })
+
   it('falls back to /groups for external next paths', () => {
     expect(resetPasswordSearchSchema.parse({
       next: 'https://evil.example/reset',
