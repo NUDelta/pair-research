@@ -1,5 +1,5 @@
-import type { GroupSettingsMember, GroupSettingsRole } from './types'
-import { KeyRoundIcon, UsersIcon } from 'lucide-react'
+import type { GroupSettingsMember, GroupSettingsRole } from '../types'
+import { UsersIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -50,26 +50,6 @@ export default function GroupRolesSection({
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full border p-2">
-              <KeyRoundIcon className="text-muted-foreground" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">
-                {roles.length}
-                {' '}
-                configured
-                {' '}
-                {roles.length === 1 ? 'role' : 'roles'}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                Keep titles clear and distinct so assignments stay readable.
-              </span>
-            </div>
-          </div>
-        </div>
-
         <Table>
           <TableHeader>
             <TableRow>

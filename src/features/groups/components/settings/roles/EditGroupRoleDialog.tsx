@@ -1,5 +1,5 @@
 import type { infer as Infer } from 'zod'
-import type { GroupSettingsRole } from './types'
+import type { GroupSettingsRole } from '../types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'

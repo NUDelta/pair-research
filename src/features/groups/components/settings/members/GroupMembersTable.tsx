@@ -1,5 +1,5 @@
 import type { ColumnDef, RowSelectionState, VisibilityState } from '@tanstack/react-table'
-import type { GroupSettingsMember, GroupSettingsRole } from './types'
+import type { GroupSettingsMember, GroupSettingsRole } from '../types'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
@@ -133,9 +133,8 @@ export default function GroupMembersTable({
               />
               <AvatarFallback>{getInitials(row.original.fullName ?? row.original.email)}</AvatarFallback>
             </Avatar>
-            <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex min-w-0">
               <span className="truncate font-medium">{row.original.displayName}</span>
-              <span className="truncate text-sm text-muted-foreground">{row.original.email}</span>
             </div>
           </div>
         ),
@@ -161,10 +160,13 @@ export default function GroupMembersTable({
         accessorFn: (row: GroupMemberTableRow) => row.isPending ? 'Pending' : 'Active',
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-2">
-            {row.original.isCreator && <Badge variant="outline">Creator</Badge>}
-            <Badge variant={row.original.isPending ? 'secondary' : 'outline'}>
-              {row.original.isPending ? 'Pending' : 'Active'}
-            </Badge>
+            {row.original.isCreator
+              ? <Badge variant="outline">Creator</Badge>
+              : (
+                  <Badge variant={row.original.isPending ? 'secondary' : 'outline'}>
+                    {row.original.isPending ? 'Pending' : 'Active'}
+                  </Badge>
+                )}
           </div>
         ),
       },

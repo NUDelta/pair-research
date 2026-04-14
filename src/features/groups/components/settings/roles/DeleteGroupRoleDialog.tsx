@@ -1,4 +1,4 @@
-import type { GroupSettingsRole } from './types'
+import type { GroupSettingsRole } from '../types'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { Trash2Icon } from 'lucide-react'

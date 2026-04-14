@@ -9,14 +9,12 @@ import {
   UsersIcon,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Separator } from '@/shared/ui/separator'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import GroupBasicsFormCard from './GroupBasicsFormCard'
-import GroupMembersTable from './GroupMembersTable'
-import GroupRolesSection from './GroupRolesSection'
+import GroupMembersTable from './members/GroupMembersTable'
+import GroupRolesSection from './roles/GroupRolesSection'
 
 interface GroupSettingsPageProps {
   settings: GroupSettingsData
@@ -48,7 +46,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
   ]
 
   return (
-    <div className="container mx-auto flex max-w-6xl flex-col gap-6 p-6">
+    <div className="container mx-auto flex max-w-7xl flex-col gap-6 p-6">
       <div className="flex flex-col gap-4">
         <Button variant="ghost" size="sm" asChild className="w-fit">
           <Link to="/groups/$slug" params={{ slug: settings.group.id }}>
@@ -62,12 +60,39 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
             <h1 className="text-3xl font-semibold tracking-tight">Group settings</h1>
           </div>
           <p className="max-w-3xl text-muted-foreground">
-            Manage the name, description, members, and admin access for
+            Manage settings for
             {' '}
             <span className="font-medium text-foreground">{settings.group.name}</span>
             .
           </p>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1">
+          <UsersIcon className="size-4" />
+          <span>
+            {confirmedMembers.length}
+            {' '}
+            members
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1">
+          <ShieldCheckIcon className="size-4" />
+          <span>
+            {adminMembers.length}
+            {' '}
+            admins
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1">
+          <KeyRoundIcon className="size-4" />
+          <span>
+            {settings.roles.length}
+            {' '}
+            roles
+          </span>
+        </span>
       </div>
 
       <Tabs
@@ -78,15 +103,12 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
           }
         }}
         orientation="vertical"
-        className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]"
+        className="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]"
       >
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Settings</CardTitle>
-              <CardDescription>
-                Navigate between the management sections for this group workspace.
-              </CardDescription>
+              <CardTitle className="-mb-4">Settings</CardTitle>
             </CardHeader>
             <CardContent>
               <TabsList className="flex h-auto w-full flex-col items-stretch gap-1 bg-transparent p-0">
@@ -97,14 +119,11 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
                     <TabsTrigger
                       key={section.value}
                       value={section.value}
-                      className="h-auto w-full justify-start gap-3 rounded-lg border px-4 py-3 text-left"
+                      className="h-auto w-full justify-start gap-3 rounded-lg border px-4 py-3 text-left hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
                       <SectionIcon />
-                      <span className="flex flex-col items-start gap-1">
+                      <span className="flex flex-col items-start">
                         <span>{section.title}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {section.description}
-                        </span>
                       </span>
                     </TabsTrigger>
                   )
@@ -112,82 +131,13 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
               </TabsList>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Overview</CardTitle>
-              <CardDescription>
-                Current group state at a glance.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                <div className="rounded-lg border p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <UsersIcon />
-                    Members
-                  </div>
-                  <p className="mt-2 text-2xl font-semibold">{confirmedMembers.length}</p>
-                </div>
-                <div className="rounded-lg border p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <ShieldCheckIcon />
-                    Admins
-                  </div>
-                  <p className="mt-2 text-2xl font-semibold">{adminMembers.length}</p>
-                </div>
-                <div className="rounded-lg border p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <KeyRoundIcon />
-                    Roles
-                  </div>
-                  <p className="mt-2 text-2xl font-semibold">{settings.roles.length}</p>
-                </div>
-              </div>
-              <Separator />
-              <div className="flex flex-col gap-2">
-                <p className="text-sm font-medium">Available roles</p>
-                <div className="flex flex-wrap gap-2">
-                  {settings.roles.map(role => (
-                    <Badge key={role.id} variant="outline">
-                      {role.title}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-lg border border-dashed p-4">
-                <p className="font-medium">Current policy</p>
-                <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
-                  <li>The creator stays an admin in this initial version.</li>
-                  <li>At least one confirmed admin must always remain.</li>
-                  <li>Confirmed members cannot be removed during an active pairing.</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="min-w-0">
           <TabsContent value="general" className="mt-0 flex flex-col gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>General</CardTitle>
-                <CardDescription>
-                  Update the shared group profile and naming used across the app.
-                </CardDescription>
-              </CardHeader>
-            </Card>
             <GroupBasicsFormCard group={settings.group} />
           </TabsContent>
           <TabsContent value="members" className="mt-0 flex flex-col gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Members</CardTitle>
-                <CardDescription>
-                  Manage membership, invitations, access levels, and bulk updates.
-                </CardDescription>
-              </CardHeader>
-            </Card>
             <GroupMembersTable
               creatorId={settings.group.creatorId}
               currentUserId={settings.currentUserId}
@@ -198,14 +148,6 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
             />
           </TabsContent>
           <TabsContent value="roles" className="mt-0 flex flex-col gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Roles</CardTitle>
-                <CardDescription>
-                  Create, rename, and retire role definitions used by group members.
-                </CardDescription>
-              </CardHeader>
-            </Card>
             <GroupRolesSection
               groupId={settings.group.id}
               members={settings.members}
