@@ -8,8 +8,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import BulkRoleActionDialog from './BulkRoleActionDialog'
@@ -50,9 +48,7 @@ export default function GroupRolesToolbar({
               Bulk actions
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuLabel>Bulk actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent align="start" className="py-2 px-3">
             <DropdownMenuGroup>
               <DropdownMenuItem onSelect={() => setMergeOpen(true)}>
                 Merge selected roles

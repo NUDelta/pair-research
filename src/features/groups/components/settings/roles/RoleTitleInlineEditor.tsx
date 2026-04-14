@@ -68,13 +68,13 @@ export default function RoleTitleInlineEditor({
         }}
       >
         <span>{role.title}</span>
-        <PencilIcon aria-hidden="true" />
+        <PencilIcon size={15} aria-hidden="true" />
       </button>
     )
   }
 
   return (
-    <div className="flex min-w-[220px] items-center gap-2">
+    <div className="flex min-w-55 items-center gap-2">
       <Input
         value={draftTitle}
         aria-invalid={!validation.success}

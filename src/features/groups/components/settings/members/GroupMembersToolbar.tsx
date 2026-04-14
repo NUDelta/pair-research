@@ -9,8 +9,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -62,9 +60,7 @@ export default function GroupMembersToolbar({
               Bulk actions
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-64">
-            <DropdownMenuLabel>Bulk actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent align="start" className="py-2 px-3">
             <DropdownMenuGroup>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger disabled={roles.length === 0}>
