@@ -3,7 +3,7 @@ import type { GroupSettingsData } from './types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { SaveIcon } from 'lucide-react'
+import { SaveIcon, Trash2 } from 'lucide-react'
 import { useEffect, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -108,7 +108,12 @@ export default function GroupBasicsFormCard({ group }: GroupBasicsFormCardProps)
           </div>
         </form>
       </CardContent>
-      <CardFooter className="justify-end">
+      <CardFooter className="justify-between">
+        <Button type="button" variant="destructive" onClick={() => toast.warning('Delete group feature not implemented yet')}>
+          <Trash2 data-icon="inline-start" />
+          {' '}
+          Delete group
+        </Button>
         <Button type="submit" form="group-basics-form" disabled={!isDirty || !isValid || isPending}>
           {isPending
             ? <Spinner text="Saving..." />
