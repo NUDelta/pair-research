@@ -1,7 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import AccountForm from '@/features/account/components/AccountForm'
 import AccountPagePending from '@/features/account/components/AccountPagePending'
 import { getOrCreateProfile } from '@/features/account/server/getOrCreateProfile'
+import { buildLegalPageHref } from '@/features/legal/lib/legalLinks'
 
 export const Route = createFileRoute('/_authed/account')({
   loader: async () => getOrCreateProfile(),
@@ -30,6 +31,27 @@ function AccountPage() {
         <p className="text-sm text-muted-foreground">
           Email and password updates coming soon...
         </p>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200/80 bg-white/80 p-5">
+        <h2 className="text-lg font-medium text-slate-950">Legal</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Review the current Terms of Service and Privacy Policy for Pair Research.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-4 text-sm font-medium">
+          <Link
+            to={buildLegalPageHref('/terms', 'account')}
+            className="text-sky-700 transition hover:text-slate-950"
+          >
+            Terms of Service
+          </Link>
+          <Link
+            to={buildLegalPageHref('/privacy', 'account')}
+            className="text-sky-700 transition hover:text-slate-950"
+          >
+            Privacy Policy
+          </Link>
+        </div>
       </div>
     </div>
   )

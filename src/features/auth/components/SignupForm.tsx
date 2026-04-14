@@ -11,6 +11,7 @@ import { sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
 import { signupFormSchema } from '@/features/auth/schemas/auth'
 import { buildAuthPageHref } from '@/features/auth/schemas/authSearch'
 import { signup } from '@/features/auth/server'
+import { buildLegalPageHref } from '@/features/legal/lib/legalLinks'
 import { TURNSTILE_ERROR_CODES } from '@/shared/turnstile/constants'
 import TurnstileField from '@/shared/turnstile/TurnstileField'
 import { Button } from '@/shared/ui/button'
@@ -190,26 +191,30 @@ const SignupForm = ({
             onCheckedChange={checked => setValue('agreeToTerms', checked === true)}
             className="mt-1"
           />
-          <div className="space-y-1 leading-none">
+          <div className="space-y-2 leading-none">
             <Label htmlFor="agreeToTerms" className="text-sm font-normal cursor-pointer">
-              I agree to the
+              I agree to the Terms of Service and Privacy Policy.
+            </Label>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Read the
               {' '}
-              <button
-                type="button"
+              <a
+                href={buildLegalPageHref('/terms', 'signup')}
                 className="underline hover:text-foreground transition-colors"
               >
                 Terms of Service
-              </button>
+              </a>
               {' '}
               and
               {' '}
-              <button
-                type="button"
+              <a
+                href={buildLegalPageHref('/privacy', 'signup')}
                 className="underline hover:text-foreground transition-colors"
               >
                 Privacy Policy
-              </button>
-            </Label>
+              </a>
+              .
+            </p>
           </div>
         </div>
 
