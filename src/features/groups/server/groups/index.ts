@@ -1,4 +1,6 @@
 export { acceptGroupInvitation } from './acceptGroupInvitation'
 export { createGroup } from './createGroup'
+export { getGroupSettings } from './getGroupSettings'
 export { getSingleGroup } from './getSingleGroup'
 export { getUserGroups } from './getUserGroups'
+export { updateGroupBasics } from './updateGroupBasics'
