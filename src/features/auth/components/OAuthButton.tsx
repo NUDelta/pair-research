@@ -1,23 +1,26 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
 import { createClient } from '@/shared/supabase/client'
 import { Spinner } from '@/shared/ui'
 import { Button } from '@/shared/ui/button'
 
-export const OAuthButton = () => {
+interface OAuthButtonProps {
+  label?: string
+  nextPath?: string
+}
+
+export const OAuthButton = ({
+  label = 'Continue with Google',
+  nextPath = '/groups',
+}: OAuthButtonProps) => {
   const [loading, setLoading] = useState<boolean>(false)
   const supabase = createClient()
 
   const handleGoogle = async () => {
     setLoading(true)
     try {
-      const redirectPath = sanitizeRedirectPath(
-        new URL(globalThis.location.href).searchParams.get('next'),
-        '/groups',
-      )
       const redirectTo = new URL('/auth/callback', globalThis.location.origin)
-      redirectTo.searchParams.set('next', redirectPath)
+      redirectTo.searchParams.set('next', nextPath)
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -58,7 +61,7 @@ export const OAuthButton = () => {
                   height={20}
                   className="h-5 w-5"
                 />
-                Sign in with Google
+                {label}
               </>
             )}
       </Button>

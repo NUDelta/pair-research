@@ -17,12 +17,12 @@ import AuthField from './AuthField'
 import { OAuthButton } from './OAuthButton'
 
 interface LoginFormProps {
-  toggleOpen: () => void
+  nextPath?: string
   onAuthSuccess?: () => Promise<void> | void
 }
 
 const LoginForm = ({
-  toggleOpen,
+  nextPath = '/groups',
   onAuthSuccess,
 }: LoginFormProps) => {
   const turnstileRef = useRef<TurnstileFieldHandle>(null)
@@ -58,16 +58,10 @@ const LoginForm = ({
         })
 
         if (result.success) {
-          const redirectPath = sanitizeRedirectPath(
-            new URL(globalThis.location.href).searchParams.get('next'),
-            '/groups',
-          )
-
           await onAuthSuccess?.()
           await router.invalidate()
           toast.success(result.message)
-          toggleOpen()
-          await navigate({ href: redirectPath })
+          await navigate({ href: sanitizeRedirectPath(nextPath, '/groups') })
         }
         else {
           turnstileRef.current?.reset()
@@ -92,10 +86,10 @@ const LoginForm = ({
   }
 
   return (
-    <div className="space-y-4">
-      <OAuthButton />
+    <div className="space-y-5">
+      <OAuthButton nextPath={nextPath} />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <AuthField
           id="email"
           label="Email"
@@ -117,7 +111,7 @@ const LoginForm = ({
         />
 
         <TurnstileField
-          ref={turnstileRef}
+          controllerRef={turnstileRef}
           action="login"
           mode="visible"
           description="Complete the security check before signing in."
@@ -143,7 +137,7 @@ const LoginForm = ({
 
         <Button
           type="submit"
-          className="h-11 w-full"
+          className="h-12 w-full rounded-xl text-sm font-semibold"
           disabled={!isValid || isPending}
         >
           {isPending

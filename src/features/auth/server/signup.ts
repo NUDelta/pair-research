@@ -1,6 +1,8 @@
 import type { TurnstileAwareActionResponse } from '@/shared/turnstile/constants'
 import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
 import { gravatarLink } from '@/features/auth/lib'
+import { sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
 import { signupSchema } from '@/features/auth/schemas/auth'
 import { SITE_BASE_URL } from '@/shared/config/constants'
 import { createClient } from '@/shared/supabase/server'
@@ -8,7 +10,11 @@ import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
 import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
 
-const signupRequestSchema = signupSchema.merge(turnstileTokenSchema)
+const signupRequestSchema = signupSchema
+  .merge(turnstileTokenSchema)
+  .extend({
+    nextPath: z.string().optional(),
+  })
 
 type SignupResponse = TurnstileAwareActionResponse & {
   sessionEstablished?: boolean
@@ -35,9 +41,10 @@ export const signup = createServerFn({ method: 'POST' })
     const trimmedEmail = data.email.trim()
 
     const gravatarUrl = await gravatarLink(trimmedEmail, trimmedName)
+    const nextPath = sanitizeRedirectPath(data.nextPath, '/groups')
 
     const emailRedirectTo = SITE_BASE_URL !== ''
-      ? new URL('/auth/confirm?next=/groups', SITE_BASE_URL).toString()
+      ? new URL(`/auth/confirm?next=${encodeURIComponent(nextPath)}`, SITE_BASE_URL).toString()
       : undefined
 
     const { data: authData, error } = await supabase.auth.signUp({

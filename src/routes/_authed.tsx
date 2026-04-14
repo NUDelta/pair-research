@@ -6,7 +6,7 @@ export const Route = createFileRoute('/_authed')({
     const user = await getCurrentUser()
     if (!user) {
       const next = encodeURIComponent(location.href)
-      throw redirect({ href: `/?next=${next}` })
+      throw redirect({ href: `/login?next=${next}` })
     }
 
     return { user }

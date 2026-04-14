@@ -1,14 +1,14 @@
-import type { SignupValues } from '@/features/auth/schemas/auth'
+import type { SignupFormValues } from '@/features/auth/schemas/auth'
 import type { TurnstileFieldHandle } from '@/shared/turnstile/TurnstileField'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { LoaderCircle } from 'lucide-react'
-import { useRef, useTransition } from 'react'
+import { CheckCircle2, LoaderCircle, Mail } from 'lucide-react'
+import { useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
-import { signupSchema } from '@/features/auth/schemas/auth'
+import { signupFormSchema } from '@/features/auth/schemas/auth'
 import { signup } from '@/features/auth/server'
 import { TURNSTILE_ERROR_CODES } from '@/shared/turnstile/constants'
 import TurnstileField from '@/shared/turnstile/TurnstileField'
@@ -19,15 +19,22 @@ import AuthField from './AuthField'
 import { OAuthButton } from './OAuthButton'
 
 interface SignupFormProps {
-  toggleOpen: () => void
+  loginHref?: string
+  nextPath?: string
   onAuthSuccess?: () => Promise<void> | void
 }
 
+type SignupFormInput = SignupFormValues & {
+  agreeToTerms?: boolean
+}
+
 const SignupForm = ({
-  toggleOpen,
+  loginHref = '/login',
+  nextPath = '/groups',
   onAuthSuccess,
 }: SignupFormProps) => {
   const turnstileRef = useRef<TurnstileFieldHandle>(null)
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -35,13 +42,15 @@ const SignupForm = ({
     setError,
     watch,
     setValue,
-  } = useForm<SignupValues & { agreeToTerms?: boolean }>({
-    resolver: zodResolver(signupSchema),
+    reset,
+  } = useForm<SignupFormInput>({
+    resolver: zodResolver(signupFormSchema),
     mode: 'onChange',
     defaultValues: {
       name: '',
       email: '',
       password: '',
+      confirmPassword: '',
       agreeToTerms: false,
     },
   })
@@ -52,7 +61,7 @@ const SignupForm = ({
 
   const agreeToTerms = watch('agreeToTerms')
 
-  const onSubmit = async (values: SignupValues) => {
+  const onSubmit = async ({ agreeToTerms: _agreeToTerms, confirmPassword: _confirmPassword, ...values }: SignupFormInput) => {
     if (!agreeToTerms) {
       setError('root', { message: 'You must agree to the terms and conditions' })
       return
@@ -69,26 +78,29 @@ const SignupForm = ({
         const result = await signupFn({
           data: {
             ...values,
+            nextPath,
             turnstileToken,
           },
         })
         if (result.success) {
           if (result.sessionEstablished === true) {
-            const redirectPath = sanitizeRedirectPath(
-              new URL(globalThis.location.href).searchParams.get('next'),
-              '/groups',
-            )
-
             await onAuthSuccess?.()
             await router.invalidate()
             toast.success(result.message)
-            toggleOpen()
-            await navigate({ href: redirectPath })
+            await navigate({ href: sanitizeRedirectPath(nextPath, '/groups') })
             return
           }
 
           toast.warning(result.message)
-          toggleOpen()
+          setPendingConfirmationEmail(values.email.trim())
+          reset({
+            name: '',
+            email: values.email.trim(),
+            password: '',
+            confirmPassword: '',
+            agreeToTerms: false,
+          })
+          turnstileRef.current?.reset()
         }
         else {
           turnstileRef.current?.reset()
@@ -108,11 +120,50 @@ const SignupForm = ({
     })
   }
 
-  return (
-    <div className="space-y-4">
-      <OAuthButton />
+  if (pendingConfirmationEmail !== null) {
+    return (
+      <div className="space-y-5 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/90 p-5 text-slate-900">
+        <div className="flex items-start gap-3">
+          <div className="rounded-2xl bg-emerald-500/12 p-3 text-emerald-700">
+            <CheckCircle2 className="size-5" aria-hidden="true" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">
+              Check your inbox
+            </h3>
+            <p className="text-sm leading-6 text-slate-700">
+              We sent a confirmation link to
+              {' '}
+              <span className="font-semibold">{pendingConfirmationEmail}</span>
+              . Confirm your email, then come back to sign in.
+            </p>
+          </div>
+        </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="rounded-2xl border border-emerald-200 bg-white/70 p-4 text-sm leading-6 text-slate-700">
+          <div className="flex items-center gap-2 font-medium text-slate-900">
+            <Mail className="size-4 text-emerald-700" aria-hidden="true" />
+            Next step
+          </div>
+          <p className="mt-2">
+            If the message does not show up in a minute, check spam or retry sign up with the same email.
+          </p>
+        </div>
+
+        <Button asChild className="h-12 w-full rounded-xl text-sm font-semibold">
+          <a href={loginHref}>
+            Go to sign in
+          </a>
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      <OAuthButton nextPath={nextPath} />
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <AuthField
           id="name"
           label="Full Name"
@@ -140,6 +191,16 @@ const SignupForm = ({
           autocomplete="new-password"
           placeholder="Create a strong password"
           error={errors.password}
+          register={register}
+        />
+
+        <AuthField
+          id="confirmPassword"
+          label="Confirm Password"
+          type="password"
+          autocomplete="new-password"
+          placeholder="Re-enter your password"
+          error={errors.confirmPassword}
           register={register}
         />
 
@@ -174,7 +235,7 @@ const SignupForm = ({
         </div>
 
         <TurnstileField
-          ref={turnstileRef}
+          controllerRef={turnstileRef}
           action="signup"
           mode="visible"
           description="Complete the security check before creating your account."
@@ -188,7 +249,7 @@ const SignupForm = ({
 
         <Button
           type="submit"
-          className="h-11 w-full"
+          className="h-12 w-full rounded-xl text-sm font-semibold"
           disabled={!isValid || !agreeToTerms || isPending}
         >
           {isPending

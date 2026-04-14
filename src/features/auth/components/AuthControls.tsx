@@ -11,14 +11,10 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import AuthControlsLoading from './AuthControlsLoading'
-import AuthDialog from './AuthDialog'
 import SignOutItem from './SignOutItem'
-
-type AuthDialogTab = 'login' | 'signup' | null
 
 const AuthControls = () => {
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false)
-  const [openAuthDialog, setOpenAuthDialog] = useState<AuthDialogTab>(null)
 
   const {
     loading,
@@ -26,7 +22,6 @@ const AuthControls = () => {
       full_name: fullname,
       avatar_url: avatarUrl,
     },
-    refreshProfile,
   } = useAuthProfile(setIsUserLoggedIn)
 
   if (loading) {
@@ -67,28 +62,12 @@ const AuthControls = () => {
           )
         : (
             <>
-              <AuthDialog
-                key={`login-${openAuthDialog === 'login' ? 'open' : 'closed'}`}
-                defaultTab="login"
-                open={openAuthDialog === 'login'}
-                onOpenChange={open => setOpenAuthDialog(open ? 'login' : null)}
-                onAuthSuccess={refreshProfile}
-              >
-                <Button variant="ghost" size="lg">
-                  Sign in
-                </Button>
-              </AuthDialog>
-              <AuthDialog
-                key={`signup-${openAuthDialog === 'signup' ? 'open' : 'closed'}`}
-                defaultTab="signup"
-                open={openAuthDialog === 'signup'}
-                onOpenChange={open => setOpenAuthDialog(open ? 'signup' : null)}
-                onAuthSuccess={refreshProfile}
-              >
-                <Button variant="default" size="lg">
-                  Sign up
-                </Button>
-              </AuthDialog>
+              <Button asChild variant="ghost" size="lg" className="rounded-full px-4">
+                <Link to="/login">Sign in</Link>
+              </Button>
+              <Button asChild variant="default" size="lg" className="rounded-full px-5 shadow-md shadow-sky-200/70">
+                <Link to="/signup">Sign up</Link>
+              </Button>
             </>
           )}
     </div>

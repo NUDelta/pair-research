@@ -3,7 +3,6 @@ import { authStorageStatePath, enableTurnstileBypass, getPlaywrightAuthCredentia
 
 const authCredentials = getPlaywrightAuthCredentials()
 const groupsPathPattern = /\/groups$/
-const signInTriggerPattern = /^Sign in$/i
 const signInSubmitPattern = /^sign in$/i
 
 test('create authenticated storage state from the email/password login flow', async ({ page, baseURL }) => {
@@ -14,8 +13,7 @@ test('create authenticated storage state from the email/password login flow', as
   }
 
   await enableTurnstileBypass(page.context(), baseURL)
-  await page.goto('/')
-  await page.locator('header').locator('button').filter({ hasText: signInTriggerPattern }).first().click()
+  await page.goto('/login')
 
   await page.getByLabel('Email').fill(authCredentials!.email)
   await page.getByLabel('Password').fill(authCredentials!.password)

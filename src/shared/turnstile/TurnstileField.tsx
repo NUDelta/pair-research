@@ -1,10 +1,10 @@
 import type { TurnstileInstance } from '@marsidev/react-turnstile'
+import type { RefObject } from 'react'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { CheckCircle2, LoaderCircle, ShieldAlert, ShieldCheck } from 'lucide-react'
 import {
-  forwardRef,
   useCallback,
-  useImperativeHandle,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -24,8 +24,12 @@ export interface TurnstileFieldHandle {
 }
 
 interface TurnstileFieldProps {
+  /**
+   * The action name to associate with the generated token. This is used for analytics and debugging purposes on Cloudflare's end, and does not affect how you should verify the token on your server. You can use any string here that helps you identify where the token is coming from (e.g. "login", "signup", "comment_form", etc.).
+   */
   action: string
   className?: string
+  controllerRef?: RefObject<TurnstileFieldHandle | null>
   description?: string
   mode?: TurnstileFieldMode
 }
@@ -40,12 +44,13 @@ const statusStyles: Record<TurnstileFieldStatus, string> = {
   error: 'text-destructive',
 }
 
-const TurnstileField = forwardRef<TurnstileFieldHandle, TurnstileFieldProps>(({
+export default function TurnstileField({
   action,
   className,
+  controllerRef,
   description,
   mode = 'adaptive',
-}, ref) => {
+}: TurnstileFieldProps) {
   const { siteKey } = getTurnstilePublicEnv()
   const widgetRef = useRef<TurnstileInstance | undefined>(undefined)
   const pendingResolverRef = useRef<((value: string | null) => void) | null>(null)
@@ -155,12 +160,22 @@ const TurnstileField = forwardRef<TurnstileFieldHandle, TurnstileFieldProps>(({
     })
   }, [requireInteractiveChallenge, siteKey, token, visibleChallenge])
 
-  useImperativeHandle(ref, () => ({
-    ensureToken,
-    getToken: () => token,
-    requireInteractiveChallenge,
-    reset,
-  }), [ensureToken, requireInteractiveChallenge, reset, token])
+  useEffect(() => {
+    if (controllerRef == null) {
+      return
+    }
+
+    controllerRef.current = {
+      ensureToken,
+      getToken: () => token,
+      requireInteractiveChallenge,
+      reset,
+    }
+
+    return () => {
+      controllerRef.current = null
+    }
+  }, [controllerRef, ensureToken, requireInteractiveChallenge, reset, token])
 
   const widgetOptions = useMemo(() => {
     if (visibleChallenge) {
@@ -228,14 +243,14 @@ const TurnstileField = forwardRef<TurnstileFieldHandle, TurnstileFieldProps>(({
         />
       </div>
 
-      <div className={cn('flex items-start gap-2 text-sm', statusStyles[status])} role="status" aria-live="polite">
-        <StatusIcon className={cn('mt-0.5 size-4 shrink-0', status === 'verifying' && 'animate-spin')} />
-        <span>{message}</span>
-      </div>
+      {((status === 'error' || status === 'required') && !visibleChallenge) || status === 'verifying'
+        ? (
+            <div className={cn('flex items-start gap-2 text-sm', statusStyles[status])} role="status" aria-live="polite">
+              <StatusIcon className={cn('mt-0.5 size-4 shrink-0', status === 'verifying' && 'animate-spin')} />
+              <span>{message}</span>
+            </div>
+          )
+        : null}
     </div>
   )
-})
-
-TurnstileField.displayName = 'TurnstileField'
-
-export default TurnstileField
+}

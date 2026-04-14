@@ -6,11 +6,9 @@ function getHeader(page: Page) {
   return page.locator('header')
 }
 
-function getHeaderAuthButton(page: Page, label: 'Sign in' | 'Sign up') {
+function getHeaderAuthLink(page: Page, label: 'Sign in' | 'Sign up') {
   return getHeader(page)
-    .locator('button')
-    .filter({ hasText: new RegExp(`^${label}$`, 'i') })
-    .first()
+    .getByRole('link', { name: new RegExp(`^${label}$`, 'i') })
 }
 
 test.beforeEach(async ({ context, baseURL }) => {
@@ -27,39 +25,35 @@ test('homepage renders the public app shell and marketing content', async ({ pag
   await expect(page.getByRole('link', { name: /pair research home/i })).toBeVisible()
   await expect(page.getByText(/Pair Research is a collaborative method/i)).toBeVisible()
   await expect(page.getByRole('img', { name: /illustration of pair research features/i })).toBeVisible()
-  await expect(getHeaderAuthButton(page, 'Sign in')).toBeVisible()
-  await expect(getHeaderAuthButton(page, 'Sign up')).toBeVisible()
+  await expect(getHeaderAuthLink(page, 'Sign in')).toBeVisible()
+  await expect(getHeaderAuthLink(page, 'Sign up')).toBeVisible()
 })
 
-test('protected groups route redirects unauthenticated users home and preserves the next path', async ({ page }) => {
+test('protected groups route redirects unauthenticated users to sign in and preserves the next path', async ({ page }) => {
   await page.goto('/groups')
 
-  await expect(page).toHaveURL(/\/\?next=%2Fgroups$/)
-  await expect(page.getByRole('link', { name: /pair research home/i })).toBeVisible()
-  await expect(getHeaderAuthButton(page, 'Sign in')).toBeVisible()
+  await expect(page).toHaveURL(/\/login\?next=%2Fgroups$/)
+  await expect(page.getByRole('heading', { name: /sign in to continue/i })).toBeVisible()
 })
 
-test('sign-in dialog renders the current auth entry surface', async ({ page }) => {
-  await page.goto('/')
-  await getHeaderAuthButton(page, 'Sign in').click()
-  const dialog = page.getByRole('dialog')
+test('sign-in page renders the current auth entry surface', async ({ page }) => {
+  await page.goto('/login')
 
-  await expect(dialog.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
-  await expect(dialog.getByRole('button', { name: /sign in with google/i })).toBeVisible()
-  await expect(dialog.getByLabel('Email')).toBeVisible()
-  await expect(dialog.getByPlaceholder('Enter your password')).toBeVisible()
-  await expect(dialog.getByRole('button', { name: /^sign in$/i }).last()).toBeVisible()
+  await expect(page.getByRole('heading', { name: /sign in to continue/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /continue with google/i })).toBeVisible()
+  await expect(page.getByLabel('Email')).toBeVisible()
+  await expect(page.getByPlaceholder('Enter your password')).toBeVisible()
+  await expect(page.getByText(/complete the security check before signing in/i)).toBeVisible()
+  await expect(page.getByRole('button', { name: /^sign in$/i })).toBeVisible()
 })
 
-test('sign-up tab renders the current email sign-up form', async ({ page }) => {
-  await page.goto('/')
-  await getHeaderAuthButton(page, 'Sign in').click()
-  const dialog = page.getByRole('dialog')
-  await dialog.getByRole('tab', { name: /^sign up$/i }).click()
+test('sign-up page renders the current email sign-up form', async ({ page }) => {
+  await page.goto('/signup')
 
-  await expect(dialog.getByRole('heading', { name: 'Create account' })).toBeVisible()
-  await expect(dialog.getByLabel('Full Name')).toBeVisible()
-  await expect(dialog.getByLabel('Email')).toBeVisible()
-  await expect(dialog.getByPlaceholder('Create a strong password')).toBeVisible()
-  await expect(dialog.getByRole('button', { name: /^create account$/i }).last()).toBeVisible()
+  await expect(page.getByRole('heading', { name: /create your account/i })).toBeVisible()
+  await expect(page.getByLabel('Full Name')).toBeVisible()
+  await expect(page.getByLabel('Email')).toBeVisible()
+  await expect(page.getByPlaceholder('Create a strong password')).toBeVisible()
+  await expect(page.getByText(/complete the security check before creating your account/i)).toBeVisible()
+  await expect(page.getByRole('button', { name: /^create account$/i })).toBeVisible()
 })
