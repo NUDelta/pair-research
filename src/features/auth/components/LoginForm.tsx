@@ -34,6 +34,7 @@ const LoginForm = ({
   onAuthSuccess,
 }: LoginFormProps) => {
   const turnstileRef = useRef<TurnstileFieldHandle>(null)
+  const [isTurnstileVerified, setIsTurnstileVerified] = useState(false)
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null)
   const {
     register,
@@ -150,6 +151,7 @@ const LoginForm = ({
           action="login"
           mode="visible"
           description="Complete the security check before signing in."
+          onVerifiedChange={setIsTurnstileVerified}
         />
 
         {errors.root && (
@@ -173,7 +175,7 @@ const LoginForm = ({
         <Button
           type="submit"
           className="h-12 w-full rounded-xl text-sm font-semibold"
-          disabled={!isValid || isPending}
+          disabled={!isValid || !isTurnstileVerified || isPending}
         >
           {isPending
             ? (

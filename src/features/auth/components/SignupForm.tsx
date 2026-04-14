@@ -36,6 +36,7 @@ const SignupForm = ({
   onAuthSuccess,
 }: SignupFormProps) => {
   const turnstileRef = useRef<TurnstileFieldHandle>(null)
+  const [isTurnstileVerified, setIsTurnstileVerified] = useState(false)
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null)
   const {
     register,
@@ -217,6 +218,7 @@ const SignupForm = ({
           action="signup"
           mode="visible"
           description="Complete the security check before creating your account."
+          onVerifiedChange={setIsTurnstileVerified}
         />
 
         {errors.root && (
@@ -228,7 +230,7 @@ const SignupForm = ({
         <Button
           type="submit"
           className="h-12 w-full rounded-xl text-sm font-semibold"
-          disabled={!isValid || !agreeToTerms || isPending}
+          disabled={!isValid || !agreeToTerms || !isTurnstileVerified || isPending}
         >
           {isPending
             ? (

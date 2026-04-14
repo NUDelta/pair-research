@@ -32,6 +32,7 @@ interface TurnstileFieldProps {
   controllerRef?: RefObject<TurnstileFieldHandle | null>
   description?: string
   mode?: TurnstileFieldMode
+  onVerifiedChange?: (verified: boolean) => void
 }
 
 const statusStyles: Record<TurnstileFieldStatus, string> = {
@@ -50,6 +51,7 @@ export default function TurnstileField({
   controllerRef,
   description,
   mode = 'adaptive',
+  onVerifiedChange,
 }: TurnstileFieldProps) {
   const { siteKey } = getTurnstilePublicEnv()
   const widgetRef = useRef<TurnstileInstance | undefined>(undefined)
@@ -176,6 +178,10 @@ export default function TurnstileField({
       controllerRef.current = null
     }
   }, [controllerRef, ensureToken, requireInteractiveChallenge, reset, token])
+
+  useEffect(() => {
+    onVerifiedChange?.(token !== null && token !== '')
+  }, [onVerifiedChange, token])
 
   const widgetOptions = useMemo(() => {
     if (visibleChallenge) {
