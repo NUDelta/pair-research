@@ -43,6 +43,17 @@ export const addGroupMemberSchema = z.object({
   isAdmin: z.boolean(),
 })
 
+export const groupMemberInviteSchema = z.object({
+  email: emailSchema,
+  roleId: roleIdSchema,
+  isAdmin: z.boolean(),
+})
+
+export const addGroupMembersSchema = z.object({
+  groupId: groupIdSchema,
+  invites: z.array(groupMemberInviteSchema).min(1, 'Add at least one member').max(20, 'You can add at most 20 members at a time'),
+})
+
 export const updateGroupMemberSchema = z.object({
   groupId: groupIdSchema,
   userId: userIdSchema,
@@ -96,3 +107,4 @@ export const removeGroupMemberSchema = z.object({
 
 export type UpdateGroupBasicsValues = z.infer<typeof updateGroupBasicsSchema>
 export type AddGroupMemberValues = z.infer<typeof addGroupMemberSchema>
+export type AddGroupMembersValues = z.infer<typeof addGroupMembersSchema>

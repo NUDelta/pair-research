@@ -1,21 +1,11 @@
-import type { infer as Infer } from 'zod'
 import type { GroupSettingsRole } from '../types'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from '@tanstack/react-router'
-import { useServerFn } from '@tanstack/react-start'
 import { ShieldPlusIcon, UserPlusIcon } from 'lucide-react'
-import { useEffect, useState, useTransition } from 'react'
-import { Controller, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-import { addGroupMemberSchema } from '@/features/groups/schemas/groupManagement'
-import { addGroupMember } from '@/features/groups/server/groups'
+import { MAX_GROUP_MEMBER_INVITES } from '@/features/groups/lib/groupMemberInviteBatch'
 import { Spinner } from '@/shared/ui'
 import { Button } from '@/shared/ui/button'
-import { Checkbox } from '@/shared/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import MemberInviteBatchEditor from './MemberInviteBatchEditor'
+import { useGroupMemberInviteDialog } from './useGroupMemberInviteDialog'
 
 interface AddGroupMemberDialogProps {
   groupId: string
@@ -23,165 +13,104 @@ interface AddGroupMemberDialogProps {
   triggerClassName?: string
 }
 
-const inviteMemberFormSchema = addGroupMemberSchema.omit({ groupId: true })
-type InviteMemberFormValues = Infer<typeof inviteMemberFormSchema>
-
 export default function AddGroupMemberDialog({
   groupId,
   roles,
   triggerClassName,
 }: AddGroupMemberDialogProps) {
-  const router = useRouter()
-  const addGroupMemberFn = useServerFn(addGroupMember)
-  const [open, setOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
-  const form = useForm<InviteMemberFormValues>({
-    resolver: zodResolver(inviteMemberFormSchema),
-    mode: 'onChange',
-    defaultValues: {
-      email: '',
-      roleId: roles[0]?.id ?? '',
-      isAdmin: false,
-    },
-  })
-
   const {
-    control,
-    formState: { errors, isValid },
+    defaultIsAdmin,
+    defaultRoleId,
+    draftSource,
+    fileInputRef,
+    handleAddBlankRow,
+    handleApplyAssignment,
+    handleCancel,
+    handleDialogToggle,
+    handleFileChange,
+    handleImportSource,
+    handleRemoveRow,
     handleSubmit,
-    register,
-    reset,
-    setValue,
-    watch,
-  } = form
-  const selectedRoleId = watch('roleId')
-  const shouldInviteAsAdmin = watch('isAdmin')
-
-  useEffect(() => {
-    if (roles.length === 0) {
-      return
-    }
-
-    if (!roles.some(role => role.id === selectedRoleId)) {
-      setValue('roleId', roles[0].id, { shouldValidate: true })
-    }
-  }, [roles, selectedRoleId, setValue])
-
-  const onSubmit = handleSubmit((values) => {
-    startTransition(async () => {
-      const response = await addGroupMemberFn({
-        data: {
-          groupId,
-          email: values.email,
-          roleId: values.roleId,
-          isAdmin: values.isAdmin,
-        },
-      })
-
-      if (!response.success) {
-        toast.error(response.message)
-        return
-      }
-
-      toast.success(response.message)
-      reset({
-        email: '',
-        roleId: roles[0]?.id ?? '',
-        isAdmin: false,
-      })
-      setOpen(false)
-      await router.invalidate()
-    })
-  })
+    handleUpdateRow,
+    hasAdminInvite,
+    inviteRows,
+    isPending,
+    open,
+    rowErrors,
+    selectedRowIdSet,
+    selectedRowIds,
+    setDefaultIsAdmin,
+    setDefaultRoleId,
+    setDraftSource,
+    setSelectedRowIds,
+    toggleRowSelection,
+  } = useGroupMemberInviteDialog({ groupId, roles })
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleDialogToggle}>
       <DialogTrigger asChild>
         <Button disabled={roles.length === 0} className={triggerClassName}>
           <UserPlusIcon data-icon="inline-start" />
-          Add member
+          Add members
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Invite member</DialogTitle>
+          <DialogTitle>Add members</DialogTitle>
           <DialogDescription>
-            Add a pending member invitation and choose the initial role and admin access.
+            Prepare up to
+            {' '}
+            {MAX_GROUP_MEMBER_INVITES}
+            {' '}
+            invites from pasted text or CSV, then apply shared or per-member access before sending.
           </DialogDescription>
         </DialogHeader>
-        <form id="invite-group-member-form" onSubmit={onSubmit} className="flex flex-col gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="invite-email">Email</Label>
-            <Input
-              id="invite-email"
-              type="email"
-              placeholder="member@example.com"
-              aria-invalid={errors.email !== undefined}
-              {...register('email')}
-            />
-            {errors.email !== undefined && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="invite-role">Role</Label>
-            <Controller
-              name="roleId"
-              control={control}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="invite-role" aria-invalid={errors.roleId !== undefined} className="w-full">
-                    <SelectValue placeholder="Choose a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {roles.map(role => (
-                        <SelectItem key={role.id} value={role.id}>
-                          {role.title}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.roleId !== undefined && (
-              <p className="text-sm text-destructive">{errors.roleId.message}</p>
-            )}
-          </div>
-          <div className="flex items-start gap-3 rounded-lg border p-4">
-            <Controller
-              name="isAdmin"
-              control={control}
-              render={({ field }) => (
-                <Checkbox
-                  id="invite-admin"
-                  checked={field.value}
-                  onCheckedChange={checked => field.onChange(checked === true)}
-                />
-              )}
-            />
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="invite-admin">Grant admin access</Label>
-              <p className="text-sm text-muted-foreground">
-                Admins can manage members, update settings, and control pairings.
-              </p>
-            </div>
-          </div>
-        </form>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={event => void handleFileChange(event)}
+        />
+        <MemberInviteBatchEditor
+          defaultIsAdmin={defaultIsAdmin}
+          defaultRoleId={defaultRoleId}
+          draftSource={draftSource}
+          inviteRows={inviteRows}
+          maxInvites={MAX_GROUP_MEMBER_INVITES}
+          onAddBlankRow={handleAddBlankRow}
+          onApplyAssignment={handleApplyAssignment}
+          onDraftSourceChange={setDraftSource}
+          onImportSource={() => handleImportSource(draftSource)}
+          onOpenFilePicker={() => fileInputRef.current?.click()}
+          onRemoveRow={handleRemoveRow}
+          onSelectAllRows={checked => setSelectedRowIds(checked ? inviteRows.map(row => row.id) : [])}
+          onSelectRow={toggleRowSelection}
+          onUpdateDefaultAccess={setDefaultIsAdmin}
+          onUpdateDefaultRole={setDefaultRoleId}
+          onUpdateRow={handleUpdateRow}
+          roles={roles}
+          rowErrors={rowErrors}
+          selectedCount={selectedRowIds.length}
+          selectedRowIds={selectedRowIdSet}
+        />
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
+          <Button variant="outline" onClick={handleCancel} disabled={isPending}>
             Cancel
           </Button>
-          <Button type="submit" form="invite-group-member-form" disabled={!isValid || isPending || roles.length === 0}>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={inviteRows.length === 0 || isPending || roles.length === 0}
+          >
             {isPending
-              ? <Spinner text="Adding member..." />
+              ? <Spinner text="Adding members..." />
               : (
                   <>
-                    {shouldInviteAsAdmin
+                    {hasAdminInvite
                       ? <ShieldPlusIcon data-icon="inline-start" />
                       : <UserPlusIcon data-icon="inline-start" />}
-                    Add member
+                    {hasAdminInvite ? 'Add members with access' : 'Add members'}
                   </>
                 )}
           </Button>
