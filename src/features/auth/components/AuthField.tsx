@@ -55,7 +55,7 @@ const AuthField = ({
           autoComplete={autocomplete}
           placeholder={placeholder ?? `Enter your ${label.toLowerCase()}`}
           className={`
-            transition-all duration-200 focus:ring-2
+            h-12 rounded-xl border-slate-200 bg-white transition-all duration-200 focus:ring-2
             ${Icon ? 'pl-10' : ''}
             ${isPassword ? 'pr-10' : ''}
             ${error ? 'border-destructive focus:border-destructive' : ''}
@@ -67,7 +67,7 @@ const AuthField = ({
             type="button"
             variant="ghost"
             size="sm"
-            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+            className="absolute right-1 top-1/2 h-10 -translate-y-1/2 rounded-lg px-3 hover:bg-slate-100"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >

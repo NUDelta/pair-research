@@ -1,6 +1,7 @@
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
 import { createRedirectResponse, getRequestOrigin, sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
+import { buildAuthPageHref } from '@/features/auth/schemas/authSearch'
 import { createClient } from '@/shared/supabase/server'
 
 export const Route = createFileRoute('/auth/confirm')({
@@ -15,23 +16,32 @@ export const Route = createFileRoute('/auth/confirm')({
 
         if (token_hash !== null && type) {
           const supabase = await createClient()
-          const { error } = await supabase.auth.verifyOtp({
+          const { data, error } = await supabase.auth.verifyOtp({
             type,
             token_hash,
           })
 
           if (!error) {
-            const redirectUrl = new URL(next, targetOrigin)
+            const redirectUrl = new URL(
+              data.session !== null
+                ? next
+                : buildAuthPageHref('/signup', {
+                    email: data.user?.email,
+                    nextPath: next,
+                    notice: 'verified',
+                  }),
+              targetOrigin,
+            )
             redirectUrl.searchParams.set('from', 'auth-confirm')
             return createRedirectResponse(redirectUrl)
           }
 
-          const errorRedirectUrl = new URL('/', targetOrigin)
+          const errorRedirectUrl = new URL(buildAuthPageHref('/login', { nextPath: next }), targetOrigin)
           errorRedirectUrl.searchParams.set('error', error.message)
           return createRedirectResponse(errorRedirectUrl)
         }
 
-        return createRedirectResponse(new URL('/', targetOrigin))
+        return createRedirectResponse(new URL(buildAuthPageHref('/login', { nextPath: next }), targetOrigin))
       },
     },
   },

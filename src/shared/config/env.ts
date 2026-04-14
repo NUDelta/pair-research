@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const supabaseUrlSchema = z.string().url().nonempty()
 const supabasePublishableKeySchema = z.string().nonempty()
+const optionalApiKeySchema = z.string().trim().min(1)
 
 export function getSupabasePublicEnv() {
   const url = supabaseUrlSchema.safeParse(import.meta.env.VITE_SUPABASE_URL ?? '')
@@ -14,5 +15,13 @@ export function getSupabasePublicEnv() {
   return {
     url: url.data,
     publishableKey: publishableKey.data,
+  }
+}
+
+export function getTurnstilePublicEnv() {
+  const siteKey = optionalApiKeySchema.safeParse(import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY ?? '')
+
+  return {
+    siteKey: siteKey.success ? siteKey.data : '',
   }
 }
