@@ -3,7 +3,7 @@ export default function GroupsPagePending() {
   const joinedSkeletonKeys = ['joined-1', 'joined-2', 'joined-3']
 
   return (
-    <div className="container mx-auto max-w-5xl space-y-6 p-4 animate-pulse">
+    <div className="container mx-auto max-w-5xl animate-pulse space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div className="h-8 w-40 rounded bg-gray-200" />
         <div className="h-10 w-32 rounded bg-gray-300" />
@@ -32,7 +32,7 @@ export default function GroupsPagePending() {
 
 function CardSkeleton() {
   return (
-    <div className="space-y-4 rounded-lg bg-white p-4 shadow">
+    <div className="space-y-4 rounded-xl border bg-card p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="h-5 w-32 rounded bg-gray-200" />
         <div className="h-5 w-5 rounded-full bg-gray-200" />

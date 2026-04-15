@@ -5,6 +5,7 @@ import { Check, Settings } from 'lucide-react'
 import { useTransition } from 'react'
 import { toast } from 'sonner'
 import { acceptGroupInvitation } from '@/features/groups/server/groups'
+import { cn } from '@/shared/lib/utils'
 import { Spinner } from '@/shared/ui'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -38,6 +39,7 @@ const GroupCard = ({
   const [isAccepting, startTransition] = useTransition()
   const router = useRouter()
   const acceptGroupInvitationFn = useServerFn(acceptGroupInvitation)
+  const isNavigable = href !== undefined
 
   const onAccept = async () => {
     startTransition(async () => {
@@ -54,7 +56,10 @@ const GroupCard = ({
 
   const CardContentComponent = (
     <Card
-      className="flex flex-col h-full w-full justify-between group cursor-pointer hover:shadow-lg transition"
+      className={cn(
+        'group flex h-full w-full flex-col justify-between transition',
+        isNavigable && 'cursor-pointer hover:shadow-lg',
+      )}
     >
       <div className="space-y-2">
         <CardHeader className="flex justify-between items-center">
@@ -102,12 +107,14 @@ const GroupCard = ({
                 <Button
                   variant="secondary"
                   size="sm"
+                  type="button"
+                  disabled={isAccepting}
+                  aria-busy={isAccepting}
                   onClick={(event_) => {
                     event_.preventDefault()
                     event_.stopPropagation()
                     onAccept()
                   }}
-                  // Add some animation when hovering with shadow, scalling, and color darker
                   className="hover:shadow-lg hover:scale-105 hover:bg-accent hover:text-accent-foreground transition duration-200"
                 >
                   {isAccepting
@@ -139,17 +146,7 @@ const GroupCard = ({
         </Link>
       )
     : (
-        <div
-          className="w-full h-full text-left p-0"
-          onClick={() => {
-            toast.warning(
-              <span className="flex flex-col gap-2">
-                <p className="font-bold">You need to accept the invitation first.</p>
-                <p>Click on the right bottom "Accept" button on the card to accept.</p>
-              </span>,
-            )
-          }}
-        >
+        <div className="h-full w-full">
           {CardContentComponent}
         </div>
       )

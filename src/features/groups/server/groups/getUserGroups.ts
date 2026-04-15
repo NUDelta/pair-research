@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { groupsResponseSchema } from '@/features/groups/schemas/group'
 import { getUser } from '@/shared/supabase/server'
 
-export const getUserGroups = createServerFn({ method: 'GET' }).handler(async () => {
+export async function loadUserGroups() {
   try {
     const { prisma } = await import('@/shared/lib/prismaClient')
     const user = await getUser()
@@ -74,5 +74,8 @@ export const getUserGroups = createServerFn({ method: 'GET' }).handler(async () 
     }
 
     console.error('[GET_USER_GROUPS_ERROR]', error_)
+    throw error_
   }
-})
+}
+
+export const getUserGroups = createServerFn({ method: 'GET' }).handler(async () => loadUserGroups())

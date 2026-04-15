@@ -4,6 +4,13 @@ import GroupsPagePending from '@/features/groups/components/pending/GroupsPagePe
 import { getUserGroups } from '@/features/groups/server/groups'
 import { Button } from '@/shared/ui/button'
 
+function compareJoinedAtDesc(
+  leftGroup: { joinedAt: string },
+  rightGroup: { joinedAt: string },
+) {
+  return Date.parse(rightGroup.joinedAt) - Date.parse(leftGroup.joinedAt)
+}
+
 export const Route = createFileRoute('/_authed/groups/')({
   loader: async () => getUserGroups(),
   pendingComponent: GroupsPagePending,
@@ -16,9 +23,8 @@ export const Route = createFileRoute('/_authed/groups/')({
 function GroupsPage() {
   const groups = Route.useLoaderData()
 
-  const pending = groups?.filter(g => g.isPending)
-  const joined = groups?.filter(g => !g.isPending)
-    .sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime())
+  const pending = groups.filter(group => group.isPending).sort(compareJoinedAtDesc)
+  const joined = groups.filter(group => !group.isPending).sort(compareJoinedAtDesc)
 
   return (
     <div className="container mx-auto max-w-5xl space-y-6 p-6">
@@ -29,7 +35,7 @@ function GroupsPage() {
         </Button>
       </div>
 
-      {pending !== undefined && pending.length > 0 && (
+      {pending.length > 0 && (
         <section>
           <h2 className="mb-4 text-xl font-semibold">Pending Invitations</h2>
           <div className="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2">
@@ -40,7 +46,7 @@ function GroupsPage() {
         </section>
       )}
 
-      {joined !== undefined && joined.length > 0
+      {joined.length > 0
         ? (
             <section>
               <h2 className="mb-4 text-xl font-semibold">Joined Groups</h2>
@@ -52,7 +58,7 @@ function GroupsPage() {
             </section>
           )
         : (
-            (pending === undefined || pending.length < 1) && (
+            pending.length === 0 && (
               <div className="py-10 text-center">
                 <p className="mb-2">You haven&apos;t joined any groups yet.</p>
                 <p className="mb-4">Request an invitation or create your own group.</p>
