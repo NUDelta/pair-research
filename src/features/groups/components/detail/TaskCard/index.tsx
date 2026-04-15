@@ -52,12 +52,15 @@ export default function TaskCard({
       poolStatus === 'paired' && 'border-amber-200 bg-amber-50/50',
     )}
     >
-      <CardContent className={
-        `flex flex-col space-y-4 px-4 py-2
-        ${currentUserId === undefined && 'sm:flex-row sm:justify-between'}`
-      }
+      <CardContent
+        className={cn(
+          'flex flex-col',
+          'gap-2 px-3 py-1',
+          currentUserId === undefined && 'sm:flex-row sm:justify-between',
+          currentUserId === undefined && 'sm:items-center sm:gap-4',
+        )}
       >
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {poolStatus !== undefined && (
             <div>
               <span
@@ -81,12 +84,13 @@ export default function TaskCard({
                 />
               )
             : (
-                <TaskDescription description={description ?? 'No task submitted yet.'} />
+                <TaskDescription
+                  description={description ?? 'No task submitted yet.'}
+                />
               )}
 
-          {/* User Info */}
-          <div className="flex items-center gap-3">
-            <Avatar className="w-6 h-6">
+          <div className="flex items-center gap-2 pt-1">
+            <Avatar className="h-5 w-5">
               <AvatarImage
                 src={userAvatar ?? undefined}
                 alt={`${fullName}'s avatar`}
@@ -96,11 +100,12 @@ export default function TaskCard({
                 {getInitials(fullName)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm">{fullName ?? 'New User (Name not set)'}</span>
+            <span className="text-sm">
+              {fullName ?? 'New User (Name not set)'}
+            </span>
           </div>
         </div>
 
-        {/* Rating Control */}
         {taskId !== undefined && onRateChange !== undefined && (
           <RatingControl
             taskId={taskId}

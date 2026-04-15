@@ -209,7 +209,7 @@ const OthersTasksForm = ({
               </p>
             )}
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2">
         {tasks.map(task => (
           <TaskCard
             key={task.id}
