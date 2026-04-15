@@ -5,6 +5,11 @@ import { buildDirectedAffinityGraph, buildUndirectedAffinityGraph, sortPairingTa
 /**
  * Builds pairs by preserving stable roommate assignments where possible, then
  * repairing unresolved participants with a weighted matching pass.
+ *
+ * @param tasks - Tasks currently in the pairing pool. Each task represents one participant.
+ * @param helpCapacities - Directed help scores that describe who can help whom.
+ * @returns Final persisted pair records. Each record contains user ids, task ids,
+ * and the combined mutual affinity used for the pairing.
  */
 export function buildPairs(
   tasks: PairingTaskCandidate[],

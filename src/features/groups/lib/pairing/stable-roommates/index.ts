@@ -16,6 +16,14 @@ export type { StableMatchingResult }
 
 /**
  * Runs Irving's stable roommates algorithm with deterministic odd-pool handling.
+ *
+ * @param preferences - Preference rows using zero-based participant indexes.
+ * `preferences[i][0]` is participant `i`'s first choice.
+ * @param options - Odd-pool handling controls. `remove` tries dropping one
+ * participant at a time, while `add` introduces a synthetic unmatched participant.
+ * @returns Stable or partially-stable index-based partner mapping.
+ * `matching[i] = j` means participant `i` is paired with `j`.
+ * `matching[i] = -1` means participant `i` is unmatched.
  */
 export function stableMatchingWrapper(
   preferences: number[][],
@@ -83,6 +91,14 @@ export function stableMatchingWrapper(
   }
 }
 
+/**
+ * Executes the stable-roommates phases for one concrete participant set.
+ *
+ * @param preferences - Validated preference matrix for the current reduced pool.
+ * @param removedPerson - Original participant removed to make an odd pool even, if any.
+ * @param addedPerson - Whether the odd pool was handled by adding a synthetic participant.
+ * @returns Stable or partially-stable result mapped back to the original pool indexes.
+ */
 function runStableMatching(
   preferences: number[][],
   removedPerson: number | null,
@@ -136,6 +152,16 @@ function runStableMatching(
   return finalizeStableResult(formatMatching(finalHolds), ranks, removedPerson, addedPerson, 'Phase 2')
 }
 
+/**
+ * Normalizes the result after a stable-roommates phase finishes.
+ *
+ * @param matching - Candidate index-based partner mapping for the current reduced pool.
+ * @param ranks - Rank lookup derived from the reduced preference matrix.
+ * @param removedPerson - Original participant removed to make an odd pool even, if any.
+ * @param addedPerson - Whether a synthetic participant was injected for odd-pool handling.
+ * @param phaseLabel - Which stable-roommates phase produced the candidate result.
+ * @returns Final public result, restoring any odd-pool adjustments on the way out.
+ */
 function finalizeStableResult(
   matching: number[],
   ranks: number[][],

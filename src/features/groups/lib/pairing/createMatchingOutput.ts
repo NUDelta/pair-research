@@ -5,6 +5,13 @@ import { createPreferenceMatrix, stableMatchingWrapper } from './stable-roommate
 /**
  * Stable roommates decides the ideal structure first. Only the participants
  * still unmatched after that step are handed to weighted matching.
+ *
+ * @param directedGraph - Directed affinity matrix where `directedGraph[i][j]`
+ * means participant `i` thinks participant `j` can help them by that amount.
+ * @param undirectedGraph - Mutual affinity matrix where `undirectedGraph[i][j]`
+ * is the combined value for pairing participants `i` and `j`.
+ * @returns Full algorithm output including the final index-based matching and
+ * intermediate stable / weighted results for debugging.
  */
 export function createMatchingOutput(
   directedGraph: number[][],
@@ -65,6 +72,16 @@ export function createMatchingOutput(
   }
 }
 
+/**
+ * Rewrites a weighted match computed on the unmatched subset back into the
+ * original full-pool participant indexes.
+ *
+ * @param stableMatching - Stable-roommates output on the full pool.
+ * @param weightedMatching - Matching computed on the reduced unmatched subset.
+ * @param unmatchedParticipantIndexes - Original participant indexes represented
+ * by the reduced weighted graph.
+ * @returns Combined full-pool matching using original participant indexes.
+ */
 function combineMatchings(
   stableMatching: number[],
   weightedMatching: number[],
@@ -83,6 +100,13 @@ function combineMatchings(
   return combinedMatching
 }
 
+/**
+ * Validates that the matching is symmetric and leaves at most one participant
+ * unmatched, which is the only legal unresolved state for an odd-sized pool.
+ *
+ * @param matching - Index-based partner mapping where `-1` means unmatched.
+ * @returns `true` when the matching is internally consistent.
+ */
 function isResolvedMatching(matching: number[]): boolean {
   for (const [participant, partner] of matching.entries()) {
     if (partner === -1) {

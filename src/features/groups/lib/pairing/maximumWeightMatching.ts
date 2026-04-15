@@ -1,6 +1,13 @@
 interface WeightedMatchingResult {
+  /**
+   * Index-based partner mapping.
+   * `matching[i] = j` means participant `i` is paired with participant `j`.
+   * `matching[i] = -1` means participant `i` is left unmatched.
+   */
   matching: number[]
+  /** Number of realized pairs in the matching. */
   pairCount: number
+  /** Sum of all chosen edge weights. */
   totalWeight: number
 }
 
@@ -16,6 +23,10 @@ interface MemoizedMatchingResult {
  * The solver prefers maximum cardinality first, then maximum total weight.
  * That matches the behavior expected by the pairing flow: leave someone
  * unmatched only when the participant count is odd.
+ *
+ * @param weightMatrix - Symmetric affinity matrix where `weightMatrix[i][j]`
+ * is the benefit of pairing participants `i` and `j`.
+ * @returns Exact best matching for the matrix, including pair count and total weight.
  */
 export function findMaximumWeightMatching(weightMatrix: number[][]): WeightedMatchingResult {
   const participantCount = weightMatrix.length
@@ -117,6 +128,13 @@ export function findMaximumWeightMatching(weightMatrix: number[][]): WeightedMat
   }
 }
 
+/**
+ * Chooses between two candidate weighted matchings.
+ *
+ * @param left - Candidate result being considered.
+ * @param right - Current best candidate.
+ * @returns Positive when `left` is better, negative when `right` is better, and `0` on a tie.
+ */
 function compareWeightedResults(
   left: Pick<MemoizedMatchingResult, 'pairCount' | 'totalWeight'>,
   right: Pick<MemoizedMatchingResult, 'pairCount' | 'totalWeight'>,
@@ -132,6 +150,13 @@ function compareWeightedResults(
   return 0
 }
 
+/**
+ * Finds the lowest-numbered participant still present in the bitmask.
+ *
+ * @param mask - Bitmask of unresolved participants.
+ * @param participantCount - Size of the graph represented by the mask.
+ * @returns Index of the first still-active participant, or `-1` if the mask is empty.
+ */
 function findFirstParticipant(mask: bigint, participantCount: number): number {
   for (let participant = 0; participant < participantCount; participant += 1) {
     if ((mask & (1n << BigInt(participant))) !== 0n) {
