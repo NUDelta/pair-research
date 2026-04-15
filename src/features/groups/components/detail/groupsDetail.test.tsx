@@ -3,6 +3,7 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MakePairsButton from './buttons/MakePairsButton'
+import ResetPoolButton from './buttons/ResetPoolButton'
 import OthersTasksForm from './OthersTasksForm'
 
 const {
@@ -55,13 +56,29 @@ describe('groups detail controls', () => {
   })
 
   it('disables make pairs when fewer than two pool tasks are available', () => {
-    render(<MakePairsButton groupId="group-1" eligibleTaskCount={0} />)
+    render(<MakePairsButton groupId="group-1" eligibleTaskCount={0} allRatingsSubmitted={false} />)
 
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toHaveAttribute(
       'title',
       'The pool is empty. At least two active tasks are required to make pairs.',
     )
+  })
+
+  it('disables make pairs until every pool member has submitted all ratings', () => {
+    render(<MakePairsButton groupId="group-1" eligibleTaskCount={3} allRatingsSubmitted={false} />)
+
+    expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Make Pairs' })).toHaveAttribute(
+      'title',
+      'Everyone in the pool must finish rating every other task before making pairs.',
+    )
+  })
+
+  it('keeps reset pool available for admins via confirmation dialog', () => {
+    render(<ResetPoolButton groupId="group-1" />)
+
+    expect(screen.getByRole('button', { name: 'Reset Pool' })).toBeEnabled()
   })
 
   it('autosaves rating changes immediately and queues rapid updates for the same task', async () => {

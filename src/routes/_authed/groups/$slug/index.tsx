@@ -51,6 +51,9 @@ function SingleGroupPage() {
     : currentUserTask !== undefined
       ? 'in-pool'
       : 'not-in-pool'
+  const totalRatingsNeededPerTask = Math.max(tasks.length - 1, 0)
+  const allRatingsSubmitted = tasks.length >= 2
+    && tasks.every(task => (task.ratingsCompletedCount ?? 0) >= totalRatingsNeededPerTask)
 
   useEffect(() => {
     const previousActivePairingId = previousActivePairingIdRef.current
@@ -89,9 +92,14 @@ function SingleGroupPage() {
             )}
             {groupInfo.isAdmin && (
               <>
-                {groupInfo.hasActivePairing
-                  ? <ResetPoolButton groupId={groupInfo.id} />
-                  : <MakePairsButton groupId={groupInfo.id} eligibleTaskCount={tasks.length} />}
+                <ResetPoolButton groupId={groupInfo.id} />
+                {!groupInfo.hasActivePairing && (
+                  <MakePairsButton
+                    groupId={groupInfo.id}
+                    eligibleTaskCount={tasks.length}
+                    allRatingsSubmitted={allRatingsSubmitted}
+                  />
+                )}
               </>
             )}
           </>
