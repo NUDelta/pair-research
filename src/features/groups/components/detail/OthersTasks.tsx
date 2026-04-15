@@ -1,4 +1,5 @@
 import { AlertCircle } from 'lucide-react'
+import ActiveRoundPanel from './ActiveRoundPanel'
 import HorseRace from './HorseRace'
 import OthersTasksForm from './OthersTasksForm'
 
@@ -7,6 +8,7 @@ interface OthersTasksProps {
   groupId: string
   currentUserHasTask?: boolean
   currentUserInPool?: boolean
+  currentUserLeftOut?: boolean
   hasActivePairing?: boolean
   isAdmin?: boolean
   raceTasks?: Task[]
@@ -18,6 +20,7 @@ const OthersTasks = ({
   groupId,
   currentUserHasTask,
   currentUserInPool,
+  currentUserLeftOut = false,
   hasActivePairing,
   isAdmin,
   raceTasks = [],
@@ -27,15 +30,10 @@ const OthersTasks = ({
     return (
       <div className="space-y-4">
         <HorseRace currentUserId={currentUserId} tasks={raceTasks} />
-        <div className="w-full py-12 flex flex-col items-center text-center text-muted-foreground">
-          <AlertCircle className="w-10 h-10 mb-2 text-gray-400" />
-          <p className="text-lg font-medium">This round is complete</p>
-          <p className="text-sm mt-1">
-            {isAdmin
-              ? 'Reset the pool when you are ready to start the next pairing round.'
-              : 'Wait for an admin to reset the pool before the next round begins.'}
-          </p>
-        </div>
+        <ActiveRoundPanel
+          currentUserLeftOut={currentUserLeftOut}
+          isAdmin={isAdmin === true}
+        />
       </div>
     )
   }

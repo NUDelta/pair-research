@@ -153,6 +153,7 @@ function SingleGroupPage() {
           currentUserTask !== undefined || currentUserActivePairingTaskWithProfile !== null
         }
         currentUserInPool={currentUserTask !== undefined}
+        currentUserLeftOut={currentUserLeftOutOfActivePairing}
         hasActivePairing={groupInfo.hasActivePairing}
         isAdmin={groupInfo.isAdmin}
         raceTasks={tasks}
