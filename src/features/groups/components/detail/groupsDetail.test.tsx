@@ -3,6 +3,7 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MakePairsButton from './buttons/MakePairsButton'
+import ResetPoolButton from './buttons/ResetPoolButton'
 import OthersTasksForm from './OthersTasksForm'
 
 const {
@@ -55,13 +56,29 @@ describe('groups detail controls', () => {
   })
 
   it('disables make pairs when fewer than two pool tasks are available', () => {
-    render(<MakePairsButton groupId="group-1" eligibleTaskCount={0} />)
+    render(<MakePairsButton groupId="group-1" eligibleTaskCount={0} allRatingsSubmitted={false} />)
 
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toHaveAttribute(
       'title',
       'The pool is empty. At least two active tasks are required to make pairs.',
     )
+  })
+
+  it('disables make pairs until every pool member has submitted all ratings', () => {
+    render(<MakePairsButton groupId="group-1" eligibleTaskCount={3} allRatingsSubmitted={false} />)
+
+    expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Make Pairs' })).toHaveAttribute(
+      'title',
+      'Everyone in the pool must finish rating every other task before making pairs.',
+    )
+  })
+
+  it('keeps reset pool available for admins via confirmation dialog', () => {
+    render(<ResetPoolButton groupId="group-1" />)
+
+    expect(screen.getByRole('button', { name: 'Reset Pool' })).toBeEnabled()
   })
 
   it('autosaves rating changes immediately and queues rapid updates for the same task', async () => {
@@ -81,9 +98,29 @@ describe('groups detail controls', () => {
 
     render(
       <OthersTasksForm
+        currentUserId="user-1"
         groupId="group-1"
+        raceTasks={[
+          {
+            id: 'task-self',
+            description: 'My draft',
+            userId: 'user-1',
+            fullName: 'Me',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate',
+            avatarUrl: null,
+            helpCapacity: 2,
+            ratingsCompletedCount: 0,
+          },
+        ]}
         canRate
-        currentUserInPool
         tasks={[
           {
             id: 'task-1',
@@ -92,6 +129,7 @@ describe('groups detail controls', () => {
             fullName: 'Teammate',
             avatarUrl: null,
             helpCapacity: 2,
+            ratingsCompletedCount: 0,
           },
         ]}
       />,
@@ -136,14 +174,27 @@ describe('groups detail controls', () => {
       expect(screen.queryByText('Saving rating...')).not.toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: 'Rate 5' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('How much can you help with each of these tasks?')).toBeInTheDocument()
+    expect(screen.getByText('(1: not at all, 5: totally)')).toBeInTheDocument()
   })
 
   it('hides rating controls for users who are not currently in the pool', () => {
     render(
       <OthersTasksForm
+        currentUserId="user-1"
         groupId="group-1"
+        raceTasks={[
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate',
+            avatarUrl: null,
+            helpCapacity: 2,
+            ratingsCompletedCount: 0,
+          },
+        ]}
         canRate={false}
-        currentUserInPool={false}
         tasks={[
           {
             id: 'task-1',
@@ -152,6 +203,7 @@ describe('groups detail controls', () => {
             fullName: 'Teammate',
             avatarUrl: null,
             helpCapacity: 2,
+            ratingsCompletedCount: 0,
           },
         ]}
       />,
@@ -159,39 +211,5 @@ describe('groups detail controls', () => {
 
     expect(screen.queryByRole('button', { name: 'Rate 3' })).not.toBeInTheDocument()
     expect(screen.getByText('Join the pool to unlock ratings. Only members with an active task in the current pool can rate others.')).toBeInTheDocument()
-  })
-
-  it('shows a compact rating progress summary for users who are currently in the pool', () => {
-    render(
-      <OthersTasksForm
-        groupId="group-1"
-        canRate
-        currentUserInPool
-        tasks={[
-          {
-            id: 'task-1',
-            description: 'Review draft intro',
-            userId: 'user-2',
-            fullName: 'Teammate',
-            avatarUrl: null,
-            helpCapacity: 2,
-          },
-          {
-            id: 'task-2',
-            description: 'Check citations',
-            userId: 'user-3',
-            fullName: 'Another teammate',
-            avatarUrl: null,
-            helpCapacity: null,
-          },
-        ]}
-      />,
-    )
-
-    expect(screen.getByText((_, element) => element?.textContent === 'Rated 1 of 2 people')).toBeInTheDocument()
-    expect(screen.getByText('1 left')).toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'Ratings completed' })).toHaveAttribute('aria-valuenow', '1')
-    expect(screen.getByRole('progressbar', { name: 'Ratings completed' })).toHaveAttribute('aria-valuemax', '2')
-    expect(screen.getByText('Rate how ready you feel to help each person on a 1-5 scale. Higher means you feel more able to help.')).toBeInTheDocument()
   })
 })

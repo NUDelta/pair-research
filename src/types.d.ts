@@ -20,6 +20,8 @@ interface Task {
   fullName: string | null
   avatarUrl: string | null
   helpCapacity: number | null
+  ratingsCompletedCount?: number
+  ratingsCompletionOrder?: number | null
 }
 
 interface CurrentUserActivePair {

@@ -7,7 +7,7 @@ import TaskDescription from './TaskDescription'
 import TaskEditor from './TaskEditor'
 
 type RatingStatus = 'idle' | 'saving' | 'error'
-type PoolStatus = 'in-pool' | 'not-in-pool' | 'paired'
+type PoolStatus = 'in-pool' | 'not-in-pool' | 'paired' | 'solo'
 
 interface TaskCardProps {
   taskId?: string
@@ -42,6 +42,7 @@ export default function TaskCard({
     'in-pool': 'In Pool',
     'not-in-pool': 'Not In Pool',
     'paired': 'Currently Paired',
+    'solo': 'No Pair This Round',
   } as const
 
   return (
@@ -50,14 +51,18 @@ export default function TaskCard({
       poolStatus === 'in-pool' && 'border-emerald-200 bg-emerald-50/40',
       poolStatus === 'not-in-pool' && 'border-slate-200 bg-slate-50/60',
       poolStatus === 'paired' && 'border-amber-200 bg-amber-50/50',
+      poolStatus === 'solo' && 'border-sky-200 bg-sky-50/60',
     )}
     >
-      <CardContent className={
-        `flex flex-col space-y-4 px-4 py-2
-        ${currentUserId === undefined && 'sm:flex-row sm:justify-between'}`
-      }
+      <CardContent
+        className={cn(
+          'flex flex-col',
+          'gap-2 px-3 py-1',
+          currentUserId === undefined && 'sm:flex-row sm:justify-between',
+          currentUserId === undefined && 'sm:items-center sm:gap-4',
+        )}
       >
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {poolStatus !== undefined && (
             <div>
               <span
@@ -66,6 +71,7 @@ export default function TaskCard({
                   poolStatus === 'in-pool' && 'bg-emerald-100 text-emerald-900',
                   poolStatus === 'not-in-pool' && 'bg-slate-200 text-slate-700',
                   poolStatus === 'paired' && 'bg-amber-100 text-amber-900',
+                  poolStatus === 'solo' && 'bg-sky-100 text-sky-900',
                 )}
               >
                 {poolStatusLabel[poolStatus]}
@@ -81,12 +87,13 @@ export default function TaskCard({
                 />
               )
             : (
-                <TaskDescription description={description ?? 'No task submitted yet.'} />
+                <TaskDescription
+                  description={description ?? 'No task submitted yet.'}
+                />
               )}
 
-          {/* User Info */}
-          <div className="flex items-center gap-3">
-            <Avatar className="w-6 h-6">
+          <div className="flex items-center gap-2 pt-1">
+            <Avatar className="h-5 w-5">
               <AvatarImage
                 src={userAvatar ?? undefined}
                 alt={`${fullName}'s avatar`}
@@ -96,11 +103,12 @@ export default function TaskCard({
                 {getInitials(fullName)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm">{fullName ?? 'New User (Name not set)'}</span>
+            <span className="text-sm">
+              {fullName ?? 'New User (Name not set)'}
+            </span>
           </div>
         </div>
 
-        {/* Rating Control */}
         {taskId !== undefined && onRateChange !== undefined && (
           <RatingControl
             taskId={taskId}

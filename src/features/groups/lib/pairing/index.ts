@@ -1,4 +1,5 @@
-export { buildPairs, findMissingHelpCapacities } from './pairing/index'
+export { buildPairs } from './buildPairs'
+export { findMissingHelpCapacities } from './helpCapacities'
 export type {
   BuiltPair,
   HelpCapacityCandidate,
@@ -6,4 +7,4 @@ export type {
   MissingHelpCapacity,
   PairingHistory,
   PairingTaskCandidate,
-} from './pairing/index'
+} from './types'

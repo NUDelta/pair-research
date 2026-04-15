@@ -23,15 +23,6 @@ export const resetPool = createServerFn({ method: 'POST' })
         },
         select: {
           is_admin: true,
-          group: {
-            select: {
-              pairing_group_active_pairing_idTopairing: {
-                select: {
-                  id: true,
-                },
-              },
-            },
-          },
         },
       })
 
@@ -49,32 +40,34 @@ export const resetPool = createServerFn({ method: 'POST' })
         }
       }
 
-      const activePairing = membership.group.pairing_group_active_pairing_idTopairing
-
-      if (activePairing === null) {
-        return {
-          success: false,
-          message: 'This group does not have an active pairing to reset',
-        }
-      }
-
-      const pairedTasks = await prisma.task.findMany({
+      const activeTasks = await prisma.task.findMany({
         where: {
-          pairing_id: activePairing.id,
+          group_id: data.groupId,
+          delete_pending: {
+            not: true,
+          },
         },
         select: {
           id: true,
         },
       })
 
-      const pairedTaskIds = pairedTasks.map(task => task.id)
+      const activeTaskIds = activeTasks.map(task => task.id)
 
       await prisma.$transaction(async (tx) => {
-        if (pairedTaskIds.length > 0) {
+        if (activeTaskIds.length > 0) {
+          await tx.task_help_capacity.deleteMany({
+            where: {
+              task_id: {
+                in: activeTaskIds,
+              },
+            },
+          })
+
           await tx.task.updateMany({
             where: {
               id: {
-                in: pairedTaskIds,
+                in: activeTaskIds,
               },
             },
             data: {
@@ -93,11 +86,11 @@ export const resetPool = createServerFn({ method: 'POST' })
           },
         })
 
-        if (pairedTaskIds.length > 0) {
+        if (activeTaskIds.length > 0) {
           await tx.task.deleteMany({
             where: {
               id: {
-                in: pairedTaskIds,
+                in: activeTaskIds,
               },
             },
           })

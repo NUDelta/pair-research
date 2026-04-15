@@ -20,7 +20,8 @@ const RatingControl = ({
   return (
     <div
       className={cn(
-        'flex flex-col items-start gap-2 rounded-md px-3 py-2 transition-colors',
+        'flex flex-col items-start rounded-md transition-colors',
+        'gap-1 px-2 py-1',
         status === 'saving' && 'bg-amber-50',
         status === 'error' && 'bg-rose-50',
       )}
@@ -40,7 +41,8 @@ const RatingControl = ({
               key={n}
               type="button"
               className={cn(
-                'h-8 w-8 rounded-full border text-sm focus:outline-none focus:ring-2 focus:ring-primary',
+                'rounded-full border text-sm focus:outline-none focus:ring-2 focus:ring-primary',
+                'h-7 w-7 text-sm',
                 isSelected ? 'bg-primary text-white hover:bg-primary' : 'bg-gray-100 hover:bg-gray-200',
                 isSaved ? 'border-primary/50' : 'border-transparent',
                 status === 'saving' && isSelected && 'bg-amber-300 text-amber-950 hover:bg-amber-300',
@@ -58,7 +60,7 @@ const RatingControl = ({
       </fieldset>
       <p
         className={cn(
-          'min-h-4 text-xs',
+          'min-h-3 text-xs',
           status === 'saving' && 'text-amber-800',
           status === 'error' && 'text-rose-700',
           status === 'idle' && 'text-transparent',

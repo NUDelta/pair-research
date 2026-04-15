@@ -185,14 +185,59 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         },
       })
 
-      const tasks = tasksWithHelpCapacity.map(task => ({
-        id: String(task.id),
-        description: task.description,
-        userId: task.user_id,
-        fullName: task.profile.full_name,
-        avatarUrl: task.profile.avatar_url,
-        helpCapacity: task.task_help_capacity[0]?.help_capacity,
-      }))
+      const activeTaskIds = tasksWithHelpCapacity.map(task => task.id)
+      const poolRatingRows = activeTaskIds.length > 0
+        ? await prisma.task_help_capacity.findMany({
+            where: {
+              task_id: {
+                in: activeTaskIds,
+              },
+            },
+            select: {
+              id: true,
+              user_id: true,
+              task_id: true,
+            },
+          })
+        : []
+
+      const ratingProgressByUserId = poolRatingRows.reduce<Record<string, {
+        count: number
+        completionOrder: number | null
+      }>>((acc, rating) => {
+        // task_help_capacity rows are immutable per (task, user), so the largest
+        // row id for a user's active-pool ratings reflects their most recently
+        // completed new rating without being affected by later edits.
+        const ratingId = Number(rating.id)
+        const current = acc[rating.user_id] ?? {
+          count: 0,
+          completionOrder: null,
+        }
+
+        acc[rating.user_id] = {
+          count: current.count + 1,
+          completionOrder: current.completionOrder === null
+            ? ratingId
+            : Math.max(current.completionOrder, ratingId),
+        }
+
+        return acc
+      }, {})
+
+      const tasks = tasksWithHelpCapacity.map((task) => {
+        const progress = ratingProgressByUserId[task.user_id]
+
+        return {
+          id: String(task.id),
+          description: task.description,
+          userId: task.user_id,
+          fullName: task.profile.full_name,
+          avatarUrl: task.profile.avatar_url,
+          helpCapacity: task.task_help_capacity[0]?.help_capacity ?? null,
+          ratingsCompletedCount: progress?.count ?? 0,
+          ratingsCompletionOrder: progress?.completionOrder ?? null,
+        }
+      })
 
       return { groupInfo, tasks, currentUserActivePairingTaskWithProfile }
     }

@@ -1,7 +1,7 @@
 import type { TaskRealtimePayload } from './taskRealtimePayload'
 import { useRouter } from '@tanstack/react-router'
 import { produce } from 'immer'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/shared/supabase/client'
 import { subscribeToGroupTaskChanges } from './subscribeToGroupTaskChanges'
@@ -22,12 +22,17 @@ export const useTaskRealtimeListener = (
   const router = useRouter()
   const supabase = createClient()
   const [tasks, setTasks] = useState<Task[]>(initialTasks || [])
+  const handledPairingRefreshIdsRef = useRef(new Set<string>())
 
   useEffect(() => {
     // Reset local realtime state when the loader refreshes for this group.
     // eslint-disable-next-line react/set-state-in-effect
     setTasks(initialTasks ?? [])
   }, [groupId, initialTasks])
+
+  useEffect(() => {
+    handledPairingRefreshIdsRef.current.clear()
+  }, [groupId])
 
   /**
    * Handle task updates in the database
@@ -72,6 +77,8 @@ export const useTaskRealtimeListener = (
           fullName: profile.full_name,
           avatarUrl: profile.avatar_url,
           helpCapacity: existingIndex === -1 ? null : draft[existingIndex]?.helpCapacity ?? null,
+          ratingsCompletedCount: existingIndex === -1 ? 0 : draft[existingIndex]?.ratingsCompletedCount ?? 0,
+          ratingsCompletionOrder: existingIndex === -1 ? null : draft[existingIndex]?.ratingsCompletionOrder ?? null,
         } satisfies Task
 
         if (existingIndex !== -1) {
@@ -140,11 +147,19 @@ export const useTaskRealtimeListener = (
     // When a pairing is created, the task is deleted from the current user
     // and refresh the page to show the new pairing
     if (taskRaw.pairing_id !== null) {
+      const shouldRefreshForPairing = !handledPairingRefreshIdsRef.current.has(taskRaw.pairing_id)
+
       if (userId !== currentUserId && userId !== null && userId.length > 0) {
-        toast.success('Task paired with another user! Refreshing...')
         handleTaskDelete(taskRaw.id)
       }
-      await router.invalidate()
+
+      if (shouldRefreshForPairing) {
+        handledPairingRefreshIdsRef.current.add(taskRaw.pairing_id)
+        if (userId !== currentUserId && userId !== null && userId.length > 0) {
+          toast.success('Task paired with another user! Refreshing...')
+        }
+        await router.invalidate()
+      }
       return
     }
 

@@ -9,16 +9,19 @@ import { Button } from '@/shared/ui/button'
 interface Props {
   groupId: string
   eligibleTaskCount: number
+  allRatingsSubmitted: boolean
 }
 
-const MakePairsButton = ({ groupId, eligibleTaskCount }: Props) => {
+const MakePairsButton = ({ groupId, eligibleTaskCount, allRatingsSubmitted }: Props) => {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
   const makePairsFn = useServerFn(makePairs)
-  const isDisabled = eligibleTaskCount < 2 || isPending
+  const isDisabled = eligibleTaskCount < 2 || !allRatingsSubmitted || isPending
   const disabledReason = eligibleTaskCount === 0
     ? 'The pool is empty. At least two active tasks are required to make pairs.'
-    : 'At least two active tasks are required to make pairs.'
+    : eligibleTaskCount < 2
+      ? 'At least two active tasks are required to make pairs.'
+      : 'Everyone in the pool must finish rating every other task before making pairs.'
 
   const handleMakePairs = async (force = false) => {
     startTransition(async () => {

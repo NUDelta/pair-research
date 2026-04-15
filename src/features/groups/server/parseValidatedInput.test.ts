@@ -10,7 +10,7 @@ describe('parseValidatedInput', () => {
         groupId: '550e8400-e29b-41d4-a716-446655440000',
         description: 'hey',
       }),
-    ).toThrowError('Task description must be at least 5 characters.')
+    ).toThrowError('Task description must be at least 5 words.')
   })
 
   it('uses plain-language messaging for invalid group names', () => {
