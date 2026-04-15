@@ -53,6 +53,16 @@ export interface BuiltPair {
 }
 
 /**
+ * Previous-round history used to bias the next pairing round away from repeats.
+ */
+export interface PairingHistory {
+  /** User-id pairs that were matched in the immediately previous round. */
+  previousPairs: Array<readonly [string, string]>
+  /** User who was left unmatched in the previous round, when that is known. */
+  previousUnmatchedUserId: string | null
+}
+
+/**
  * Debug-friendly output from the stable-first pairing pipeline.
  */
 export interface MatchingOutput {

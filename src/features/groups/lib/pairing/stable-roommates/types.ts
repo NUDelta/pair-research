@@ -6,6 +6,8 @@ export interface StableMatchingOptions {
   handleOddMethod?: 'add' | 'remove'
   /** When removing for an odd pool, try every possible removal instead of only the first. */
   removeAll?: boolean
+  /** Original participant index that should not be chosen as the unmatched user when avoidable. */
+  avoidUnmatchedParticipantIndex?: number | null
 }
 
 /**

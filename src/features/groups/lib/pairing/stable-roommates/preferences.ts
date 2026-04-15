@@ -3,16 +3,17 @@
  *
  * @param weightedMatrix - Directed affinity matrix where `weightedMatrix[i][j]`
  * is participant `i`'s rating for pairing with participant `j`.
+ * `null` means that pair is forbidden for the current attempt.
  * @returns Preference matrix where each row lists participant indexes in descending
  * affinity order, excluding the participant's own index.
  */
-export function createPreferenceMatrix(weightedMatrix: number[][]): number[][] {
+export function createPreferenceMatrix(weightedMatrix: Array<Array<number | null>>): number[][] {
   return weightedMatrix.map((row, personIndex) =>
     row
       .map((weight, candidateIndex) => ({ weight, candidateIndex }))
-      .filter(({ candidateIndex }) => candidateIndex !== personIndex)
+      .filter(({ weight, candidateIndex }) => weight !== null && candidateIndex !== personIndex)
       .sort((left, right) => {
-        const weightDifference = right.weight - left.weight
+        const weightDifference = (right.weight ?? 0) - (left.weight ?? 0)
         if (weightDifference !== 0) {
           return weightDifference
         }
@@ -27,8 +28,8 @@ export function createPreferenceMatrix(weightedMatrix: number[][]): number[][] {
  * Validates and completes a preference matrix for the stable-roommates solver.
  *
  * @param preferences - Candidate preference rows using zero-based participant indexes.
- * Rows may be partial; any missing valid participants are appended automatically.
- * @returns Completed preference matrix, or `null` when the input shape is invalid.
+ * Rows may be partial when some pairings are intentionally forbidden.
+ * @returns Validated preference matrix, or `null` when the input shape is invalid.
  */
 export function validatePreferenceMatrix(preferences: number[][]): number[][] | null {
   if (!Array.isArray(preferences) || preferences.length <= 1) {
@@ -55,12 +56,6 @@ export function validatePreferenceMatrix(preferences: number[][]): number[][] | 
       }
 
       seen.add(preference)
-    }
-
-    for (let candidateIndex = 0; candidateIndex < participantCount; candidateIndex += 1) {
-      if (candidateIndex !== personIndex && !seen.has(candidateIndex)) {
-        row.push(candidateIndex)
-      }
     }
   }
 

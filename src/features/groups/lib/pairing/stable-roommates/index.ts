@@ -29,7 +29,11 @@ export function stableMatchingWrapper(
   preferences: number[][],
   options: StableMatchingOptions = {},
 ): StableMatchingResult {
-  const { handleOddMethod = 'remove', removeAll = true } = options
+  const {
+    handleOddMethod = 'remove',
+    removeAll = true,
+    avoidUnmatchedParticipantIndex = null,
+  } = options
   const validatedPreferences = validatePreferenceMatrix(preferences)
 
   if (validatedPreferences === null) {
@@ -49,11 +53,22 @@ export function stableMatchingWrapper(
     return runStableMatching(oddHandled.preferences, oddHandled.removedPerson, oddHandled.addedPerson)
   }
 
-  const removablePeople = removeAll
+  const allRemovablePeople = removeAll
     ? validatedPreferences.map((_, personIndex) => personIndex)
     : [0]
+  const removablePeople = avoidUnmatchedParticipantIndex === null
+    ? allRemovablePeople
+    : allRemovablePeople.filter(personIndex => personIndex !== avoidUnmatchedParticipantIndex)
 
   let bestResult: StableMatchingCandidate | null = null
+
+  if (removablePeople.length === 0) {
+    return {
+      matching: [],
+      fullyStable: false,
+      debug: 'Failed to evaluate stable roommates candidates.',
+    }
+  }
 
   for (const personIndex of removablePeople) {
     const oddHandled = handleOddUsers(validatedPreferences, {

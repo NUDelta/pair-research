@@ -5,5 +5,6 @@ export type {
   HelpCapacityCandidate,
   MatchingOutput,
   MissingHelpCapacity,
+  PairingHistory,
   PairingTaskCandidate,
 } from './types'

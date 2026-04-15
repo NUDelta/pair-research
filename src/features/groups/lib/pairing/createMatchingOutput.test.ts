@@ -51,4 +51,30 @@ describe('createMatchingOutput', () => {
       unmatchedParticipantIndexes: [0, 1, 2, 3],
     })
   })
+
+  it('avoids leaving the same participant unmatched when an odd-pool alternative exists', () => {
+    expect(createMatchingOutput(
+      [
+        [0, 9, 8],
+        [9, 0, 1],
+        [8, 1, 0],
+      ],
+      [
+        [0, 18, 16],
+        [18, 0, 2],
+        [16, 2, 0],
+      ],
+      {
+        avoidUnmatchedParticipantIndex: 0,
+      },
+    )).toEqual({
+      matching: [1, 0, -1],
+      fullyStable: true,
+      stableDebug: 'Stable matching found after Phase 1.',
+      stableResult: [1, 0, -1],
+      mwmResultFull: [1, 0, -1],
+      mwmResultPartial: [],
+      unmatchedParticipantIndexes: [],
+    })
+  })
 })

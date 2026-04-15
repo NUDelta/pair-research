@@ -2,26 +2,39 @@ import type { MatchingOutput } from './types'
 import { findMaximumWeightMatching } from './maximumWeightMatching'
 import { createPreferenceMatrix, stableMatchingWrapper } from './stable-roommates'
 
+interface MatchingConstraints {
+  /** Original participant index that should not be left unmatched when avoidable. */
+  avoidUnmatchedParticipantIndex?: number | null
+}
+
 /**
  * Stable roommates decides the ideal structure first. Only the participants
  * still unmatched after that step are handed to weighted matching.
  *
  * @param directedGraph - Directed affinity matrix where `directedGraph[i][j]`
  * means participant `i` thinks participant `j` can help them by that amount.
+ * `null` means that pair is forbidden for the current attempt.
  * @param undirectedGraph - Mutual affinity matrix where `undirectedGraph[i][j]`
  * is the combined value for pairing participants `i` and `j`.
+ * `null` means that pair is forbidden for the current attempt.
+ * @param constraints - Optional history-aware controls for odd-sized pools.
  * @returns Full algorithm output including the final index-based matching and
  * intermediate stable / weighted results for debugging.
  */
 export function createMatchingOutput(
-  directedGraph: number[][],
-  undirectedGraph: number[][],
+  directedGraph: Array<Array<number | null>>,
+  undirectedGraph: Array<Array<number | null>>,
+  constraints: MatchingConstraints = {},
 ): MatchingOutput {
+  const { avoidUnmatchedParticipantIndex = null } = constraints
   const stableResult = stableMatchingWrapper(createPreferenceMatrix(directedGraph), {
     handleOddMethod: 'remove',
     removeAll: true,
+    avoidUnmatchedParticipantIndex,
   })
-  const mwmResultFull = findMaximumWeightMatching(undirectedGraph).matching
+  const mwmResultFull = findMaximumWeightMatching(undirectedGraph, {
+    avoidUnmatchedParticipantIndex,
+  }).matching
 
   if (stableResult.fullyStable) {
     return {
@@ -52,9 +65,16 @@ export function createMatchingOutput(
   }
 
   const reducedUndirectedGraph = unmatchedParticipantIndexes.map(sourceIndex =>
-    unmatchedParticipantIndexes.map(targetIndex => undirectedGraph[sourceIndex][targetIndex] ?? 0),
+    unmatchedParticipantIndexes.map(targetIndex => undirectedGraph[sourceIndex][targetIndex]),
   )
-  const mwmResultPartial = findMaximumWeightMatching(reducedUndirectedGraph).matching
+  const reducedAvoidedUnmatchedParticipantIndex = avoidUnmatchedParticipantIndex === null
+    ? -1
+    : unmatchedParticipantIndexes.indexOf(avoidUnmatchedParticipantIndex)
+  const mwmResultPartial = findMaximumWeightMatching(reducedUndirectedGraph, {
+    avoidUnmatchedParticipantIndex: reducedAvoidedUnmatchedParticipantIndex >= 0
+      ? reducedAvoidedUnmatchedParticipantIndex
+      : null,
+  }).matching
   const combinedMatching = combineMatchings(
     stableResult.matching,
     mwmResultPartial,

@@ -26,4 +26,32 @@ describe('findMaximumWeightMatching', () => {
       totalWeight: 9,
     })
   })
+
+  it('skips forbidden edges and avoids a specific unmatched participant when possible', () => {
+    expect(findMaximumWeightMatching([
+      [0, 9, 8],
+      [9, 0, 1],
+      [8, 1, 0],
+    ], {
+      avoidUnmatchedParticipantIndex: 0,
+    })).toEqual({
+      matching: [1, 0, -1],
+      pairCount: 1,
+      totalWeight: 9,
+    })
+  })
+
+  it('returns no constrained solution when only the avoided participant could be unmatched', () => {
+    expect(findMaximumWeightMatching([
+      [0, null, null],
+      [null, 0, 7],
+      [null, 7, 0],
+    ], {
+      avoidUnmatchedParticipantIndex: 0,
+    })).toEqual({
+      matching: [-1, -1, -1],
+      pairCount: 0,
+      totalWeight: 0,
+    })
+  })
 })

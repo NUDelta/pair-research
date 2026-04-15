@@ -94,4 +94,73 @@ describe('buildPairs', () => {
       },
     ])
   })
+
+  it('forbids repeated pairs from the previous round when an alternative exists', () => {
+    const tasks = buildTasks(4)
+    const helpCapacities = buildHelpCapacitiesFromDirectedMatrix([
+      [0, 9, 8, 1],
+      [9, 0, 1, 8],
+      [8, 1, 0, 9],
+      [1, 8, 9, 0],
+    ])
+
+    expect(buildPairs(tasks, helpCapacities, {
+      previousPairs: [['user-1', 'user-2'], ['user-3', 'user-4']],
+      previousUnmatchedUserId: null,
+    })).toEqual([
+      {
+        firstUser: 'user-1',
+        secondUser: 'user-3',
+        affinity: 16,
+        taskIds: ['1', '3'],
+      },
+      {
+        firstUser: 'user-2',
+        secondUser: 'user-4',
+        affinity: 16,
+        taskIds: ['2', '4'],
+      },
+    ])
+  })
+
+  it('relaxes to allow a repeated pair when no alternative matching exists', () => {
+    const tasks = buildTasks(2)
+    const helpCapacities = buildHelpCapacitiesFromDirectedMatrix([
+      [0, 9],
+      [9, 0],
+    ])
+
+    expect(buildPairs(tasks, helpCapacities, {
+      previousPairs: [['user-1', 'user-2']],
+      previousUnmatchedUserId: null,
+    })).toEqual([
+      {
+        firstUser: 'user-1',
+        secondUser: 'user-2',
+        affinity: 18,
+        taskIds: ['1', '2'],
+      },
+    ])
+  })
+
+  it('avoids leaving the previously unmatched user unmatched again when the pool is odd', () => {
+    const tasks = buildTasks(3)
+    const helpCapacities = buildHelpCapacitiesFromDirectedMatrix([
+      [0, 9, 8],
+      [9, 0, 1],
+      [8, 1, 0],
+    ])
+
+    expect(buildPairs(tasks, helpCapacities, {
+      previousPairs: [],
+      previousUnmatchedUserId: 'user-1',
+    })).toEqual([
+      {
+        firstUser: 'user-1',
+        secondUser: 'user-2',
+        affinity: 18,
+        taskIds: ['1', '2'],
+      },
+    ])
+  })
 })

@@ -65,4 +65,20 @@ describe('stableMatchingWrapper', () => {
       debug: 'Stable matching found after Phase 1.',
     })
   })
+
+  it('avoids removing the previously unmatched participant when another odd-pool choice works', () => {
+    const preferences = [
+      [1, 2],
+      [0, 2],
+      [0, 1],
+    ]
+
+    expect(stableMatchingWrapper(preferences, {
+      avoidUnmatchedParticipantIndex: 0,
+    })).toEqual({
+      matching: [1, 0, -1],
+      fullyStable: true,
+      debug: 'Stable matching found after Phase 1.',
+    })
+  })
 })

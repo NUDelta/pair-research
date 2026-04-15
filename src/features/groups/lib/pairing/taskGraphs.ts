@@ -1,4 +1,4 @@
-import type { HelpCapacityCandidate, PairingTaskCandidate } from './types'
+import type { HelpCapacityCandidate, PairingHistory, PairingTaskCandidate } from './types'
 import {
   createHelpCapacityLookup,
   getDirectedAffinity,
@@ -26,13 +26,19 @@ export function sortPairingTasks(tasks: PairingTaskCandidate[]): PairingTaskCand
 export function buildDirectedAffinityGraph(
   tasks: PairingTaskCandidate[],
   helpCapacities: HelpCapacityCandidate[],
-): number[][] {
+  history?: PairingHistory,
+): Array<Array<number | null>> {
   const helpCapacityLookup = createHelpCapacityLookup(helpCapacities)
+  const repeatedPairLookup = createRepeatedPairLookup(history)
 
   return tasks.map(sourceTask =>
     tasks.map((targetTask) => {
       if (sourceTask.id === targetTask.id) {
         return 0
+      }
+
+      if (repeatedPairLookup.has(createPairKey(sourceTask.userId, targetTask.userId))) {
+        return null
       }
 
       return getDirectedAffinity(helpCapacityLookup, sourceTask.id, targetTask.userId)
@@ -51,13 +57,19 @@ export function buildDirectedAffinityGraph(
 export function buildUndirectedAffinityGraph(
   tasks: PairingTaskCandidate[],
   helpCapacities: HelpCapacityCandidate[],
-): number[][] {
+  history?: PairingHistory,
+): Array<Array<number | null>> {
   const helpCapacityLookup = createHelpCapacityLookup(helpCapacities)
+  const repeatedPairLookup = createRepeatedPairLookup(history)
 
   return tasks.map((sourceTask, sourceIndex) =>
     tasks.map((targetTask, targetIndex) => {
       if (sourceIndex === targetIndex) {
         return 0
+      }
+
+      if (repeatedPairLookup.has(createPairKey(sourceTask.userId, targetTask.userId))) {
+        return null
       }
 
       return getUndirectedAffinity(
@@ -69,4 +81,14 @@ export function buildUndirectedAffinityGraph(
       )
     }),
   )
+}
+
+function createRepeatedPairLookup(history?: PairingHistory): Set<string> {
+  return new Set(
+    history?.previousPairs.map(([firstUserId, secondUserId]) => createPairKey(firstUserId, secondUserId)) ?? [],
+  )
+}
+
+function createPairKey(firstUserId: string, secondUserId: string): string {
+  return [firstUserId, secondUserId].sort((left, right) => left.localeCompare(right)).join('::')
 }
