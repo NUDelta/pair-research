@@ -3,7 +3,7 @@ import type { GroupValues, RoleValues } from '@/features/groups/schemas/groupFor
 import { Plus, Trash } from 'lucide-react'
 import { Controller } from 'react-hook-form'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 
 interface RoleField extends RoleValues {
@@ -28,26 +28,23 @@ const RolesEditor = ({
   <Card>
     <CardHeader>
       <CardTitle>Roles</CardTitle>
-      <div className="space-y-2 text-sm text-muted-foreground leading-5">
-        <p>
-          You can give your group members different titles here. In the future, you will also be able to add or take away preference for pairings between two roles in your group.
-        </p>
-        <p>
-          We recommend singular tense, not plural. Make sure you 'Enter' or click outside after editing the role title.
-        </p>
-      </div>
-
+      <CardDescription>
+        Define the titles members can hold in this group. Use singular labels when possible,
+        such as &ldquo;Professor&rdquo; or &ldquo;Postdoc&rdquo;.
+      </CardDescription>
     </CardHeader>
-    <CardContent className="space-y-2">
+    <CardContent className="space-y-3">
       {roleFields.map((field, idx) => (
-        <div key={field.id} className="flex items-center space-x-2 space-y-1">
+        <div key={field.id} className="flex items-start gap-2">
           <Controller
             name={`roles.${idx}.title`}
             control={control}
             render={({ field, fieldState }) => (
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <Input
                   {...field}
+                  aria-invalid={fieldState.error !== undefined}
+                  placeholder="Role name"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
@@ -58,15 +55,19 @@ const RolesEditor = ({
                     }
                   }}
                 />
-                {fieldState.error && <p className="text-red-500 text-sm">{fieldState.error.message}</p>}
+                {fieldState.error && (
+                  <p className="text-sm text-destructive">{fieldState.error.message}</p>
+                )}
               </div>
             )}
           />
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             onClick={() => removeRole(idx)}
             disabled={roleFields.length <= 1}
+            aria-label={`Remove role ${idx + 1}`}
           >
             <Trash className="h-4 w-4" />
           </Button>
@@ -75,12 +76,11 @@ const RolesEditor = ({
       <Button
         type="button"
         variant="outline"
-        onClick={() => appendRole({ title: 'Stuff' })}
+        onClick={() => appendRole({ title: 'New Role' })}
         className="w-full"
       >
         <Plus className="mr-2 h-4 w-4" />
-        {' '}
-        Add Role
+        Add role
       </Button>
     </CardContent>
   </Card>

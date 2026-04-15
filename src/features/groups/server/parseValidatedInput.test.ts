@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { groupSchema } from '@/features/groups/schemas/groupForm'
 import { taskSchema } from '@/features/groups/schemas/taskForm'
 import { parseValidatedInput } from './parseValidatedInput'
 
@@ -10,5 +11,41 @@ describe('parseValidatedInput', () => {
         description: 'hey',
       }),
     ).toThrowError('Task description must be at least 5 characters.')
+  })
+
+  it('uses plain-language messaging for invalid group names', () => {
+    expect(() =>
+      parseValidatedInput(groupSchema, {
+        groupName: 'Research@Group',
+        groupDescription: 'We workshop drafts together.',
+        roles: [{ title: 'Researcher' }],
+        assignedRole: 'Researcher',
+        members: [],
+      }),
+    ).toThrowError('Use letters, numbers, spaces, hyphens, or underscores for the group name.')
+  })
+
+  it('uses plain-language messaging for invalid descriptions', () => {
+    expect(() =>
+      parseValidatedInput(groupSchema, {
+        groupName: 'Research Group',
+        groupDescription: 'Please review <draft> notes before Friday.',
+        roles: [{ title: 'Researcher' }],
+        assignedRole: 'Researcher',
+        members: [],
+      }),
+    ).toThrowError('Write a short plain-text description and avoid angle brackets like < or >.')
+  })
+
+  it('rejects duplicate role titles after trimming and casing normalization', () => {
+    expect(() =>
+      parseValidatedInput(groupSchema, {
+        groupName: 'Research Group',
+        groupDescription: 'We workshop drafts together.',
+        roles: [{ title: 'Researcher' }, { title: ' researcher ' }],
+        assignedRole: 'Researcher',
+        members: [],
+      }),
+    ).toThrowError('Each role title must be unique.')
   })
 })

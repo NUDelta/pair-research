@@ -1,7 +1,7 @@
 import type { Control } from 'react-hook-form'
 import type { GroupValues, RoleValues } from '@/features/groups/schemas/groupForm'
 import { Controller } from 'react-hook-form'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 
@@ -21,12 +21,15 @@ const AssignedRoleSelector = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Your Role</CardTitle>
+        <CardTitle className="text-lg">Your role</CardTitle>
+        <CardDescription>
+          This role is assigned to you when the group is created.
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="assignedRole" className="text-sm font-medium">
-            Select Your Role
+            Select your role
           </Label>
           <Controller
             name="assignedRole"

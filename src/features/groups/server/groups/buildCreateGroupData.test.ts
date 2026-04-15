@@ -28,4 +28,15 @@ describe('buildCreateGroupData', () => {
 
     expect(result.description).toBeNull()
   })
+
+  it('trims the group name and description before persistence', () => {
+    const result = buildCreateGroupData({
+      groupName: '  Weekly Lab  ',
+      groupDescription: '  Discuss drafts  ',
+      creatorId: 'user-1',
+    })
+
+    expect(result.name).toBe('Weekly Lab')
+    expect(result.description).toBe('Discuss drafts')
+  })
 })

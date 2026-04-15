@@ -1,13 +1,32 @@
 import type { User } from '@supabase/supabase-js'
+import type { TurnstileAwareActionResponse } from '@/shared/turnstile/constants'
 import { createServerFn } from '@tanstack/react-start'
 import { groupSchema } from '@/features/groups/schemas/groupForm'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { getUser } from '@/shared/supabase/server'
+import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
+import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
+import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
 import { buildCreateGroupData } from './buildCreateGroupData'
 
+const createGroupRequestSchema = groupSchema.merge(turnstileTokenSchema)
+
 export const createGroup = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(groupSchema, data))
-  .handler(async ({ data }): Promise<ActionResponse> => {
+  .inputValidator((data: unknown) => parseValidatedInput(createGroupRequestSchema, data))
+  .handler(async ({ data }): Promise<TurnstileAwareActionResponse> => {
+    const turnstile = await verifyTurnstileToken({
+      action: 'create-group',
+      skipVerification: isTurnstileVerificationBypassed(),
+      token: data.turnstileToken,
+    })
+
+    if (!turnstile.success) {
+      return createTurnstileErrorResponse(
+        turnstile.message,
+        turnstile.code ?? TURNSTILE_ERROR_CODES.failed,
+      )
+    }
+
     try {
       const [{ prisma }, { createServiceRoleSupabase }] = await Promise.all([
         import('@/shared/lib/prismaClient'),

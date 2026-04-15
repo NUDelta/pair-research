@@ -1,3 +1,5 @@
+import { normalizeNullableDescription } from './groupManagement'
+
 interface BuildCreateGroupDataInput {
   groupName: string
   groupDescription?: string | null
@@ -10,8 +12,10 @@ export function buildCreateGroupData({
   creatorId,
 }: BuildCreateGroupDataInput) {
   return {
-    name: groupName,
-    description: groupDescription ?? null,
+    name: groupName.trim(),
+    description: groupDescription === undefined || groupDescription === null
+      ? null
+      : normalizeNullableDescription(groupDescription),
     creator_id: creatorId,
     active_pairing_id: null as string | null,
     active: true,

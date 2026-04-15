@@ -10,15 +10,17 @@ const roleTitleRegex = /^[\p{L}\p{N}_\- ]+$/u
 export const roleSchema = z.object({
   title: z
     .string()
+    .trim()
     .nonempty('Role title is required')
-    .min(2, 'Role title must be at least 2 characters')
-    .max(50, 'Role title must be less than 50 characters')
-    .regex(roleTitleRegex, 'Role title can only contain letters, numbers, underscores, hyphens, and spaces'),
+    .min(2, 'Use at least one short word for the role title')
+    .max(50, 'Keep the role title to a few words')
+    .regex(roleTitleRegex, 'Use letters, numbers, spaces, hyphens, or underscores for the role title'),
 })
 
 export const emailSchema = z.object({
   email: z
     .string()
+    .trim()
     .nonempty('Email is required')
     .email('Please enter a valid email address')
     .refine(
@@ -32,10 +34,11 @@ export const memberSchema = emailSchema.extend(roleSchema.shape)
 export const groupSchema = z.object({
   groupName: z
     .string()
+    .trim()
     .nonempty('Group name is required')
     .min(2, 'Group name is required')
-    .max(50, 'Group name must be less than 50 characters')
-    .regex(groupNameRegex, 'Group name can only contain letters, numbers, underscores, hyphens, and spaces'),
+    .max(50, 'Keep the group name to a few clear words')
+    .regex(groupNameRegex, 'Use letters, numbers, spaces, hyphens, or underscores for the group name'),
   groupDescription: z
     .string()
     .optional()
@@ -48,15 +51,32 @@ export const groupSchema = z.object({
           && val.length <= 500
           && groupDescriptionRegex.test(val)),
       {
-        message: 'Group description must be 5–500 characters and contain valid characters',
+        message: 'Write a short plain-text description and avoid angle brackets like < or >',
       },
     ),
   roles: z
     .array(roleSchema)
     .min(1, 'At least one role is required')
-    .max(8, 'You can have a maximum of 8 roles'),
+    .max(8, 'You can have a maximum of 8 roles')
+    .superRefine((roles, context) => {
+      const seenTitles = new Set<string>()
+
+      roles.forEach((role, index) => {
+        const normalizedTitle = role.title.trim().toLowerCase()
+        if (seenTitles.has(normalizedTitle)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [index, 'title'],
+            message: 'Each role title must be unique.',
+          })
+          return
+        }
+
+        seenTitles.add(normalizedTitle)
+      })
+    }),
   // Assigned role should be one of the roles defined above
-  assignedRole: z.string().min(2).max(50, 'Assigned role is required'),
+  assignedRole: z.string().trim().min(2).max(50, 'Assigned role is required'),
   members: z
     .array(memberSchema)
     .max(50, 'You can invite a maximum of 50 members'),
