@@ -23,18 +23,6 @@ const OthersTasks = ({
   raceTasks = [],
   tasks = [],
 }: OthersTasksProps) => {
-  if (tasks.length > 0) {
-    return (
-      <OthersTasksForm
-        currentUserId={currentUserId}
-        groupId={groupId}
-        raceTasks={raceTasks}
-        tasks={tasks}
-        canRate={currentUserInPool === true}
-      />
-    )
-  }
-
   if (hasActivePairing) {
     return (
       <div className="space-y-4">
@@ -49,6 +37,18 @@ const OthersTasks = ({
           </p>
         </div>
       </div>
+    )
+  }
+
+  if (tasks.length > 0) {
+    return (
+      <OthersTasksForm
+        currentUserId={currentUserId}
+        groupId={groupId}
+        raceTasks={raceTasks}
+        tasks={tasks}
+        canRate={currentUserInPool === true}
+      />
     )
   }
 

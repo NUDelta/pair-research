@@ -6,6 +6,7 @@ import GroupDetailHeader from '@/features/groups/components/detail/GroupDetailHe
 import OthersTasks from '@/features/groups/components/detail/OthersTasks'
 import Pairing from '@/features/groups/components/detail/Pairing'
 import PairingSuccessConfetti from '@/features/groups/components/detail/PairingSuccessConfetti'
+import SoloRoundNotice from '@/features/groups/components/detail/SoloRoundNotice'
 import TaskCard from '@/features/groups/components/detail/TaskCard'
 import SingleGroupPending from '@/features/groups/components/pending/SingleGroupPending'
 import { useRatingProgressRealtimeRefresh } from '@/features/groups/hooks/useRatingProgressRealtimeRefresh'
@@ -46,11 +47,17 @@ function SingleGroupPage() {
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
   const othersTasks = tasks.filter(task => task.userId !== currentUserId)
+  const currentUserLeftOutOfActivePairing
+    = groupInfo.hasActivePairing
+      && currentUserActivePairingTaskWithProfile === null
+      && currentUserTask !== undefined
   const currentUserPoolStatus = currentUserActivePairingTaskWithProfile !== null
     ? 'paired'
-    : currentUserTask !== undefined
-      ? 'in-pool'
-      : 'not-in-pool'
+    : currentUserLeftOutOfActivePairing
+      ? 'solo'
+      : currentUserTask !== undefined
+        ? 'in-pool'
+        : 'not-in-pool'
   const totalRatingsNeededPerTask = Math.max(tasks.length - 1, 0)
   const allRatingsSubmitted = tasks.length >= 2
     && tasks.every(task => (task.ratingsCompletedCount ?? 0) >= totalRatingsNeededPerTask)
@@ -109,10 +116,11 @@ function SingleGroupPage() {
       {currentUserActivePairingTaskWithProfile !== null && (
         <Pairing pairingInfo={currentUserActivePairingTaskWithProfile} />
       )}
+      {currentUserLeftOutOfActivePairing && <SoloRoundNotice />}
 
       <TaskCard
-        currentUserId={currentUserActivePairingTaskWithProfile === null ? currentUserId : undefined}
-        groupId={currentUserActivePairingTaskWithProfile === null ? groupInfo.id : undefined}
+        currentUserId={!groupInfo.hasActivePairing ? currentUserId : undefined}
+        groupId={!groupInfo.hasActivePairing ? groupInfo.id : undefined}
         description={currentUserActivePairingTaskWithProfile === null
           ? currentUserTask?.description
           : 'You are currently in an active pairing. Reset the pool before changing your task.'}

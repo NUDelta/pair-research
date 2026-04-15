@@ -25,6 +25,12 @@ export interface BuiltPair {
   taskIds: [string, string]
 }
 
+function getTaskScore(taskId: string, helpCapacities: HelpCapacityCandidate[]) {
+  return helpCapacities
+    .filter(capacity => capacity.taskId === taskId)
+    .reduce((sum, capacity) => sum + capacity.helpCapacity, 0)
+}
+
 export function findMissingHelpCapacities(
   tasks: PairingTaskCandidate[],
   helpCapacities: HelpCapacityCandidate[],
@@ -63,15 +69,26 @@ export function buildPairs(
 ): BuiltPair[] {
   const pairs: BuiltPair[] = []
   const usedTaskIds = new Set<string>()
+  const pairingCandidates = tasks.length % 2 === 1
+    ? [...tasks]
+        .sort((left, right) => {
+          const scoreDifference = getTaskScore(left.id, helpCapacities) - getTaskScore(right.id, helpCapacities)
+          if (scoreDifference !== 0) {
+            return scoreDifference
+          }
 
-  const sortedTasks = [...tasks].sort((a, b) => {
-    const aCapacity = helpCapacities
-      .filter(capacity => capacity.taskId === a.id)
-      .reduce((sum, capacity) => sum + capacity.helpCapacity, 0)
-    const bCapacity = helpCapacities
-      .filter(capacity => capacity.taskId === b.id)
-      .reduce((sum, capacity) => sum + capacity.helpCapacity, 0)
-    return bCapacity - aCapacity
+          const nameDifference = (left.fullName ?? '').localeCompare(right.fullName ?? '')
+          if (nameDifference !== 0) {
+            return nameDifference
+          }
+
+          return left.id.localeCompare(right.id)
+        })
+        .slice(1)
+    : tasks
+
+  const sortedTasks = [...pairingCandidates].sort((a, b) => {
+    return getTaskScore(b.id, helpCapacities) - getTaskScore(a.id, helpCapacities)
   })
 
   for (const task1 of sortedTasks) {

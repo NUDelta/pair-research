@@ -7,7 +7,7 @@ import TaskDescription from './TaskDescription'
 import TaskEditor from './TaskEditor'
 
 type RatingStatus = 'idle' | 'saving' | 'error'
-type PoolStatus = 'in-pool' | 'not-in-pool' | 'paired'
+type PoolStatus = 'in-pool' | 'not-in-pool' | 'paired' | 'solo'
 
 interface TaskCardProps {
   taskId?: string
@@ -42,6 +42,7 @@ export default function TaskCard({
     'in-pool': 'In Pool',
     'not-in-pool': 'Not In Pool',
     'paired': 'Currently Paired',
+    'solo': 'No Pair This Round',
   } as const
 
   return (
@@ -50,6 +51,7 @@ export default function TaskCard({
       poolStatus === 'in-pool' && 'border-emerald-200 bg-emerald-50/40',
       poolStatus === 'not-in-pool' && 'border-slate-200 bg-slate-50/60',
       poolStatus === 'paired' && 'border-amber-200 bg-amber-50/50',
+      poolStatus === 'solo' && 'border-sky-200 bg-sky-50/60',
     )}
     >
       <CardContent
@@ -69,6 +71,7 @@ export default function TaskCard({
                   poolStatus === 'in-pool' && 'bg-emerald-100 text-emerald-900',
                   poolStatus === 'not-in-pool' && 'bg-slate-200 text-slate-700',
                   poolStatus === 'paired' && 'bg-amber-100 text-amber-900',
+                  poolStatus === 'solo' && 'bg-sky-100 text-sky-900',
                 )}
               >
                 {poolStatusLabel[poolStatus]}

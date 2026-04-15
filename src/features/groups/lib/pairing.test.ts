@@ -24,7 +24,7 @@ describe('findMissingHelpCapacities', () => {
 })
 
 describe('buildPairs', () => {
-  it('leaves an unmatched task out of the resulting pairs', () => {
+  it('leaves the lowest-scoring task out of the resulting pairs when the pool size is odd', () => {
     const tasks = [
       { id: '1', description: 'Task 1', userId: 'user-1', fullName: 'User One' },
       { id: '2', description: 'Task 2', userId: 'user-2', fullName: 'User Two' },
