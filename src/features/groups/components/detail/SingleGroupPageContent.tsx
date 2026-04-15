@@ -126,14 +126,18 @@ export default function SingleGroupPageContent({
       )}
       {currentUserLeftOutOfActivePairing && <SoloRoundNotice />}
 
-      {!groupInfo.hasActivePairing && (
+      {(!groupInfo.hasActivePairing || currentUserLeftOutOfActivePairing) && (
         <TaskCard
-          currentUserId={currentUserId}
-          groupId={groupInfo.id}
+          currentUserId={!groupInfo.hasActivePairing ? currentUserId : undefined}
+          groupId={!groupInfo.hasActivePairing ? groupInfo.id : undefined}
           description={currentUserTask?.description}
           userAvatar={groupInfo.avatarUrl}
           fullName={groupInfo.fullName}
-          poolStatus={currentUserTask !== undefined ? 'in-pool' : 'not-in-pool'}
+          poolStatus={currentUserLeftOutOfActivePairing
+            ? 'solo'
+            : currentUserTask !== undefined
+              ? 'in-pool'
+              : 'not-in-pool'}
         />
       )}
 

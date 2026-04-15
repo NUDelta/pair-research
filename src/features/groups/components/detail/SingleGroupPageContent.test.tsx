@@ -156,7 +156,7 @@ describe('singleGroupPageContent', () => {
     mockPairingProps.mockClear()
   })
 
-  it('hides the current user task card while an active pairing is shown', () => {
+  it('hides the current user task card while an active pairing is shown for a paired member', () => {
     render(
       <SingleGroupPageContent
         {...baseProps}
@@ -186,6 +186,33 @@ describe('singleGroupPageContent', () => {
 
     expect(screen.getByTestId('pairing-card')).toBeInTheDocument()
     expect(screen.queryByTestId('task-card')).not.toBeInTheDocument()
+  })
+
+  it('keeps the current user task card visible when they were left out of the active round', () => {
+    render(
+      <SingleGroupPageContent
+        {...baseProps}
+        groupInfo={{
+          ...baseProps.groupInfo,
+          activePairingId: 'pairing-1',
+          activePairingCreatedAt: '2026-04-14T12:00:00.000Z',
+          activePairCount: 1,
+          hasActivePairing: true,
+        }}
+        initialTasks={[baseTask, teammateTask]}
+      />,
+    )
+
+    expect(screen.getByTestId('solo-round-notice')).toBeInTheDocument()
+    expect(screen.getByTestId('task-card')).toBeInTheDocument()
+    expect(mockTaskCardProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        currentUserId: undefined,
+        groupId: undefined,
+        description: 'Draft my methods section',
+        poolStatus: 'solo',
+      }),
+    )
   })
 
   it('keeps the current user task card visible when no pairing is active', () => {
