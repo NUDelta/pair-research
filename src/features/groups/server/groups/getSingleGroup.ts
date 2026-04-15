@@ -101,6 +101,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         description: membership.group.description,
         activePairingId: membership.group.active_pairing_id,
         activePairingCreatedAt: activePairing?.created_at.toISOString() ?? null,
+        activePairCount: activePairing?.pair.length ?? 0,
         lastPairingCreatedAt: latestPairing?.created_at.toISOString() ?? null,
         userId,
         fullName: membership.profile.full_name,

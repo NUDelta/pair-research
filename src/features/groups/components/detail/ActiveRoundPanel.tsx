@@ -2,13 +2,17 @@ import { AlertCircleIcon, RotateCcwIcon, UsersIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 
 interface ActiveRoundPanelProps {
+  activePairCount?: number
   currentUserLeftOut: boolean
   isAdmin: boolean
+  leftOutNames?: string[]
 }
 
 export default function ActiveRoundPanel({
+  activePairCount = 0,
   currentUserLeftOut,
   isAdmin,
+  leftOutNames = [],
 }: ActiveRoundPanelProps) {
   const icon = isAdmin
     ? <RotateCcwIcon className="size-5 text-amber-600" />
@@ -18,12 +22,15 @@ export default function ActiveRoundPanel({
 
   const title = currentUserLeftOut && !isAdmin ? 'No pair this round' : 'Round complete'
   const description = isAdmin
-    ? currentUserLeftOut
-      ? 'One person was left out this round. Reset the pool from the header when you are ready to start the next round.'
-      : 'Everyone in the pool was paired this round. Reset the pool from the header when you are ready to start the next round.'
+    ? `${activePairCount === 1 ? '1 pair was' : `${activePairCount} pairs were`} created this round.`
     : currentUserLeftOut
       ? 'You were not paired this round. Wait for an admin to reset the pool before the next round begins.'
       : 'This round is complete. Wait for an admin to reset the pool before the next round begins.'
+  const adminSecondaryDescription = isAdmin
+    ? leftOutNames.length > 0
+      ? `Left out: ${leftOutNames.join(', ')}. Reset the pool from the header when you are ready to start the next round.`
+      : 'Everyone in the pool was paired this round. Reset the pool from the header when you are ready to start the next round.'
+    : null
 
   return (
     <Card className="border-dashed bg-muted/20">
@@ -31,8 +38,11 @@ export default function ActiveRoundPanel({
         {icon}
         <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
+      <CardContent className="space-y-2 text-sm text-muted-foreground">
         {description}
+        {adminSecondaryDescription !== null && (
+          <p>{adminSecondaryDescription}</p>
+        )}
       </CardContent>
     </Card>
   )

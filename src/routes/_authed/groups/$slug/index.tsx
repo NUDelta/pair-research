@@ -147,6 +147,7 @@ function SingleGroupPage() {
       />
 
       <OthersTasks
+        activePairCount={groupInfo.activePairCount}
         currentUserId={currentUserId}
         groupId={groupInfo.id}
         currentUserHasTask={

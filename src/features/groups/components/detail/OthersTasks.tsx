@@ -4,6 +4,7 @@ import HorseRace from './HorseRace'
 import OthersTasksForm from './OthersTasksForm'
 
 interface OthersTasksProps {
+  activePairCount?: number
   currentUserId: string
   groupId: string
   currentUserHasTask?: boolean
@@ -16,6 +17,7 @@ interface OthersTasksProps {
 }
 
 const OthersTasks = ({
+  activePairCount = 0,
   currentUserId,
   groupId,
   currentUserHasTask,
@@ -31,8 +33,10 @@ const OthersTasks = ({
       <div className="space-y-4">
         <HorseRace currentUserId={currentUserId} tasks={raceTasks} />
         <ActiveRoundPanel
+          activePairCount={activePairCount}
           currentUserLeftOut={currentUserLeftOut}
           isAdmin={isAdmin === true}
+          leftOutNames={tasks.map(task => task.fullName ?? 'Group member')}
         />
       </div>
     )

@@ -6,6 +6,7 @@ describe('others tasks empty states', () => {
   it('shows an admin-specific message when the current round is complete', () => {
     render(
       <OthersTasks
+        activePairCount={2}
         groupId="group-1"
         currentUserId="user-1"
         currentUserHasTask
@@ -18,12 +19,14 @@ describe('others tasks empty states', () => {
     )
 
     expect(screen.getByText('Round complete')).toBeInTheDocument()
+    expect(screen.getByText('2 pairs were created this round.')).toBeInTheDocument()
     expect(screen.getByText('Everyone in the pool was paired this round. Reset the pool from the header when you are ready to start the next round.')).toBeInTheDocument()
   })
 
   it('shows an admin-specific message when someone was left out of the round', () => {
     render(
       <OthersTasks
+        activePairCount={1}
         groupId="group-1"
         currentUserId="user-1"
         currentUserHasTask
@@ -32,17 +35,29 @@ describe('others tasks empty states', () => {
         hasActivePairing
         isAdmin
         raceTasks={[]}
-        tasks={[]}
+        tasks={[
+          {
+            id: 'task-2',
+            description: 'Left out task',
+            userId: 'user-3',
+            fullName: 'Solo User',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+        ]}
       />,
     )
 
     expect(screen.getByText('Round complete')).toBeInTheDocument()
-    expect(screen.getByText('One person was left out this round. Reset the pool from the header when you are ready to start the next round.')).toBeInTheDocument()
+    expect(screen.getByText('1 pair was created this round.')).toBeInTheDocument()
+    expect(screen.getByText('Left out: Solo User. Reset the pool from the header when you are ready to start the next round.')).toBeInTheDocument()
   })
 
   it('shows a member-specific message when waiting for an admin reset', () => {
     render(
       <OthersTasks
+        activePairCount={1}
         groupId="group-1"
         currentUserId="user-1"
         currentUserHasTask
@@ -61,6 +76,7 @@ describe('others tasks empty states', () => {
   it('shows a personalized member message when they were left out', () => {
     render(
       <OthersTasks
+        activePairCount={1}
         groupId="group-1"
         currentUserId="user-1"
         currentUserHasTask
@@ -80,6 +96,7 @@ describe('others tasks empty states', () => {
   it('does not show leftover unpaired tasks under others during an active round', () => {
     render(
       <OthersTasks
+        activePairCount={1}
         groupId="group-1"
         currentUserId="user-1"
         currentUserHasTask
