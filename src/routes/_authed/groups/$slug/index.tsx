@@ -6,6 +6,7 @@ import GroupDetailHeader from '@/features/groups/components/detail/GroupDetailHe
 import OthersTasks from '@/features/groups/components/detail/OthersTasks'
 import Pairing from '@/features/groups/components/detail/Pairing'
 import PairingSuccessConfetti from '@/features/groups/components/detail/PairingSuccessConfetti'
+import { formatPairingRelativeTime } from '@/features/groups/components/detail/roundStatus'
 import SoloRoundNotice from '@/features/groups/components/detail/SoloRoundNotice'
 import TaskCard from '@/features/groups/components/detail/TaskCard'
 import SingleGroupPending from '@/features/groups/components/pending/SingleGroupPending'
@@ -61,6 +62,20 @@ function SingleGroupPage() {
   const totalRatingsNeededPerTask = Math.max(tasks.length - 1, 0)
   const allRatingsSubmitted = tasks.length >= 2
     && tasks.every(task => (task.ratingsCompletedCount ?? 0) >= totalRatingsNeededPerTask)
+  const activeRoundRelativeTime = groupInfo.activePairingCreatedAt === null
+    ? null
+    : formatPairingRelativeTime(groupInfo.activePairingCreatedAt)
+  const latestRoundRelativeTime = groupInfo.lastPairingCreatedAt === null
+    ? null
+    : formatPairingRelativeTime(groupInfo.lastPairingCreatedAt)
+  const roundStatusLabel = groupInfo.hasActivePairing ? 'Active round' : undefined
+  const roundStatusNote = groupInfo.hasActivePairing
+    ? activeRoundRelativeTime === null
+      ? null
+      : `This pairing was made ${activeRoundRelativeTime}.`
+    : latestRoundRelativeTime === null
+      ? null
+      : `Last pairing was made ${latestRoundRelativeTime}.`
 
   useEffect(() => {
     const previousActivePairingId = previousActivePairingIdRef.current
@@ -81,6 +96,8 @@ function SingleGroupPage() {
       )}
       <GroupDetailHeader
         groupName={groupInfo.name}
+        roundStatusLabel={roundStatusLabel}
+        roundStatusNote={roundStatusNote}
         actions={(
           <>
             {groupInfo.isAdmin && (
