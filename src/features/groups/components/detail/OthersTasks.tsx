@@ -62,8 +62,10 @@ const OthersTasks = ({
         <p className="text-lg font-medium">No tasks from others yet</p>
         <p className="text-sm mt-1">
           {currentUserHasTask
-            ? 'Hang tight! Others may add their tasks soon.'
-            : 'You can start by posting your own task.'}
+            ? currentUserInPool
+              ? 'Ask another member to add a task so ratings can start.'
+              : 'Add your task from the card above to rejoin the pool for this round.'
+            : 'Add your task from the card above to join the pool and get the round started.'}
         </p>
         {currentUserInPool && (
           <p className="mt-3 text-sm">

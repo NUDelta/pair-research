@@ -24,12 +24,12 @@ export default function ActiveRoundPanel({
   const description = isAdmin
     ? `${activePairCount === 1 ? '1 pair was' : `${activePairCount} pairs were`} created this round.`
     : currentUserLeftOut
-      ? 'You were not paired this round. Wait for an admin to reset the pool before the next round begins.'
-      : 'This round is complete. Wait for an admin to reset the pool before the next round begins.'
+      ? 'You were not paired this round. Wait for an admin to reset the pool from the header before the next round begins.'
+      : 'This round is complete. Wait for an admin to reset the pool from the header before the next round begins.'
   const adminSecondaryDescription = isAdmin
     ? leftOutNames.length > 0
-      ? `Left out: ${leftOutNames.join(', ')}. Reset the pool from the header when you are ready to start the next round.`
-      : 'Everyone in the pool was paired this round. Reset the pool from the header when you are ready to start the next round.'
+      ? `Left out: ${leftOutNames.join(', ')}. Use Reset Pool in the header when you are ready to start the next round.`
+      : 'Everyone in the pool was paired this round. Use Reset Pool in the header when you are ready to start the next round.'
     : null
 
   return (

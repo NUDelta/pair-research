@@ -20,7 +20,7 @@ describe('others tasks empty states', () => {
 
     expect(screen.getByText('Round complete')).toBeInTheDocument()
     expect(screen.getByText('2 pairs were created this round.')).toBeInTheDocument()
-    expect(screen.getByText('Everyone in the pool was paired this round. Reset the pool from the header when you are ready to start the next round.')).toBeInTheDocument()
+    expect(screen.getByText('Everyone in the pool was paired this round. Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
   })
 
   it('shows an admin-specific message when someone was left out of the round', () => {
@@ -51,7 +51,7 @@ describe('others tasks empty states', () => {
 
     expect(screen.getByText('Round complete')).toBeInTheDocument()
     expect(screen.getByText('1 pair was created this round.')).toBeInTheDocument()
-    expect(screen.getByText('Left out: Solo User. Reset the pool from the header when you are ready to start the next round.')).toBeInTheDocument()
+    expect(screen.getByText('Left out: Solo User. Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
   })
 
   it('shows a member-specific message when waiting for an admin reset', () => {
@@ -70,7 +70,7 @@ describe('others tasks empty states', () => {
     )
 
     expect(screen.getByText('Round complete')).toBeInTheDocument()
-    expect(screen.getByText('This round is complete. Wait for an admin to reset the pool before the next round begins.')).toBeInTheDocument()
+    expect(screen.getByText('This round is complete. Wait for an admin to reset the pool from the header before the next round begins.')).toBeInTheDocument()
   })
 
   it('shows a personalized member message when they were left out', () => {
@@ -90,7 +90,7 @@ describe('others tasks empty states', () => {
     )
 
     expect(screen.getByText('No pair this round')).toBeInTheDocument()
-    expect(screen.getByText('You were not paired this round. Wait for an admin to reset the pool before the next round begins.')).toBeInTheDocument()
+    expect(screen.getByText('You were not paired this round. Wait for an admin to reset the pool from the header before the next round begins.')).toBeInTheDocument()
   })
 
   it('does not show leftover unpaired tasks under others during an active round', () => {
@@ -131,5 +131,51 @@ describe('others tasks empty states', () => {
     expect(screen.getByText('Round complete')).toBeInTheDocument()
     expect(screen.queryByText('Others Currently In the Pool')).not.toBeInTheDocument()
     expect(screen.queryByText('Left out task')).not.toBeInTheDocument()
+  })
+
+  it('points members without a task to the task card above', () => {
+    render(
+      <OthersTasks
+        groupId="group-1"
+        currentUserId="user-1"
+        currentUserHasTask={false}
+        currentUserInPool={false}
+        raceTasks={[]}
+        tasks={[]}
+      />,
+    )
+
+    expect(screen.getByText('Add your task from the card above to join the pool and get the round started.')).toBeInTheDocument()
+  })
+
+  it('tells a solo pool member to get another task into the round', () => {
+    render(
+      <OthersTasks
+        groupId="group-1"
+        currentUserId="user-1"
+        currentUserHasTask
+        currentUserInPool
+        raceTasks={[]}
+        tasks={[]}
+      />,
+    )
+
+    expect(screen.getByText('Ask another member to add a task so ratings can start.')).toBeInTheDocument()
+    expect(screen.getByText('You\'re the only person in the pool right now.')).toBeInTheDocument()
+  })
+
+  it('tells members with a saved task but not in the pool how to rejoin', () => {
+    render(
+      <OthersTasks
+        groupId="group-1"
+        currentUserId="user-1"
+        currentUserHasTask
+        currentUserInPool={false}
+        raceTasks={[]}
+        tasks={[]}
+      />,
+    )
+
+    expect(screen.getByText('Add your task from the card above to rejoin the pool for this round.')).toBeInTheDocument()
   })
 })
