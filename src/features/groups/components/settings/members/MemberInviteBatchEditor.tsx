@@ -1,13 +1,18 @@
+import type { ColumnDef } from '@tanstack/react-table'
 import type { GroupSettingsRole } from '../types'
 import type { GroupMemberInviteDraft } from '@/features/groups/lib/groupMemberInviteBatch'
+import { createColumnHelper } from '@tanstack/react-table'
 import { PlusIcon, Trash2Icon, UploadIcon } from 'lucide-react'
+import { useMemo } from 'react'
+import InvitePreparationPanel from '@/features/groups/components/invites/InvitePreparationPanel'
+import PreparedInvitesTable from '@/features/groups/components/invites/PreparedInvitesTable'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { DataTableColumnHeader } from '@/shared/ui/data-table'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Textarea } from '@/shared/ui/textarea'
 
 interface MemberInviteBatchEditorProps {
   defaultIsAdmin: boolean
@@ -36,6 +41,16 @@ export interface InviteRow extends GroupMemberInviteDraft {
   id: string
 }
 
+const columnHelper = createColumnHelper<InviteRow>()
+
+function toInviteDraft(row: InviteRow): GroupMemberInviteDraft {
+  return {
+    email: row.email,
+    roleId: row.roleId,
+    isAdmin: row.isAdmin,
+  }
+}
+
 export default function MemberInviteBatchEditor({
   defaultIsAdmin,
   defaultRoleId,
@@ -61,38 +76,124 @@ export default function MemberInviteBatchEditor({
   const allRowsSelected = inviteRows.length > 0 && selectedCount === inviteRows.length
   const hasRows = inviteRows.length > 0
   const canAddMoreRows = inviteRows.length < maxInvites
+  const columns = useMemo(() => {
+    return [
+      columnHelper.display({
+        id: 'select',
+        enableHiding: false,
+        enableSorting: false,
+        header: () => (
+          <div className="flex justify-center">
+            <Checkbox
+              aria-label="Select all invites"
+              checked={allRowsSelected}
+              onCheckedChange={checked => onSelectAllRows(checked === true)}
+              disabled={!hasRows}
+            />
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="flex justify-center">
+            <Checkbox
+              aria-label={`Select invite ${row.index + 1}`}
+              checked={selectedRowIds.has(row.original.id)}
+              onCheckedChange={checked => onSelectRow(row.original.id, checked === true)}
+            />
+          </div>
+        ),
+      }),
+      columnHelper.accessor('email', {
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
+        cell: ({ row }) => {
+          const errors = rowErrors[row.original.id]
+
+          return (
+            <div className="grid min-w-60 gap-2">
+              <Input
+                id={`invite-email-${row.original.id}`}
+                type="email"
+                value={row.original.email}
+                aria-invalid={errors?.email !== undefined}
+                onChange={event => onUpdateRow(row.original.id, { ...toInviteDraft(row.original), email: event.target.value })}
+                placeholder="member@example.com"
+              />
+              {errors?.email !== undefined && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
+            </div>
+          )
+        },
+      }),
+      columnHelper.accessor('roleId', {
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Role" />,
+        cell: ({ row }) => {
+          const errors = rowErrors[row.original.id]
+
+          return (
+            <div className="grid min-w-48 gap-2">
+              <Select
+                value={row.original.roleId}
+                onValueChange={roleId => onUpdateRow(row.original.id, { ...toInviteDraft(row.original), roleId })}
+              >
+                <SelectTrigger id={`invite-role-${row.original.id}`} aria-invalid={errors?.roleId !== undefined}>
+                  <SelectValue placeholder="Choose a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {roles.map(role => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.title}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              {errors?.roleId !== undefined && (
+                <p className="text-sm text-destructive">{errors.roleId}</p>
+              )}
+            </div>
+          )
+        },
+      }),
+      columnHelper.accessor('isAdmin', {
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Access" />,
+        cell: ({ row }) => (
+          <label className="flex min-h-10 items-center gap-3 rounded-lg border px-3 py-2 text-sm">
+            <Checkbox
+              checked={row.original.isAdmin}
+              onCheckedChange={checked => onUpdateRow(row.original.id, { ...toInviteDraft(row.original), isAdmin: checked === true })}
+            />
+            Admin access
+          </label>
+        ),
+      }),
+      columnHelper.display({
+        id: 'actions',
+        enableHiding: false,
+        enableSorting: false,
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => onRemoveRow(row.original.id)}
+              aria-label={`Remove invite ${row.index + 1}`}
+            >
+              <Trash2Icon />
+            </Button>
+          </div>
+        ),
+      }),
+    ] as ColumnDef<InviteRow>[]
+  }, [allRowsSelected, hasRows, onRemoveRow, onSelectAllRows, onSelectRow, onUpdateRow, roles, rowErrors, selectedRowIds])
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-xl border bg-muted/30 p-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <Label htmlFor="member-invite-source">Paste emails or CSV</Label>
-            <p className="text-sm text-muted-foreground">
-              Add up to
-              {' '}
-              {maxInvites}
-              {' '}
-              members at once. CSV supports `email`, `role`, and `access/admin` columns.
-            </p>
-          </div>
-          <Badge variant="secondary">
-            {inviteRows.length}
-            /
-            {maxInvites}
-            {' '}
-            prepared
-          </Badge>
-        </div>
-        <div className="mt-3 flex flex-col gap-3">
-          <Textarea
-            id="member-invite-source"
-            value={draftSource}
-            onChange={event => onDraftSourceChange(event.target.value)}
-            placeholder={'member1@example.com\nmember2@example.com,Researcher,admin'}
-            className="min-h-28"
-          />
-          <div className="flex flex-col gap-2 sm:flex-row">
+      <InvitePreparationPanel
+        actionButtons={(
+          <>
             <Button
               type="button"
               variant="outline"
@@ -122,9 +223,25 @@ export default function MemberInviteBatchEditor({
               <PlusIcon data-icon="inline-start" />
               Add blank row
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        )}
+        count={inviteRows.length}
+        description={(
+          <>
+            Add up to
+            {' '}
+            {maxInvites}
+            {' '}
+            members at once. CSV supports `email`, `role`, and `access/admin` columns.
+          </>
+        )}
+        label="Paste emails or CSV"
+        maxInvites={maxInvites}
+        onSourceChange={onDraftSourceChange}
+        placeholder={'member1@example.com\nmember2@example.com,Researcher,admin'}
+        sourceId="member-invite-source"
+        sourceValue={draftSource}
+      />
 
       <div className="rounded-xl border p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -171,104 +288,16 @@ export default function MemberInviteBatchEditor({
         </div>
       </div>
 
-      <div className="rounded-xl border">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-          <div className="space-y-1">
-            <h3 className="text-sm font-medium">Prepared invites</h3>
-            <p className="text-sm text-muted-foreground">
-              Edit rows individually before sending invitations.
-            </p>
-          </div>
-          {hasRows && (
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Checkbox
-                checked={allRowsSelected}
-                onCheckedChange={checked => onSelectAllRows(checked === true)}
-              />
-              Select all
-            </label>
-          )}
-        </div>
-        {hasRows
-          ? (
-              <div className="flex max-h-[320px] flex-col gap-3 overflow-y-auto p-4">
-                {inviteRows.map((row, index) => {
-                  const errors = rowErrors[row.id]
-
-                  return (
-                    <div key={row.id} className="rounded-xl border bg-background p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <label className="flex items-center gap-3 text-sm font-medium">
-                          <Checkbox
-                            checked={selectedRowIds.has(row.id)}
-                            onCheckedChange={checked => onSelectRow(row.id, checked === true)}
-                          />
-                          Invite
-                          {' '}
-                          {index + 1}
-                        </label>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => onRemoveRow(row.id)}>
-                          <Trash2Icon />
-                        </Button>
-                      </div>
-                      <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_auto]">
-                        <div className="grid gap-2">
-                          <Label htmlFor={`invite-email-${row.id}`}>Email</Label>
-                          <Input
-                            id={`invite-email-${row.id}`}
-                            type="email"
-                            value={row.email}
-                            aria-invalid={errors?.email !== undefined}
-                            onChange={event => onUpdateRow(row.id, { ...row, email: event.target.value })}
-                            placeholder="member@example.com"
-                          />
-                          {errors?.email !== undefined && (
-                            <p className="text-sm text-destructive">{errors.email}</p>
-                          )}
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor={`invite-role-${row.id}`}>Role</Label>
-                          <Select
-                            value={row.roleId}
-                            onValueChange={roleId => onUpdateRow(row.id, { ...row, roleId })}
-                          >
-                            <SelectTrigger id={`invite-role-${row.id}`} aria-invalid={errors?.roleId !== undefined}>
-                              <SelectValue placeholder="Choose a role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {roles.map(role => (
-                                  <SelectItem key={role.id} value={role.id}>
-                                    {role.title}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                          {errors?.roleId !== undefined && (
-                            <p className="text-sm text-destructive">{errors.roleId}</p>
-                          )}
-                        </div>
-                        <label className="flex min-h-10 items-center gap-3 rounded-lg border px-3 py-2 text-sm lg:self-end">
-                          <Checkbox
-                            checked={row.isAdmin}
-                            onCheckedChange={checked => onUpdateRow(row.id, { ...row, isAdmin: checked === true })}
-                          />
-                          Admin access
-                        </label>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          : (
-              <div className="flex flex-col gap-1 px-4 py-8 text-center text-sm text-muted-foreground">
-                <p>No invites prepared yet.</p>
-                <p>Import a list, upload a CSV, or add a blank row to start.</p>
-              </div>
-            )}
-      </div>
+      <PreparedInvitesTable
+        columns={columns}
+        data={inviteRows}
+        description="Edit rows individually before sending invitations."
+        emptyDescription="Import a list, upload a CSV, or add a blank row to start."
+        emptyTitle="No invites prepared yet."
+        filterColumnId="email"
+        filterPlaceholder="Filter invites..."
+        getRowId={row => row.id}
+      />
     </div>
   )
 }
