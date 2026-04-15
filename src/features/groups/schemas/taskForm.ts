@@ -1,16 +1,12 @@
 import { z } from 'zod'
 
 const TASK_DESCRIPTION_MIN_WORDS = 5
-const TASK_DESCRIPTION_MAX_WORDS = 50
+const TASK_DESCRIPTION_MAX_WORDS = 150
 
-const WORD_REGEX = /\S+/
+const WORD_REGEX = /\S+/g
 
 function countWords(value: string) {
-  return value
-    .trim()
-    .split(WORD_REGEX)
-    .filter(Boolean)
-    .length
+  return value.trim().match(WORD_REGEX)?.length ?? 0
 }
 
 export const taskSchema = z.object({

@@ -1,5 +1,6 @@
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { renderHook, waitFor } from '@testing-library/react'
+import { toast } from 'sonner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCurrentUserTaskDescription } from './useCurrentUserTaskDescription'
 import { useTaskRealtimeListener } from './useTaskRealtimeListener'
@@ -59,6 +60,12 @@ vi.mock('@tanstack/react-router', () => ({
   useRouter: mockedUseRouter,
 }))
 
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+  },
+}))
+
 describe('groups realtime hooks', () => {
   beforeEach(() => {
     channel.mockClear()
@@ -69,6 +76,7 @@ describe('groups realtime hooks', () => {
     mockedUseRouter.mockClear()
     from.mockClear()
     postgresHandlers.length = 0
+    vi.mocked(toast.success).mockClear()
   })
 
   it('syncs other tasks from refreshed loader data', async () => {
@@ -254,6 +262,76 @@ describe('groups realtime hooks', () => {
     })
 
     await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('shows the pairing refresh toast only once per pairing id', async () => {
+    const initialTasks: Task[] = [
+      {
+        id: 'task-1',
+        description: 'Draft review',
+        userId: 'user-2',
+        fullName: 'Teammate one',
+        avatarUrl: null,
+        helpCapacity: 3,
+      },
+      {
+        id: 'task-2',
+        description: 'Methods section',
+        userId: 'user-3',
+        fullName: 'Teammate two',
+        avatarUrl: null,
+        helpCapacity: 4,
+      },
+    ]
+
+    renderHook(() =>
+      useTaskRealtimeListener('group-1', 'user-1', initialTasks),
+    )
+
+    const taskHandler = postgresHandlers[0]
+    expect(taskHandler).toBeTypeOf('function')
+
+    await taskHandler({
+      schema: 'public',
+      table: 'task',
+      eventType: 'UPDATE',
+      commit_timestamp: '2026-04-13T10:00:00.000Z',
+      errors: [],
+      new: {
+        id: 'task-1',
+        description: 'Draft review',
+        user_id: 'user-2',
+        group_id: 'group-1',
+        created_at: '2026-04-13T10:00:00.000Z',
+        pairing_id: 'pairing-1',
+        delete_pending: false,
+      },
+      old: {},
+    })
+
+    await taskHandler({
+      schema: 'public',
+      table: 'task',
+      eventType: 'UPDATE',
+      commit_timestamp: '2026-04-13T10:00:01.000Z',
+      errors: [],
+      new: {
+        id: 'task-2',
+        description: 'Methods section',
+        user_id: 'user-3',
+        group_id: 'group-1',
+        created_at: '2026-04-13T10:00:01.000Z',
+        pairing_id: 'pairing-1',
+        delete_pending: false,
+      },
+      old: {},
+    })
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledTimes(1)
+      expect(toast.success).toHaveBeenCalledWith('Task paired with another user! Refreshing...')
       expect(invalidate).toHaveBeenCalledTimes(1)
     })
   })
