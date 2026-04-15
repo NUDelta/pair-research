@@ -21,6 +21,15 @@ interface SingleGroupPageContentProps {
     activePairingId: string | null
     activePairingCreatedAt: string | null
     activePairCount: number
+    activeRoundPairs: Array<{
+      id: string
+      members: Array<{
+        userId: string
+        fullName: string | null
+        avatarUrl: string | null
+        taskDescription: string | null
+      }>
+    }>
     lastPairingCreatedAt: string | null
     userId: string
     fullName: string | null
@@ -143,6 +152,7 @@ export default function SingleGroupPageContent({
 
       <OthersTasks
         activePairCount={groupInfo.activePairCount}
+        activeRoundPairs={groupInfo.activeRoundPairs}
         currentUserId={currentUserId}
         groupId={groupInfo.id}
         currentUserHasTask={

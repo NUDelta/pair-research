@@ -132,6 +132,7 @@ const baseProps = {
     activePairingId: null,
     activePairingCreatedAt: null,
     activePairCount: 0,
+    activeRoundPairs: [],
     lastPairingCreatedAt: null,
     userId: 'user-1',
     fullName: 'Ada Lovelace',
@@ -298,6 +299,7 @@ describe('singleGroupPageContent', () => {
         currentUserLeftOut: true,
         hasActivePairing: true,
         isAdmin: true,
+        activeRoundPairs: [],
         tasks: [
           expect.objectContaining({
             userId: 'user-2',
@@ -340,6 +342,7 @@ describe('singleGroupPageContent', () => {
         currentUserHasTask: true,
         currentUserInPool: false,
         isAdmin: false,
+        activeRoundPairs: [],
       }),
     )
   })
@@ -361,6 +364,7 @@ describe('singleGroupPageContent', () => {
       expect.objectContaining({
         currentUserHasTask: false,
         currentUserInPool: false,
+        activeRoundPairs: [],
         tasks: [
           expect.objectContaining({
             userId: 'user-2',
@@ -382,6 +386,7 @@ describe('singleGroupPageContent', () => {
       expect.objectContaining({
         currentUserHasTask: true,
         currentUserInPool: true,
+        activeRoundPairs: [],
         raceTasks: [
           expect.objectContaining({ userId: 'user-1' }),
           expect.objectContaining({ userId: 'user-2' }),
@@ -389,6 +394,55 @@ describe('singleGroupPageContent', () => {
         tasks: [
           expect.objectContaining({
             userId: 'user-2',
+          }),
+        ],
+      }),
+    )
+  })
+
+  it('passes active round pair summaries to the admin round panel', () => {
+    render(
+      <SingleGroupPageContent
+        {...baseProps}
+        groupInfo={{
+          ...baseProps.groupInfo,
+          activePairingId: 'pairing-1',
+          activePairingCreatedAt: '2026-04-14T12:00:00.000Z',
+          activePairCount: 1,
+          activeRoundPairs: [
+            {
+              id: 'pair-1',
+              members: [
+                {
+                  userId: 'user-2',
+                  fullName: 'Grace Hopper',
+                  avatarUrl: null,
+                  taskDescription: 'Review figures',
+                },
+                {
+                  userId: 'user-3',
+                  fullName: 'Barbara Liskov',
+                  avatarUrl: null,
+                  taskDescription: 'Refine analysis',
+                },
+              ],
+            },
+          ],
+          hasActivePairing: true,
+        }}
+        initialTasks={[]}
+      />,
+    )
+
+    expect(mockOthersTasksProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        activeRoundPairs: [
+          expect.objectContaining({
+            id: 'pair-1',
+            members: [
+              expect.objectContaining({ userId: 'user-2' }),
+              expect.objectContaining({ userId: 'user-3' }),
+            ],
           }),
         ],
       }),

@@ -20,7 +20,7 @@ describe('others tasks empty states', () => {
 
     expect(screen.getByText('Round complete')).toBeInTheDocument()
     expect(screen.getByText('2 pairs were created this round.')).toBeInTheDocument()
-    expect(screen.getByText('Everyone in the pool was paired this round. Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
+    expect(screen.getByText('Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
   })
 
   it('shows an admin-specific message when someone was left out of the round', () => {
@@ -35,6 +35,25 @@ describe('others tasks empty states', () => {
         hasActivePairing
         isAdmin
         raceTasks={[]}
+        activeRoundPairs={[
+          {
+            id: 'pair-1',
+            members: [
+              {
+                userId: 'user-4',
+                fullName: 'Pair One',
+                avatarUrl: null,
+                taskDescription: 'Draft section one',
+              },
+              {
+                userId: 'user-5',
+                fullName: 'Pair Two',
+                avatarUrl: null,
+                taskDescription: 'Review section two',
+              },
+            ],
+          },
+        ]}
         tasks={[
           {
             id: 'task-2',
@@ -51,7 +70,13 @@ describe('others tasks empty states', () => {
 
     expect(screen.getByText('Round complete')).toBeInTheDocument()
     expect(screen.getByText('1 pair was created this round.')).toBeInTheDocument()
-    expect(screen.getByText('Left out: Solo User. Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
+    expect(screen.getByText('Pairs this round')).toBeInTheDocument()
+    expect(screen.getByText('Pair One')).toBeInTheDocument()
+    expect(screen.getByText('Pair Two')).toBeInTheDocument()
+    expect(screen.getByTitle('Draft section one')).toBeInTheDocument()
+    expect(screen.getByTitle('Review section two')).toBeInTheDocument()
+    expect(screen.getByText('Left out this round: Solo User')).toBeInTheDocument()
+    expect(screen.getByText('Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
   })
 
   it('shows a member-specific message when waiting for an admin reset', () => {

@@ -5,6 +5,15 @@ import OthersTasksForm from './OthersTasksForm'
 
 interface OthersTasksProps {
   activePairCount?: number
+  activeRoundPairs?: Array<{
+    id: string
+    members: Array<{
+      userId: string
+      fullName: string | null
+      avatarUrl: string | null
+      taskDescription: string | null
+    }>
+  }>
   currentUserId: string
   groupId: string
   currentUserHasTask?: boolean
@@ -18,6 +27,7 @@ interface OthersTasksProps {
 
 const OthersTasks = ({
   activePairCount = 0,
+  activeRoundPairs = [],
   currentUserId,
   groupId,
   currentUserHasTask,
@@ -36,6 +46,7 @@ const OthersTasks = ({
           activePairCount={activePairCount}
           currentUserLeftOut={currentUserLeftOut}
           isAdmin={isAdmin === true}
+          pairSummaries={activeRoundPairs}
           leftOutNames={tasks.map(task => task.fullName ?? 'Group member')}
         />
       </div>
