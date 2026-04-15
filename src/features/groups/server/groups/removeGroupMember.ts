@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getMemberRemovalError } from '@/features/groups/lib/groupManagementRules'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
-import { getUser } from '@/shared/supabase/server'
 import { removeGroupMemberSchema } from '../../schemas/groupManagement'
 import { findManagedGroup } from './groupManagement'
 
@@ -9,6 +8,7 @@ export const removeGroupMember = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(removeGroupMemberSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
+      const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const adminContext = await findManagedGroup(user.id, data.groupId)
 

@@ -12,7 +12,7 @@ import SingleGroupPending from '@/features/groups/components/pending/SingleGroup
 import { useRatingProgressRealtimeRefresh } from '@/features/groups/hooks/useRatingProgressRealtimeRefresh'
 import { useTaskRealtimeListener } from '@/features/groups/hooks/useTaskRealtimeListener'
 import { shouldCelebratePairingActivation } from '@/features/groups/lib/pairingCelebration'
-import { getSingleGroup } from '@/features/groups/server/groups'
+import { getSingleGroup } from '@/features/groups/server/groups/getSingleGroup'
 import { Button } from '@/shared/ui/button'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

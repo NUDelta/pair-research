@@ -2,7 +2,6 @@ import { createServerFn } from '@tanstack/react-start'
 import { taskSchema } from '@/features/groups/schemas/taskForm'
 import { checkMembership } from '@/features/groups/server/checkMembership'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
-import { getUser } from '@/shared/supabase/server'
 
 export const upsertTask = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(taskSchema, data))
@@ -10,6 +9,7 @@ export const upsertTask = createServerFn({ method: 'POST' })
     try {
       const { groupId, description } = data
       const { prisma } = await import('@/shared/lib/prismaClient')
+      const { getUser } = await import('@/shared/supabase/server')
 
       const user = await getUser()
 

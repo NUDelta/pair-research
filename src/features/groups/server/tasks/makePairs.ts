@@ -3,7 +3,6 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { buildPairs, findMissingHelpCapacities } from '@/features/groups/lib/pairing'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
-import { getUser } from '@/shared/supabase/server'
 
 interface MakePairsResponse {
   success: boolean
@@ -31,6 +30,7 @@ export const makePairs = createServerFn({ method: 'POST' })
 
     try {
       const { prisma } = await import('@/shared/lib/prismaClient')
+      const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const membership = await prisma.group_member.findFirst({
         where: {

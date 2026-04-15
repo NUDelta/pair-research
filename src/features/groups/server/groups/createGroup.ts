@@ -3,7 +3,6 @@ import type { TurnstileAwareActionResponse } from '@/shared/turnstile/constants'
 import { createServerFn } from '@tanstack/react-start'
 import { groupSchema } from '@/features/groups/schemas/groupForm'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
-import { getUser } from '@/shared/supabase/server'
 import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
 import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
@@ -32,6 +31,7 @@ export const createGroup = createServerFn({ method: 'POST' })
         import('@/shared/lib/prismaClient'),
         import('@/shared/supabase/serviceRole'),
       ])
+      const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const {
         groupName,

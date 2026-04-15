@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
-import { getUser } from '@/shared/supabase/server'
 import { groupSettingsParamsSchema } from '../../schemas/groupManagement'
 import { findManagedGroup } from './groupManagement'
 
@@ -8,6 +7,7 @@ export const getGroupSettings = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => parseValidatedInput(groupSettingsParamsSchema, data))
   .handler(async ({ data }) => {
     try {
+      const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const adminContext = await findManagedGroup(user.id, data.groupId)
 

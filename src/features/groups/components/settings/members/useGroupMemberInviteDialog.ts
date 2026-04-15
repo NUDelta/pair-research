@@ -12,7 +12,7 @@ import {
   MAX_GROUP_MEMBER_INVITES,
 } from '@/features/groups/lib/groupMemberInviteBatch'
 import { addGroupMembersSchema } from '@/features/groups/schemas/groupManagement'
-import { addGroupMembers } from '@/features/groups/server/groups'
+import { addGroupMembers } from '@/features/groups/server/groups/addGroupMembers'
 import {
   applySharedAssignmentToInviteRows,
   buildImportSummaryMessage,

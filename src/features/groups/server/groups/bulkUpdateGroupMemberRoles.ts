@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getBulkMemberRoleUpdateError } from '@/features/groups/lib/groupManagementRules'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
-import { getUser } from '@/shared/supabase/server'
 import { bulkUpdateGroupMemberRolesSchema } from '../../schemas/groupManagement'
 import { findManagedGroup } from './groupManagement'
 
@@ -9,6 +8,7 @@ export const bulkUpdateGroupMemberRoles = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(bulkUpdateGroupMemberRolesSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
+      const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const adminContext = await findManagedGroup(user.id, data.groupId)
 

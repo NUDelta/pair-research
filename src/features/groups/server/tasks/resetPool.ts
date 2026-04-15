@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getUser } from '@/shared/supabase/server'
 
 export const resetPool = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
@@ -14,6 +13,7 @@ export const resetPool = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { prisma } = await import('@/shared/lib/prismaClient')
+      const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const membership = await prisma.group_member.findFirst({
         where: {

@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import GroupSettingsPage from '@/features/groups/components/settings/GroupSettingsPage'
-import { getGroupSettings } from '@/features/groups/server/groups'
+import { getGroupSettings } from '@/features/groups/server/groups/getGroupSettings'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

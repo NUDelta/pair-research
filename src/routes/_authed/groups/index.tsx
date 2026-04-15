@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import GroupCard from '@/features/groups/components/GroupCard'
 import GroupsPagePending from '@/features/groups/components/pending/GroupsPagePending'
-import { getUserGroups } from '@/features/groups/server/groups'
+import { getUserGroups } from '@/features/groups/server/groups/getUserGroups'
 import { Button } from '@/shared/ui/button'
 
 function compareJoinedAtDesc(

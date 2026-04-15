@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { checkMembership } from '@/features/groups/server/checkMembership'
-import { getUser } from '@/shared/supabase/server'
 
 export const deleteTask = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
@@ -21,6 +20,7 @@ export const deleteTask = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { prisma } = await import('@/shared/lib/prismaClient')
+      const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const id = BigInt(data.taskId)
       const membership = await checkMembership(user.id, data.groupId)

@@ -5,7 +5,7 @@ import { CheckIcon, LoaderCircleIcon, PencilIcon, XIcon } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { updateGroupRoleSchema } from '@/features/groups/schemas/groupManagement'
-import { updateGroupRole } from '@/features/groups/server/groups'
+import { updateGroupRole } from '@/features/groups/server/groups/updateGroupRole'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 

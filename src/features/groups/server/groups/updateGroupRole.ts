@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
-import { getUser } from '@/shared/supabase/server'
 import { updateGroupRoleSchema } from '../../schemas/groupManagement'
 import { findManagedGroup, normalizeRoleTitle } from './groupManagement'
 
@@ -8,6 +7,7 @@ export const updateGroupRole = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(updateGroupRoleSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
+      const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const adminContext = await findManagedGroup(user.id, data.groupId)
 
