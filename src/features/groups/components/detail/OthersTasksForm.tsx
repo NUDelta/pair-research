@@ -191,11 +191,23 @@ const OthersTasksForm = ({
       />
       <div className="space-y-3">
         <h2 id="others-task-list" className="text-xl font-semibold">Others Currently In the Pool</h2>
-        <p className="text-sm text-muted-foreground">
-          {canRate
-            ? 'Rate how ready you feel to help each person on a 1-5 scale. Higher means you feel more able to help.'
-            : 'Join the pool to unlock ratings. Only members with an active task in the current pool can rate others.'}
-        </p>
+        {canRate
+          ? (
+              <>
+                <p className="text-sm text-muted-foreground md:hidden">
+                  How much can you help with each of these tasks? (1: not at all, 5: totally)
+                </p>
+                <div className="hidden items-center justify-between gap-4 text-sm text-muted-foreground md:flex">
+                  <p>How much can you help with each of these tasks?</p>
+                  <p>(1: not at all, 5: totally)</p>
+                </div>
+              </>
+            )
+          : (
+              <p className="text-sm text-muted-foreground">
+                Join the pool to unlock ratings. Only members with an active task in the current pool can rate others.
+              </p>
+            )}
       </div>
       <div className="space-y-3">
         {tasks.map(task => (

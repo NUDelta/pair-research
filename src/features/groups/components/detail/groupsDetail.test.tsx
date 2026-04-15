@@ -157,6 +157,8 @@ describe('groups detail controls', () => {
       expect(screen.queryByText('Saving rating...')).not.toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: 'Rate 5' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('How much can you help with each of these tasks?')).toBeInTheDocument()
+    expect(screen.getByText('(1: not at all, 5: totally)')).toBeInTheDocument()
   })
 
   it('hides rating controls for users who are not currently in the pool', () => {
