@@ -2,6 +2,7 @@ import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { Settings2Icon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { LeavePoolButton, MakePairsButton, ResetPoolButton } from '@/features/groups/components/detail/buttons'
+import GroupDetailHeader from '@/features/groups/components/detail/GroupDetailHeader'
 import OthersTasks from '@/features/groups/components/detail/OthersTasks'
 import Pairing from '@/features/groups/components/detail/Pairing'
 import PairingSuccessConfetti from '@/features/groups/components/detail/PairingSuccessConfetti'
@@ -60,38 +61,38 @@ function SingleGroupPage() {
   }, [groupInfo.activePairingId])
 
   return (
-    <div className="container mx-auto max-w-5xl space-y-6 p-6">
+    <div className="container mx-auto flex max-w-5xl flex-col gap-6 p-6">
       {showPairingConfetti && (
         <PairingSuccessConfetti onComplete={() => setShowPairingConfetti(false)} />
       )}
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold" aria-label="Group title">
-          {groupInfo.name}
-        </h1>
-        <div className="flex flex-wrap gap-2">
-          {groupInfo.isAdmin && (
-            <Button asChild variant="outline">
-              <Link to="/groups/$slug/settings" params={{ slug: groupInfo.id }}>
-                <Settings2Icon data-icon="inline-start" />
-                Settings
-              </Link>
-            </Button>
-          )}
-          {currentUserTask !== undefined && (
-            <LeavePoolButton
-              taskId={currentUserTask.id}
-              groupId={groupInfo.id}
-            />
-          )}
-          {groupInfo.isAdmin && (
-            <>
-              {groupInfo.hasActivePairing
-                ? <ResetPoolButton groupId={groupInfo.id} />
-                : <MakePairsButton groupId={groupInfo.id} eligibleTaskCount={tasks.length} />}
-            </>
-          )}
-        </div>
-      </div>
+      <GroupDetailHeader
+        groupName={groupInfo.name}
+        actions={(
+          <>
+            {groupInfo.isAdmin && (
+              <Button asChild variant="outline">
+                <Link to="/groups/$slug/settings" params={{ slug: groupInfo.id }}>
+                  <Settings2Icon data-icon="inline-start" />
+                  Settings
+                </Link>
+              </Button>
+            )}
+            {currentUserTask !== undefined && (
+              <LeavePoolButton
+                taskId={currentUserTask.id}
+                groupId={groupInfo.id}
+              />
+            )}
+            {groupInfo.isAdmin && (
+              <>
+                {groupInfo.hasActivePairing
+                  ? <ResetPoolButton groupId={groupInfo.id} />
+                  : <MakePairsButton groupId={groupInfo.id} eligibleTaskCount={tasks.length} />}
+              </>
+            )}
+          </>
+        )}
+      />
 
       {currentUserActivePairingTaskWithProfile !== null && (
         <Pairing pairingInfo={currentUserActivePairingTaskWithProfile} />
