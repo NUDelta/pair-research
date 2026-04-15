@@ -116,7 +116,7 @@ describe('groups detail controls', () => {
             userId: 'user-2',
             fullName: 'Teammate',
             avatarUrl: null,
-            helpCapacity: 2,
+            helpCapacity: null,
             ratingsCompletedCount: 0,
           },
         ]}
@@ -128,7 +128,7 @@ describe('groups detail controls', () => {
             userId: 'user-2',
             fullName: 'Teammate',
             avatarUrl: null,
-            helpCapacity: 2,
+            helpCapacity: null,
             ratingsCompletedCount: 0,
           },
         ]}
@@ -136,6 +136,8 @@ describe('groups detail controls', () => {
     )
 
     expect(screen.queryByRole('button', { name: 'Submit Scores' })).not.toBeInTheDocument()
+    expect(screen.getByText('Needs your rating')).toBeInTheDocument()
+    expect(screen.getByText('0 of 2 members finished rating')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Rate 3' }))
 
@@ -174,6 +176,7 @@ describe('groups detail controls', () => {
       expect(screen.queryByText('Saving rating...')).not.toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: 'Rate 5' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByText('Needs your rating')).not.toBeInTheDocument()
     expect(screen.getByText('How much can you help with each of these tasks?')).toBeInTheDocument()
     expect(screen.getByText('(1: not at all, 5: totally)')).toBeInTheDocument()
   })
@@ -210,6 +213,7 @@ describe('groups detail controls', () => {
     )
 
     expect(screen.queryByRole('button', { name: 'Rate 3' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Needs your rating')).not.toBeInTheDocument()
     expect(screen.getByText('Join the pool to unlock ratings. Only members with an active task in the current pool can rate others.')).toBeInTheDocument()
   })
 })

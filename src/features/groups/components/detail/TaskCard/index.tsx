@@ -1,6 +1,7 @@
 import { getInitials } from '@/shared/lib/avatar'
 import { cn } from '@/shared/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
+import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent } from '@/shared/ui/card'
 import RatingControl from './RatingControl'
 import TaskDescription from './TaskDescription'
@@ -22,6 +23,7 @@ interface TaskCardProps {
   ratingMessage?: string | null
   onRateChange?: (value: number) => void
   poolStatus?: PoolStatus
+  showUnratedBadge?: boolean
 }
 
 export default function TaskCard({
@@ -37,6 +39,7 @@ export default function TaskCard({
   ratingMessage,
   onRateChange,
   poolStatus,
+  showUnratedBadge = false,
 }: TaskCardProps) {
   const poolStatusLabel = {
     'in-pool': 'In Pool',
@@ -63,19 +66,26 @@ export default function TaskCard({
         )}
       >
         <div className="space-y-1.5">
-          {poolStatus !== undefined && (
-            <div>
-              <span
-                className={cn(
-                  'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide',
-                  poolStatus === 'in-pool' && 'bg-emerald-100 text-emerald-900',
-                  poolStatus === 'not-in-pool' && 'bg-slate-200 text-slate-700',
-                  poolStatus === 'paired' && 'bg-amber-100 text-amber-900',
-                  poolStatus === 'solo' && 'bg-sky-100 text-sky-900',
-                )}
-              >
-                {poolStatusLabel[poolStatus]}
-              </span>
+          {(poolStatus !== undefined || showUnratedBadge) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {poolStatus !== undefined && (
+                <span
+                  className={cn(
+                    'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide',
+                    poolStatus === 'in-pool' && 'bg-emerald-100 text-emerald-900',
+                    poolStatus === 'not-in-pool' && 'bg-slate-200 text-slate-700',
+                    poolStatus === 'paired' && 'bg-amber-100 text-amber-900',
+                    poolStatus === 'solo' && 'bg-sky-100 text-sky-900',
+                  )}
+                >
+                  {poolStatusLabel[poolStatus]}
+                </span>
+              )}
+              {showUnratedBadge && (
+                <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700">
+                  Needs your rating
+                </Badge>
+              )}
             </div>
           )}
           {currentUserId !== undefined && groupId !== undefined

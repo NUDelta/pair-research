@@ -14,6 +14,7 @@ interface HorseRaceProps {
 
 export default function HorseRace({ currentUserId, ratings, tasks }: HorseRaceProps) {
   const entries = getHorseRaceEntries(tasks, { currentUserId, ratings })
+  const completedEntryCount = entries.filter(entry => entry.completedRatingsCount >= entry.totalRatingsToFinish).length
 
   if (entries.length < 2) {
     return null
@@ -32,6 +33,15 @@ export default function HorseRace({ currentUserId, ratings, tasks }: HorseRacePr
           <TrophyIcon className="size-5 text-amber-500" />
           Horse race
         </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {completedEntryCount}
+          {' '}
+          of
+          {' '}
+          {entries.length}
+          {' '}
+          members finished rating
+        </p>
       </CardHeader>
       <CardContent>
         <div

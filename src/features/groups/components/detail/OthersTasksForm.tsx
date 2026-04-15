@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { upsertHelpCapacities } from '@/features/groups/server/tasks'
 import HorseRace from './HorseRace'
-import { buildRatingsMap } from './ratingSummary'
+import { buildRatingsMap, getValidCapacity } from './ratingSummary'
 import TaskCard from './TaskCard'
 
 interface SaveState {
@@ -222,6 +222,7 @@ const OthersTasksForm = ({
             ratingStatus={saveStates[task.id]?.status ?? 'idle'}
             ratingMessage={saveStates[task.id]?.message ?? null}
             onRateChange={canRate ? value => handleRateChange(task.id, value) : undefined}
+            showUnratedBadge={canRate && getValidCapacity(ratings[task.id]) === undefined}
           />
         ))}
       </div>

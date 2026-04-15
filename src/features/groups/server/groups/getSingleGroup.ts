@@ -84,11 +84,43 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
       }
 
       const activePairing = membership.group.pairing_group_active_pairing_idTopairing
+      const latestPairing = await prisma.pairing.findFirst({
+        where: {
+          group_id: groupId,
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+        select: {
+          created_at: true,
+        },
+      })
+      const activeRoundPairs = activePairing?.pair.map(pair => ({
+        id: String(pair.id),
+        members: [
+          {
+            userId: pair.first_user,
+            fullName: pair.profile_pair_first_userToprofile.full_name,
+            avatarUrl: pair.profile_pair_first_userToprofile.avatar_url,
+            taskDescription: activePairing.task.find(task => task.user_id === pair.first_user)?.description ?? null,
+          },
+          {
+            userId: pair.second_user,
+            fullName: pair.profile_pair_second_userToprofile.full_name,
+            avatarUrl: pair.profile_pair_second_userToprofile.avatar_url,
+            taskDescription: activePairing.task.find(task => task.user_id === pair.second_user)?.description ?? null,
+          },
+        ],
+      })) ?? []
       const groupInfo = {
         id: groupId,
         name: membership.group.name,
         description: membership.group.description,
         activePairingId: membership.group.active_pairing_id,
+        activePairingCreatedAt: activePairing?.created_at.toISOString() ?? null,
+        activePairCount: activePairing?.pair.length ?? 0,
+        activeRoundPairs,
+        lastPairingCreatedAt: latestPairing?.created_at.toISOString() ?? null,
         userId,
         fullName: membership.profile.full_name,
         avatarUrl: membership.profile.avatar_url,

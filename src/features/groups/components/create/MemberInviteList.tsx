@@ -6,14 +6,14 @@ import { Plus, Trash2Icon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Controller } from 'react-hook-form'
 import { toast } from 'sonner'
+import InvitePreparationPanel from '@/features/groups/components/invites/InvitePreparationPanel'
+import PreparedInvitesTable from '@/features/groups/components/invites/PreparedInvitesTable'
 import { emailSchema } from '@/features/groups/schemas/groupForm'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import { DataTable, DataTableColumnHeader } from '@/shared/ui/data-table'
+import { DataTableColumnHeader } from '@/shared/ui/data-table'
 import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Textarea } from '@/shared/ui/textarea'
 
 interface RoleField extends RoleValues {
   id: string
@@ -48,7 +48,6 @@ const MemberInviteList = ({
   removeMember,
 }: MemberInviteListProps) => {
   const [draftSource, setDraftSource] = useState('')
-  const hasRows = memberFields.length > 0
   const canAddMoreRows = memberFields.length < MAX_CREATE_GROUP_MEMBERS
   const defaultRoleTitle = roleFields[0]?.title ?? ''
   const rows = useMemo(
@@ -204,35 +203,9 @@ const MemberInviteList = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-xl border bg-muted/30 p-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="member-invite-source">Paste emails</Label>
-              <p className="text-sm text-muted-foreground">
-                Add up to
-                {' '}
-                {MAX_CREATE_GROUP_MEMBERS}
-                {' '}
-                members at once. Use commas or new lines to separate each address.
-              </p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {memberFields.length}
-              /
-              {MAX_CREATE_GROUP_MEMBERS}
-              {' '}
-              prepared
-            </p>
-          </div>
-          <div className="mt-3 flex flex-col gap-3">
-            <Textarea
-              id="member-invite-source"
-              value={draftSource}
-              onChange={event => setDraftSource(event.target.value)}
-              placeholder={'member1@example.com\nmember2@example.com'}
-              className="min-h-28"
-            />
-            <div className="flex flex-col gap-2 sm:flex-row">
+        <InvitePreparationPanel
+          actionButtons={(
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -252,37 +225,36 @@ const MemberInviteList = ({
                 <Plus data-icon="inline-start" />
                 Add blank row
               </Button>
-            </div>
-          </div>
-        </div>
+            </>
+          )}
+          count={memberFields.length}
+          description={(
+            <>
+              Add up to
+              {' '}
+              {MAX_CREATE_GROUP_MEMBERS}
+              {' '}
+              members at once. Use commas or new lines to separate each address.
+            </>
+          )}
+          label="Paste emails"
+          maxInvites={MAX_CREATE_GROUP_MEMBERS}
+          onSourceChange={setDraftSource}
+          placeholder={'member1@example.com\nmember2@example.com'}
+          sourceId="member-invite-source"
+          sourceValue={draftSource}
+        />
 
-        <div className="rounded-xl border">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 mb-3">
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium">Prepared invites</h3>
-              <p className="text-sm text-muted-foreground">
-                Review each row before creating the group.
-              </p>
-            </div>
-          </div>
-          {hasRows
-            ? (
-                <DataTable
-                  columns={columns}
-                  data={rows}
-                  emptyMessage="No invites prepared yet."
-                  filterColumnId="email"
-                  filterPlaceholder="Filter invites..."
-                  getRowId={row => row.id}
-                />
-              )
-            : (
-                <div className="flex flex-col gap-1 px-4 py-8 text-center text-sm text-muted-foreground">
-                  <p>No invites prepared yet.</p>
-                  <p>Import a list or add a blank row to start.</p>
-                </div>
-              )}
-        </div>
+        <PreparedInvitesTable
+          columns={columns}
+          data={rows}
+          description="Review each row before creating the group."
+          emptyDescription="Import a list or add a blank row to start."
+          emptyTitle="No invites prepared yet."
+          filterColumnId="email"
+          filterPlaceholder="Filter invites..."
+          getRowId={row => row.id}
+        />
       </CardContent>
     </Card>
   )
