@@ -3,7 +3,8 @@ import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { upsertHelpCapacities } from '@/features/groups/server/tasks'
-import { buildRatingsMap, getRatingSummary } from './ratingSummary'
+import HorseRace from './HorseRace'
+import { buildRatingsMap } from './ratingSummary'
 import TaskCard from './TaskCard'
 
 interface SaveState {
@@ -12,17 +13,19 @@ interface SaveState {
 }
 
 interface OthersTasksFormProps {
+  currentUserId: string
   groupId: string
+  raceTasks: Task[]
   tasks: Task[]
   canRate: boolean
-  currentUserInPool: boolean
 }
 
 const OthersTasksForm = ({
+  currentUserId,
   groupId,
+  raceTasks,
   tasks,
   canRate,
-  currentUserInPool,
 }: OthersTasksFormProps) => {
   const upsertHelpCapacitiesFn = useServerFn(upsertHelpCapacities)
   const [ratings, setRatings] = useState<TaskRatings>(() => buildRatingsMap(tasks))
@@ -179,50 +182,15 @@ const OthersTasksForm = ({
     void flushQueuedRating(taskId)
   }
 
-  const {
-    ratedCount,
-    eligibleOthersCount,
-    remainingCount,
-    progressPercent,
-  } = getRatingSummary(tasks, ratings)
-
   return (
     <div className="space-y-4">
+      <HorseRace
+        currentUserId={currentUserId}
+        ratings={ratings}
+        tasks={raceTasks}
+      />
       <div className="space-y-3">
         <h2 id="others-task-list" className="text-xl font-semibold">Others Currently In the Pool</h2>
-        {currentUserInPool && (
-          <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-sm font-medium">
-                Rated
-                {' '}
-                <span className="text-base font-semibold">{ratedCount}</span>
-                {' '}
-                of
-                {' '}
-                <span className="text-base font-semibold">{eligibleOthersCount}</span>
-                {' '}
-                people
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {remainingCount === 0 ? 'All caught up' : `${remainingCount} left`}
-              </p>
-            </div>
-            <div
-              className="h-2 overflow-hidden rounded-full bg-muted"
-              role="progressbar"
-              aria-label="Ratings completed"
-              aria-valuemin={0}
-              aria-valuemax={eligibleOthersCount}
-              aria-valuenow={ratedCount}
-            >
-              <div
-                className="h-full rounded-full bg-primary transition-[width]"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-        )}
         <p className="text-sm text-muted-foreground">
           {canRate
             ? 'Rate how ready you feel to help each person on a 1-5 scale. Higher means you feel more able to help.'

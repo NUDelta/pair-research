@@ -1,16 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import OthersTasks from './OthersTasks'
-
-const { mockedUseTaskRealtimeListener } = vi.hoisted(() => ({
-  mockedUseTaskRealtimeListener: vi.fn(() => ({
-    tasks: [],
-  })),
-}))
-
-vi.mock('@/features/groups/hooks/useTaskRealtimeListener', () => ({
-  useTaskRealtimeListener: mockedUseTaskRealtimeListener,
-}))
 
 describe('others tasks empty states', () => {
   it('shows an admin-specific message when the current round is complete', () => {
@@ -22,7 +12,8 @@ describe('others tasks empty states', () => {
         currentUserInPool={false}
         hasActivePairing
         isAdmin
-        initialTasks={[]}
+        raceTasks={[]}
+        tasks={[]}
       />,
     )
 
@@ -39,7 +30,8 @@ describe('others tasks empty states', () => {
         currentUserInPool={false}
         hasActivePairing
         isAdmin={false}
-        initialTasks={[]}
+        raceTasks={[]}
+        tasks={[]}
       />,
     )
 

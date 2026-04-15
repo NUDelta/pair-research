@@ -81,9 +81,29 @@ describe('groups detail controls', () => {
 
     render(
       <OthersTasksForm
+        currentUserId="user-1"
         groupId="group-1"
+        raceTasks={[
+          {
+            id: 'task-self',
+            description: 'My draft',
+            userId: 'user-1',
+            fullName: 'Me',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate',
+            avatarUrl: null,
+            helpCapacity: 2,
+            ratingsCompletedCount: 0,
+          },
+        ]}
         canRate
-        currentUserInPool
         tasks={[
           {
             id: 'task-1',
@@ -92,6 +112,7 @@ describe('groups detail controls', () => {
             fullName: 'Teammate',
             avatarUrl: null,
             helpCapacity: 2,
+            ratingsCompletedCount: 0,
           },
         ]}
       />,
@@ -141,9 +162,20 @@ describe('groups detail controls', () => {
   it('hides rating controls for users who are not currently in the pool', () => {
     render(
       <OthersTasksForm
+        currentUserId="user-1"
         groupId="group-1"
+        raceTasks={[
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate',
+            avatarUrl: null,
+            helpCapacity: 2,
+            ratingsCompletedCount: 0,
+          },
+        ]}
         canRate={false}
-        currentUserInPool={false}
         tasks={[
           {
             id: 'task-1',
@@ -152,6 +184,7 @@ describe('groups detail controls', () => {
             fullName: 'Teammate',
             avatarUrl: null,
             helpCapacity: 2,
+            ratingsCompletedCount: 0,
           },
         ]}
       />,
@@ -159,39 +192,5 @@ describe('groups detail controls', () => {
 
     expect(screen.queryByRole('button', { name: 'Rate 3' })).not.toBeInTheDocument()
     expect(screen.getByText('Join the pool to unlock ratings. Only members with an active task in the current pool can rate others.')).toBeInTheDocument()
-  })
-
-  it('shows a compact rating progress summary for users who are currently in the pool', () => {
-    render(
-      <OthersTasksForm
-        groupId="group-1"
-        canRate
-        currentUserInPool
-        tasks={[
-          {
-            id: 'task-1',
-            description: 'Review draft intro',
-            userId: 'user-2',
-            fullName: 'Teammate',
-            avatarUrl: null,
-            helpCapacity: 2,
-          },
-          {
-            id: 'task-2',
-            description: 'Check citations',
-            userId: 'user-3',
-            fullName: 'Another teammate',
-            avatarUrl: null,
-            helpCapacity: null,
-          },
-        ]}
-      />,
-    )
-
-    expect(screen.getByText((_, element) => element?.textContent === 'Rated 1 of 2 people')).toBeInTheDocument()
-    expect(screen.getByText('1 left')).toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'Ratings completed' })).toHaveAttribute('aria-valuenow', '1')
-    expect(screen.getByRole('progressbar', { name: 'Ratings completed' })).toHaveAttribute('aria-valuemax', '2')
-    expect(screen.getByText('Rate how ready you feel to help each person on a 1-5 scale. Higher means you feel more able to help.')).toBeInTheDocument()
   })
 })

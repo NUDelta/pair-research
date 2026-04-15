@@ -8,6 +8,8 @@ import Pairing from '@/features/groups/components/detail/Pairing'
 import PairingSuccessConfetti from '@/features/groups/components/detail/PairingSuccessConfetti'
 import TaskCard from '@/features/groups/components/detail/TaskCard'
 import SingleGroupPending from '@/features/groups/components/pending/SingleGroupPending'
+import { useRatingProgressRealtimeRefresh } from '@/features/groups/hooks/useRatingProgressRealtimeRefresh'
+import { useTaskRealtimeListener } from '@/features/groups/hooks/useTaskRealtimeListener'
 import { shouldCelebratePairingActivation } from '@/features/groups/lib/pairingCelebration'
 import { getSingleGroup } from '@/features/groups/server/groups'
 import { Button } from '@/shared/ui/button'
@@ -35,10 +37,12 @@ export const Route = createFileRoute('/_authed/groups/$slug/')({
 })
 
 function SingleGroupPage() {
-  const { groupInfo, tasks, currentUserActivePairingTaskWithProfile } = Route.useLoaderData()
+  const { groupInfo, tasks: initialTasks, currentUserActivePairingTaskWithProfile } = Route.useLoaderData()
   const { userId: currentUserId } = groupInfo
   const [showPairingConfetti, setShowPairingConfetti] = useState(false)
   const previousActivePairingIdRef = useRef<string | null>(groupInfo.activePairingId ?? null)
+  const { tasks } = useTaskRealtimeListener(groupInfo.id, currentUserId, initialTasks)
+  useRatingProgressRealtimeRefresh(groupInfo.id, tasks.map(task => task.id))
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
   const othersTasks = tasks.filter(task => task.userId !== currentUserId)
@@ -110,15 +114,16 @@ function SingleGroupPage() {
       />
 
       <OthersTasks
-        groupId={groupInfo.id}
         currentUserId={currentUserId}
+        groupId={groupInfo.id}
         currentUserHasTask={
           currentUserTask !== undefined || currentUserActivePairingTaskWithProfile !== null
         }
         currentUserInPool={currentUserTask !== undefined}
         hasActivePairing={groupInfo.hasActivePairing}
         isAdmin={groupInfo.isAdmin}
-        initialTasks={othersTasks}
+        raceTasks={tasks}
+        tasks={othersTasks}
       />
     </div>
   )

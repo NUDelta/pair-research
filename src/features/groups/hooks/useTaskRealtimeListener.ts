@@ -72,6 +72,8 @@ export const useTaskRealtimeListener = (
           fullName: profile.full_name,
           avatarUrl: profile.avatar_url,
           helpCapacity: existingIndex === -1 ? null : draft[existingIndex]?.helpCapacity ?? null,
+          ratingsCompletedCount: existingIndex === -1 ? 0 : draft[existingIndex]?.ratingsCompletedCount ?? 0,
+          ratingsCompletionOrder: existingIndex === -1 ? null : draft[existingIndex]?.ratingsCompletionOrder ?? null,
         } satisfies Task
 
         if (existingIndex !== -1) {
