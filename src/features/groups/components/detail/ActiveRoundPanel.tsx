@@ -1,4 +1,5 @@
-import { AlertCircleIcon, RotateCcwIcon, UsersIcon } from 'lucide-react'
+import { AlertCircleIcon, FileTextIcon, Link2Icon, RotateCcwIcon, UsersIcon } from 'lucide-react'
+import { useState } from 'react'
 import { getInitials } from '@/shared/lib/avatar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -17,6 +18,69 @@ interface ActiveRoundPanelProps {
       taskDescription: string | null
     }>
   }>
+}
+
+interface PairMemberSummaryProps {
+  member: {
+    userId: string
+    fullName: string | null
+    avatarUrl: string | null
+    taskDescription: string | null
+  }
+}
+
+function PairMemberSummary({ member }: PairMemberSummaryProps) {
+  const taskDescription = member.taskDescription ?? 'No task description available.'
+  const [showTaskTooltip, setShowTaskTooltip] = useState(false)
+  const memberLabel = member.fullName ?? 'Group member'
+  const tooltipId = `pair-task-${member.userId}`
+
+  return (
+    <div className="relative flex flex-col items-center gap-3 text-center">
+      <Avatar className="size-10">
+        <AvatarImage
+          src={member.avatarUrl ?? undefined}
+          alt={`${memberLabel} avatar`}
+          loading="lazy"
+        />
+        <AvatarFallback>
+          {getInitials(member.fullName)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="space-y-2">
+        <p className="font-medium text-foreground">
+          {memberLabel}
+        </p>
+        <div
+          className="relative"
+          onMouseEnter={() => setShowTaskTooltip(true)}
+          onMouseLeave={() => setShowTaskTooltip(false)}
+        >
+          <button
+            type="button"
+            aria-describedby={showTaskTooltip ? tooltipId : undefined}
+            aria-label={`Show ${memberLabel}'s task`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            onClick={() => setShowTaskTooltip(true)}
+            onFocus={() => setShowTaskTooltip(true)}
+            onBlur={() => setShowTaskTooltip(false)}
+          >
+            <FileTextIcon className="size-3.5" />
+            Task
+          </button>
+          {showTaskTooltip && (
+            <div
+              id={tooltipId}
+              role="tooltip"
+              className="absolute left-1/2 top-full z-10 mt-2 w-56 -translate-x-1/2 rounded-lg border bg-background px-3 py-2 text-sm leading-6 text-foreground shadow-lg"
+            >
+              {taskDescription}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function ActiveRoundPanel({
@@ -56,42 +120,34 @@ export default function ActiveRoundPanel({
               Pairs this round
             </p>
             <div className="grid gap-3 md:grid-cols-2">
-              {pairSummaries.map(pairSummary => (
-                <div
-                  key={pairSummary.id}
-                  className="rounded-xl border bg-background/90 p-3 shadow-sm"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    {pairSummary.members.map((member, index) => (
-                      <div key={member.userId} className="contents">
-                        {index > 0 && (
-                          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            paired with
-                          </span>
+              {pairSummaries.map((pairSummary) => {
+                return (
+                  <div
+                    key={pairSummary.id}
+                    className="rounded-xl border bg-background/90 p-4 shadow-sm"
+                  >
+                    <div className="flex flex-col items-center gap-4 sm:grid sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+                      <div className="flex justify-center sm:justify-end">
+                        {pairSummary.members[0] !== undefined && (
+                          <PairMemberSummary member={pairSummary.members[0]} />
                         )}
-                        <div
-                          className="flex items-center gap-2 rounded-full bg-muted px-3 py-2"
-                          title={member.taskDescription ?? 'No task description available.'}
-                        >
-                          <Avatar className="size-7">
-                            <AvatarImage
-                              src={member.avatarUrl ?? undefined}
-                              alt={`${member.fullName ?? 'Group member'} avatar`}
-                              loading="lazy"
-                            />
-                            <AvatarFallback>
-                              {getInitials(member.fullName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-foreground">
-                            {member.fullName ?? 'Group member'}
-                          </span>
-                        </div>
                       </div>
-                    ))}
+                      {pairSummary.members[1] !== undefined && (
+                        <div className="flex items-center justify-center">
+                          <div className="rounded-full border border-border bg-muted/50 p-2 text-muted-foreground">
+                            <Link2Icon className="size-4" />
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex justify-center sm:justify-start">
+                        {pairSummary.members[1] !== undefined && (
+                          <PairMemberSummary member={pairSummary.members[1]} />
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}

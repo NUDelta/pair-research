@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import OthersTasks from './OthersTasks'
 
@@ -23,7 +24,9 @@ describe('others tasks empty states', () => {
     expect(screen.getByText('Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
   })
 
-  it('shows an admin-specific message when someone was left out of the round', () => {
+  it('shows an admin-specific message when someone was left out of the round', async () => {
+    const user = userEvent.setup()
+
     render(
       <OthersTasks
         activePairCount={1}
@@ -73,8 +76,15 @@ describe('others tasks empty states', () => {
     expect(screen.getByText('Pairs this round')).toBeInTheDocument()
     expect(screen.getByText('Pair One')).toBeInTheDocument()
     expect(screen.getByText('Pair Two')).toBeInTheDocument()
-    expect(screen.getByTitle('Draft section one')).toBeInTheDocument()
-    expect(screen.getByTitle('Review section two')).toBeInTheDocument()
+    expect(screen.queryByText('Draft section one')).not.toBeInTheDocument()
+    expect(screen.queryByText('Review section two')).not.toBeInTheDocument()
+
+    await user.hover(screen.getByRole('button', { name: `Show Pair One's task` }))
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Draft section one')
+
+    await user.unhover(screen.getByRole('button', { name: `Show Pair One's task` }))
+    await user.click(screen.getByRole('button', { name: `Show Pair Two's task` }))
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Review section two')
     expect(screen.getByText('Left out this round: Solo User')).toBeInTheDocument()
     expect(screen.getByText('Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
   })
