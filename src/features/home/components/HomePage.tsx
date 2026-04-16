@@ -13,30 +13,30 @@ export default function HomePage() {
         <img
           src="/images/example.png"
           alt="Illustration of Pair Research features"
-          className="h-auto w-full rounded-lg shadow-md transition-[transform,box-shadow] duration-500 ease-out hover:-translate-y-1 hover:shadow-xl"
+          className="h-auto w-full rounded-lg shadow-md hover-lift-md hover:shadow-xl"
         />
       </section>
 
       <section className="animate-subtle-rise-late w-full max-w-4xl">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
-          <div className="group flex flex-col items-center rounded-2xl bg-white p-6 text-center shadow transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 hover:shadow-lg">
-            <LifeBuoy className="mb-4 h-12 w-12 text-blue-500 transition-transform duration-300 ease-out group-hover:-translate-y-0.5" aria-hidden="true" />
+          <div className="group flex flex-col items-center rounded-2xl bg-white p-6 text-center shadow hover-lift-sm hover:shadow-lg">
+            <LifeBuoy className="mb-4 h-12 w-12 text-blue-500 motion-smooth group-hover:scale-[1.04]" aria-hidden="true" />
             <h3 className="mb-2 text-lg font-semibold">Overcome Blockers</h3>
             <p className="text-sm text-gray-600">
               Match together group members with appropriate skills to help each other.
             </p>
           </div>
 
-          <div className="group flex flex-col items-center rounded-2xl bg-white p-6 text-center shadow transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 hover:shadow-lg">
-            <TrendingUp className="mb-4 h-12 w-12 text-green-500 transition-transform duration-300 ease-out group-hover:-translate-y-0.5" aria-hidden="true" />
+          <div className="group flex flex-col items-center rounded-2xl bg-white p-6 text-center shadow hover-lift-sm hover:shadow-lg">
+            <TrendingUp className="mb-4 h-12 w-12 text-green-500 motion-smooth group-hover:scale-[1.04]" aria-hidden="true" />
             <h3 className="mb-2 text-lg font-semibold">Increase Productivity</h3>
             <p className="text-sm text-gray-600">
               You&apos;ll work faster if you can just get past those blockers.
             </p>
           </div>
 
-          <div className="group flex flex-col items-center rounded-2xl bg-white p-6 text-center shadow transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 hover:shadow-lg">
-            <Users className="mb-4 h-12 w-12 text-purple-500 transition-transform duration-300 ease-out group-hover:-translate-y-0.5" aria-hidden="true" />
+          <div className="group flex flex-col items-center rounded-2xl bg-white p-6 text-center shadow hover-lift-sm hover:shadow-lg">
+            <Users className="mb-4 h-12 w-12 text-purple-500 motion-smooth group-hover:scale-[1.04]" aria-hidden="true" />
             <h3 className="mb-2 text-lg font-semibold">Collaborate Effectively</h3>
             <p className="text-sm text-gray-600">
               Encourage pairings and helping between different sorts of people in your group.
@@ -49,14 +49,14 @@ export default function HomePage() {
         <img
           src="/images/delta.jpg"
           alt="Delta Lab logo"
-          className="mx-auto h-6 w-auto transition-transform duration-300 ease-out hover:scale-[1.03]"
+          className="mx-auto h-6 w-auto hover-scale-soft"
         />
         <p className="text-sm">
           Interested in learning more about the research that drives Pair Research?
           {' '}
           <a
             href="http://users.eecs.northwestern.edu/~hq/papers/pairresearch.pdf"
-            className="text-blue-500 underline-interactive transition-[color,transform] duration-300 ease-out hover:-translate-y-0.5"
+            className="text-blue-500 underline-interactive interactive-link"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -68,7 +68,7 @@ export default function HomePage() {
           {' '}
           <a
             href="http://www.northwestern.edu/provost/faculty-honors/digital-learning-fellowships/index.html"
-            className="text-blue-500 underline-interactive transition-[color,transform] duration-300 ease-out hover:-translate-y-0.5"
+            className="text-blue-500 underline-interactive interactive-link"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -79,7 +79,7 @@ export default function HomePage() {
           {' '}
           <a
             href="http://www.nsf.gov/awardsearch/showAward?AWD_ID=1623635"
-            className="text-blue-500 underline-interactive transition-[color,transform] duration-300 ease-out hover:-translate-y-0.5"
+            className="text-blue-500 underline-interactive interactive-link"
             target="_blank"
             rel="noopener noreferrer"
           >

@@ -202,7 +202,7 @@ const SignupForm = ({
               {' '}
               <a
                 href={buildLegalPageHref('/terms', 'signup')}
-                className="underline transition-[color,transform] duration-300 ease-out hover:-translate-y-0.5 hover:text-foreground"
+                className="underline interactive-link hover:text-foreground"
               >
                 Terms of Service
               </a>
@@ -211,7 +211,7 @@ const SignupForm = ({
               {' '}
               <a
                 href={buildLegalPageHref('/privacy', 'signup')}
-                className="underline transition-[color,transform] duration-300 ease-out hover:-translate-y-0.5 hover:text-foreground"
+                className="underline interactive-link hover:text-foreground"
               >
                 Privacy Policy
               </a>
@@ -236,7 +236,7 @@ const SignupForm = ({
 
         <Button
           type="submit"
-          className="h-12 w-full rounded-xl text-sm font-semibold hover:-translate-y-0.5 hover:shadow-md"
+          className="h-12 w-full rounded-xl text-sm font-semibold hover-lift-sm hover:shadow-md"
           disabled={!isValid || !agreeToTerms || !isTurnstileVerified || isPending}
         >
           {isPending

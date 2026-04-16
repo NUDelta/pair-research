@@ -37,7 +37,7 @@ function PairMemberSummary({ member }: PairMemberSummaryProps) {
 
   return (
     <div className="relative flex flex-col items-center gap-3 text-center">
-      <Avatar className="size-10 transition-transform duration-300 ease-out hover:scale-105">
+      <Avatar className="size-10 hover-scale-soft">
         <AvatarImage
           src={member.avatarUrl ?? undefined}
           alt={`${memberLabel} avatar`}
@@ -60,7 +60,7 @@ function PairMemberSummary({ member }: PairMemberSummaryProps) {
             type="button"
             aria-describedby={showTaskTooltip ? tooltipId : undefined}
             aria-label={`Show ${memberLabel}'s task`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-[transform,background-color,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:bg-muted hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover-lift-sm hover:bg-muted hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={() => setShowTaskTooltip(true)}
             onFocus={() => setShowTaskTooltip(true)}
             onBlur={() => setShowTaskTooltip(false)}
@@ -107,7 +107,7 @@ export default function ActiveRoundPanel({
     : null
 
   return (
-    <Card className="border-dashed bg-muted/20 hover:-translate-y-0.5 hover:shadow-md">
+    <Card className="border-dashed bg-muted/20 hover-lift-sm hover:shadow-md">
       <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-3">
         {icon}
         <CardTitle className="text-lg">{title}</CardTitle>
@@ -124,7 +124,7 @@ export default function ActiveRoundPanel({
                 return (
                   <div
                     key={pairSummary.id}
-                    className="rounded-xl border bg-background/90 p-4 shadow-sm transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-0.5 hover:shadow-md"
+                    className="rounded-xl border bg-background/90 p-4 shadow-sm hover-lift-sm hover:shadow-md"
                   >
                     <div className="flex flex-col items-center gap-4 sm:grid sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
                       <div className="flex justify-center sm:justify-end">

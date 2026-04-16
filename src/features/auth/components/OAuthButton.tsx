@@ -46,7 +46,7 @@ export const OAuthButton = ({
         type="button"
         variant="outline"
         onClick={handleGoogle}
-        className="group flex w-full items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-sm"
+        className="group flex w-full items-center justify-center gap-2 hover-lift-sm hover:shadow-sm"
       >
         {loading
           ? (
@@ -59,7 +59,7 @@ export const OAuthButton = ({
                   alt="Google Icon"
                   width={20}
                   height={20}
-                  className="h-5 w-5 transition-transform duration-300 ease-out group-hover:scale-105"
+                  className="h-5 w-5 motion-smooth group-hover:scale-[1.03]"
                 />
                 {label}
               </>

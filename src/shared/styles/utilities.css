@@ -77,3 +77,41 @@
 @utility animate-subtle-rise-late {
   animation: subtle-rise 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
 }
+
+@utility motion-smooth {
+  transition-property: transform, box-shadow, background-color, border-color, color, opacity;
+  transition-duration: 320ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+@utility hover-lift-sm {
+  @apply motion-smooth;
+
+  @variant hover {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@utility hover-lift-md {
+  @apply motion-smooth;
+
+  @variant hover {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+@utility hover-scale-soft {
+  @apply motion-smooth;
+
+  @variant hover {
+    transform: scale(1.03);
+  }
+}
+
+@utility interactive-link {
+  transition-property: color, text-decoration-color, text-underline-offset, opacity;
+  transition-duration: 260ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}

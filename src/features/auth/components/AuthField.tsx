@@ -47,7 +47,7 @@ const AuthField = ({
       </Label>
       <div className="relative">
         {Icon && (
-          <Icon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-[color,transform] duration-200 ease-out group-focus-within:text-foreground group-focus-within:-translate-y-[55%]" />
+          <Icon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-[color,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] group-focus-within:text-foreground group-focus-within:opacity-90" />
         )}
         <Input
           id={id}
@@ -67,7 +67,7 @@ const AuthField = ({
             type="button"
             variant="ghost"
             size="sm"
-            className="absolute right-1 top-1/2 h-10 -translate-y-1/2 rounded-lg px-3 hover:-translate-y-[52%] hover:bg-slate-100"
+            className="absolute right-1 top-1/2 h-10 -translate-y-1/2 rounded-lg px-3 transition-[background-color,color,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-slate-100"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >

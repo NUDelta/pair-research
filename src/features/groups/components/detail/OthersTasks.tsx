@@ -69,7 +69,7 @@ const OthersTasks = ({
     <div className="space-y-4">
       <HorseRace currentUserId={currentUserId} tasks={raceTasks} />
       <div className="animate-subtle-rise w-full py-12 flex flex-col items-center text-center text-muted-foreground">
-        <AlertCircle className="mb-2 h-10 w-10 text-gray-400 transition-transform duration-300 ease-out motion-safe:hover:scale-105" />
+        <AlertCircle className="mb-2 h-10 w-10 text-gray-400 motion-smooth motion-safe:hover:scale-[1.03]" />
         <p className="text-lg font-medium">No tasks from others yet</p>
         <p className="text-sm mt-1">
           {currentUserHasTask

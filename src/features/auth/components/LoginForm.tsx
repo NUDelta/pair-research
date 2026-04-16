@@ -176,7 +176,7 @@ const LoginForm = ({
             variant="link"
             size="sm"
             onClick={handleForgotPassword}
-            className="h-auto px-0 text-xs font-normal text-muted-foreground hover:-translate-y-0.5 hover:text-foreground"
+            className="h-auto px-0 text-xs font-normal text-muted-foreground interactive-link hover:text-foreground"
           >
             Forgot password?
           </Button>
@@ -184,7 +184,7 @@ const LoginForm = ({
 
         <Button
           type="submit"
-          className="h-12 w-full rounded-xl text-sm font-semibold hover:-translate-y-0.5 hover:shadow-md"
+          className="h-12 w-full rounded-xl text-sm font-semibold hover-lift-sm hover:shadow-md"
           disabled={!isValid || !isTurnstileVerified || isPending}
         >
           {isPending

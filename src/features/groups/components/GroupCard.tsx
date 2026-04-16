@@ -58,7 +58,7 @@ const GroupCard = ({
     <Card
       className={cn(
         'group animate-subtle-rise flex h-full w-full flex-col justify-between',
-        isNavigable && 'cursor-pointer hover:-translate-y-1 hover:shadow-xl',
+        isNavigable && 'cursor-pointer hover-lift-md hover:shadow-xl',
       )}
     >
       <div className="space-y-2">
@@ -80,7 +80,7 @@ const GroupCard = ({
                 })
               }}
               aria-label="Settings"
-              className="hover:-translate-y-0.5 hover:rotate-3"
+              className="hover-lift-sm hover:rotate-2"
             >
               <Settings aria-hidden="true" />
             </Button>
@@ -118,7 +118,7 @@ const GroupCard = ({
                     event_.stopPropagation()
                     onAccept()
                   }}
-                  className="hover:-translate-y-0.5 hover:shadow-lg hover:bg-accent hover:text-accent-foreground"
+                  className="hover-lift-sm hover:shadow-lg hover:bg-accent hover:text-accent-foreground"
                 >
                   {isAccepting
                     ? (

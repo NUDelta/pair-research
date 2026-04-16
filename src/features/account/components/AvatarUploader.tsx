@@ -56,7 +56,7 @@ const AvatarUploader = ({
     <div className="flex flex-col items-center gap-4 sm:flex-row">
       {/* Avatar and Updated label */}
       <div className="flex flex-col items-center gap-y-1">
-        <Avatar className="h-24 w-24 transition-[transform,box-shadow] duration-300 ease-out hover:scale-[1.03] hover:shadow-md">
+        <Avatar className="h-24 w-24">
           <AvatarImage src={previewUrl ?? ''} alt={`${fullName}'s avatar`} />
           <AvatarFallback>
             {getInitials(fullName)}
@@ -82,7 +82,7 @@ const AvatarUploader = ({
         <Button
           variant="outline"
           type="button"
-          className="hover:-translate-y-0.5 hover:shadow-sm"
+          className="hover-lift-sm hover:shadow-sm"
           onClick={() => inputRef.current?.click()}
         >
           {pending ? <Spinner text="Uploading..." /> : 'Change Avatar'}

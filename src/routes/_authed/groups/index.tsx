@@ -30,7 +30,7 @@ function GroupsPage() {
     <div className="container mx-auto max-w-5xl space-y-6 p-6">
       <div className="animate-subtle-rise flex items-center justify-between">
         <h1 className="text-2xl font-bold">Groups</h1>
-        <Button asChild className="hover:-translate-y-0.5 hover:shadow-md">
+        <Button asChild className="hover-lift-sm hover:shadow-md">
           <Link to="/groups/create">Create Group</Link>
         </Button>
       </div>

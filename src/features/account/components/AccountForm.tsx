@@ -71,7 +71,7 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
         <EmailSection email={email} />
         <Button
           type="submit"
-          className="hover:-translate-y-0.5 hover:shadow-md"
+          className="hover-lift-sm hover:shadow-md"
           disabled={!formState.isDirty || !!formState.errors.full_name || isPending}
         >
           {isPending

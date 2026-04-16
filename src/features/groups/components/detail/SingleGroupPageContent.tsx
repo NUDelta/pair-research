@@ -102,7 +102,7 @@ export default function SingleGroupPageContent({
           actions={(
             <>
               {groupInfo.isAdmin && (
-                <Button asChild variant="outline" className="hover:-translate-y-0.5 hover:shadow-sm">
+                <Button asChild variant="outline" className="hover-lift-sm hover:shadow-sm">
                   <Link to="/groups/$slug/settings" params={{ slug: groupInfo.id }}>
                     <Settings2Icon data-icon="inline-start" />
                     Settings

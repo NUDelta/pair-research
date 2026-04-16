@@ -12,7 +12,7 @@ const Header = () => {
           <Link
             to="/"
             aria-label="Pair Research home"
-            className="text-lg font-semibold transition-[color,transform] duration-300 ease-out hover:-translate-y-0.5 hover:text-foreground/80 sm:text-xl"
+            className="text-lg font-semibold interactive-link hover:text-foreground/80 sm:text-xl"
           >
             Pair Research
           </Link>
