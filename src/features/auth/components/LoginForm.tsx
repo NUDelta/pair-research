@@ -117,23 +117,25 @@ const LoginForm = ({
   return (
     <div className="space-y-5">
       {activeNoticeVariant !== undefined && (
-        <AuthEmailStatusNotice
-          actionHref={activeNoticeVariant === 'check-email'
-            ? buildAuthPageHref('/signup', {
-                email: activeNoticeEmail,
-                nextPath,
-                notice: 'check-email',
-              })
-            : undefined}
-          actionLabel={activeNoticeVariant === 'check-email' ? 'Back to sign up' : undefined}
-          email={activeNoticeEmail}
-          variant={activeNoticeVariant}
-        />
+        <div className="animate-subtle-rise">
+          <AuthEmailStatusNotice
+            actionHref={activeNoticeVariant === 'check-email'
+              ? buildAuthPageHref('/signup', {
+                  email: activeNoticeEmail,
+                  nextPath,
+                  notice: 'check-email',
+                })
+              : undefined}
+            actionLabel={activeNoticeVariant === 'check-email' ? 'Back to sign up' : undefined}
+            email={activeNoticeEmail}
+            variant={activeNoticeVariant}
+          />
+        </div>
       )}
 
       <OAuthButton nextPath={nextPath} />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="animate-subtle-rise-late space-y-5">
         <AuthField
           id="email"
           label="Email"
@@ -163,7 +165,7 @@ const LoginForm = ({
         />
 
         {errors.root && (
-          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
+          <div className="animate-subtle-rise text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
             {errors.root.message}
           </div>
         )}
@@ -174,7 +176,7 @@ const LoginForm = ({
             variant="link"
             size="sm"
             onClick={handleForgotPassword}
-            className="px-0 h-auto font-normal text-xs text-muted-foreground hover:text-foreground"
+            className="h-auto px-0 text-xs font-normal text-muted-foreground hover:-translate-y-0.5 hover:text-foreground"
           >
             Forgot password?
           </Button>
@@ -182,7 +184,7 @@ const LoginForm = ({
 
         <Button
           type="submit"
-          className="h-12 w-full rounded-xl text-sm font-semibold"
+          className="h-12 w-full rounded-xl text-sm font-semibold hover:-translate-y-0.5 hover:shadow-md"
           disabled={!isValid || !isTurnstileVerified || isPending}
         >
           {isPending

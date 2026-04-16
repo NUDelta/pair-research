@@ -65,12 +65,13 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="animate-subtle-rise-delayed space-y-4">
         <AvatarUploader fullName={full_name ?? ''} initialUrl={avatar_url ?? ''} setValue={setValue} />
         <FullNameInput />
         <EmailSection email={email} />
         <Button
           type="submit"
+          className="hover:-translate-y-0.5 hover:shadow-md"
           disabled={!formState.isDirty || !!formState.errors.full_name || isPending}
         >
           {isPending
