@@ -12,7 +12,8 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
     const { groupId } = data
 
     try {
-      const { prisma } = await import('@/shared/lib/prismaClient')
+      const { getPrismaClient } = await import('@/shared/server/prisma')
+      const prisma = await getPrismaClient()
       const { getUser } = await import('@/shared/supabase/server')
       const { id: userId } = await getUser()
 

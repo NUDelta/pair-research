@@ -1,11 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
+import { normalizeInviteEmail } from '@/features/groups/lib/groupNormalization'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { addGroupMembersSchema } from '../../schemas/groupManagement'
 import {
   ensureProfileForInvite,
   findManagedGroup,
   inviteCreatedUserByEmail,
-  normalizeInviteEmail,
 } from './groupManagement'
 
 export const addGroupMembers = createServerFn({ method: 'POST' })

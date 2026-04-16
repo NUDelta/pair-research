@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
+import { normalizeRoleTitle } from '@/features/groups/lib/groupNormalization'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { updateGroupRoleSchema } from '../../schemas/groupManagement'
-import { findManagedGroup, normalizeRoleTitle } from './groupManagement'
+import { findManagedGroup } from './groupManagement'
 
 export const updateGroupRole = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(updateGroupRoleSchema, data))

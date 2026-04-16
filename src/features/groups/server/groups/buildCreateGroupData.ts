@@ -1,4 +1,4 @@
-import { normalizeNullableDescription } from './groupManagement'
+import { normalizeNullableDescription } from '@/features/groups/lib/groupNormalization'
 
 interface BuildCreateGroupDataInput {
   groupName: string

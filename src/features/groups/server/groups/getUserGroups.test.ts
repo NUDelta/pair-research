@@ -9,12 +9,12 @@ vi.mock('@/shared/supabase/server', () => ({
   getUser: mockGetUser,
 }))
 
-vi.mock('@/shared/lib/prismaClient', () => ({
-  prisma: {
+vi.mock('@/shared/server/prisma', () => ({
+  getPrismaClient: () => ({
     group_member: {
       findMany: mockFindMany,
     },
-  },
+  }),
 }))
 
 const { loadUserGroups } = await import('./getUserGroups')

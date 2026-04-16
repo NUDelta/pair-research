@@ -1,7 +1,6 @@
-import { createServiceRoleSupabase } from '@/shared/supabase/serviceRole'
-
 export async function findManagedGroup(userId: string, groupId: string) {
-  const { prisma } = await import('@/shared/lib/prismaClient')
+  const { getPrismaClient } = await import('@/shared/server/prisma')
+  const prisma = await getPrismaClient()
 
   const membership = await prisma.group_member.findFirst({
     where: {
@@ -34,7 +33,8 @@ export async function findManagedGroup(userId: string, groupId: string) {
 }
 
 export async function ensureProfileForInvite(email: string) {
-  const { prisma } = await import('@/shared/lib/prismaClient')
+  const { getPrismaClient } = await import('@/shared/server/prisma')
+  const prisma = await getPrismaClient()
   const normalizedEmail = email.trim().toLowerCase()
 
   const existingProfile = await prisma.profile.findFirst({
@@ -54,7 +54,8 @@ export async function ensureProfileForInvite(email: string) {
     }
   }
 
-  const serviceRoleSupabase = createServiceRoleSupabase()
+  const { createServiceRoleSupabase } = await import('@/shared/server/supabase/serviceRole')
+  const serviceRoleSupabase = await createServiceRoleSupabase()
   const {
     data: { user },
     error,
@@ -83,7 +84,13 @@ export async function ensureProfileForInvite(email: string) {
 }
 
 export async function inviteCreatedUserByEmail(
-  serviceRoleSupabase: ReturnType<typeof createServiceRoleSupabase>,
+  serviceRoleSupabase: {
+    auth: {
+      admin: {
+        inviteUserByEmail: (email: string) => Promise<unknown>
+      }
+    }
+  },
   email: string,
 ) {
   try {
@@ -92,17 +99,4 @@ export async function inviteCreatedUserByEmail(
   catch (error) {
     console.warn('[GROUP_MEMBER_INVITE_FAILED]', { email, error })
   }
-}
-
-export function normalizeNullableDescription(description: string) {
-  const trimmed = description.trim()
-  return trimmed.length > 0 ? trimmed : null
-}
-
-export function normalizeInviteEmail(email: string) {
-  return email.trim().toLowerCase()
-}
-
-export function normalizeRoleTitle(title: string) {
-  return title.trim()
 }

@@ -8,7 +8,8 @@ export const upsertTask = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     try {
       const { groupId, description } = data
-      const { prisma } = await import('@/shared/lib/prismaClient')
+      const { getPrismaClient } = await import('@/shared/server/prisma')
+      const prisma = await getPrismaClient()
       const { getUser } = await import('@/shared/supabase/server')
 
       const user = await getUser()

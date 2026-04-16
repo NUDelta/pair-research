@@ -119,12 +119,13 @@ describe('createGroupForm', () => {
       }
     }
 
-    expect(firstCall.data.groupName).toBe('Systems Biology Lab')
-    expect(firstCall.data.turnstileToken).toBe('turnstile-token')
-
-    expect(mockResetTurnstile).toHaveBeenCalled()
-    expect(mockRequireInteractiveChallenge).toHaveBeenCalledWith('Please confirm you are human to continue.')
-    expect(await screen.findByText(/please confirm you are human to continue/i)).toBeVisible()
+    await waitFor(() => {
+      expect(firstCall.data.groupName).toBe('Systems Biology Lab')
+      expect(firstCall.data.turnstileToken).toBe('turnstile-token')
+      expect(mockResetTurnstile).toHaveBeenCalled()
+      expect(mockRequireInteractiveChallenge).toHaveBeenCalledWith('Please confirm you are human to continue.')
+      expect(screen.getByText(/please confirm you are human to continue/i)).toBeVisible()
+    })
   })
 
   it('imports a pasted list of invite emails into prepared rows', async () => {

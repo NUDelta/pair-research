@@ -3,13 +3,16 @@
   "search.exclude": {
     "**/node_modules": true,
     "**/bower_components": true,
-    "**/routeTree.gen.ts": true
+    "**/routeTree.gen.ts": true,
+    "cloudflare-env.d.ts": true
   },
   "files.watcherExclude": {
-    "**/routeTree.gen.ts": true
+    "**/routeTree.gen.ts": true,
+    "cloudflare-env.d.ts": true
   },
   "files.readonlyInclude": {
-    "**/routeTree.gen.ts": true
+    "**/routeTree.gen.ts": true,
+    "cloudflare-env.d.ts": true
   },
 
   // Disable the default formatter, use eslint instead

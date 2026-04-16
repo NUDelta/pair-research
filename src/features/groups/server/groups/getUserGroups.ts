@@ -4,7 +4,8 @@ import { groupsResponseSchema } from '@/features/groups/schemas/group'
 
 export async function loadUserGroups() {
   try {
-    const { prisma } = await import('@/shared/lib/prismaClient')
+    const { getPrismaClient } = await import('@/shared/server/prisma')
+    const prisma = await getPrismaClient()
     const { getUser } = await import('@/shared/supabase/server')
     const user = await getUser()
     const userId = user.id
