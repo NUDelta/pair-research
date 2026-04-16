@@ -28,15 +28,15 @@ function GroupsPage() {
 
   return (
     <div className="container mx-auto max-w-5xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="animate-subtle-rise flex items-center justify-between">
         <h1 className="text-2xl font-bold">Groups</h1>
-        <Button asChild>
+        <Button asChild className="hover:-translate-y-0.5 hover:shadow-md">
           <Link to="/groups/create">Create Group</Link>
         </Button>
       </div>
 
       {pending.length > 0 && (
-        <section>
+        <section className="animate-subtle-rise-delayed">
           <h2 className="mb-4 text-xl font-semibold">Pending Invitations</h2>
           <div className="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2">
             {pending.map(g => (
@@ -48,7 +48,7 @@ function GroupsPage() {
 
       {joined.length > 0
         ? (
-            <section>
+            <section className="animate-subtle-rise-late">
               <h2 className="mb-4 text-xl font-semibold">Joined Groups</h2>
               <div className="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2">
                 {joined.map(g => (
@@ -59,7 +59,7 @@ function GroupsPage() {
           )
         : (
             pending.length === 0 && (
-              <div className="py-10 text-center">
+              <div className="animate-subtle-rise-late py-10 text-center">
                 <p className="mb-2">You haven&apos;t joined any groups yet.</p>
                 <p className="mb-4">Request an invitation or create your own group.</p>
               </div>

@@ -94,77 +94,89 @@ export default function SingleGroupPageContent({
       {showPairingConfetti && (
         <PairingSuccessConfetti onComplete={() => setShowPairingConfetti(false)} />
       )}
-      <GroupDetailHeader
-        groupName={groupInfo.name}
-        roundStatusLabel={roundStatusLabel}
-        roundStatusNote={roundStatusNote}
-        actions={(
-          <>
-            {groupInfo.isAdmin && (
-              <Button asChild variant="outline">
-                <Link to="/groups/$slug/settings" params={{ slug: groupInfo.id }}>
-                  <Settings2Icon data-icon="inline-start" />
-                  Settings
-                </Link>
-              </Button>
-            )}
-            {currentUserTask !== undefined && (
-              <LeavePoolButton
-                taskId={currentUserTask.id}
-                groupId={groupInfo.id}
-              />
-            )}
-            {groupInfo.isAdmin && (
-              <>
-                <ResetPoolButton groupId={groupInfo.id} />
-                {!groupInfo.hasActivePairing && (
-                  <MakePairsButton
-                    groupId={groupInfo.id}
-                    eligibleTaskCount={tasks.length}
-                    allRatingsSubmitted={allRatingsSubmitted}
-                  />
-                )}
-              </>
-            )}
-          </>
-        )}
-      />
+      <div className="animate-subtle-rise">
+        <GroupDetailHeader
+          groupName={groupInfo.name}
+          roundStatusLabel={roundStatusLabel}
+          roundStatusNote={roundStatusNote}
+          actions={(
+            <>
+              {groupInfo.isAdmin && (
+                <Button asChild variant="outline" className="hover:-translate-y-0.5 hover:shadow-sm">
+                  <Link to="/groups/$slug/settings" params={{ slug: groupInfo.id }}>
+                    <Settings2Icon data-icon="inline-start" />
+                    Settings
+                  </Link>
+                </Button>
+              )}
+              {currentUserTask !== undefined && (
+                <LeavePoolButton
+                  taskId={currentUserTask.id}
+                  groupId={groupInfo.id}
+                />
+              )}
+              {groupInfo.isAdmin && (
+                <>
+                  <ResetPoolButton groupId={groupInfo.id} />
+                  {!groupInfo.hasActivePairing && (
+                    <MakePairsButton
+                      groupId={groupInfo.id}
+                      eligibleTaskCount={tasks.length}
+                      allRatingsSubmitted={allRatingsSubmitted}
+                    />
+                  )}
+                </>
+              )}
+            </>
+          )}
+        />
+      </div>
 
       {currentUserActivePairingTaskWithProfile !== null && (
-        <Pairing pairingInfo={currentUserActivePairingTaskWithProfile} />
+        <div className="animate-subtle-rise-delayed">
+          <Pairing pairingInfo={currentUserActivePairingTaskWithProfile} />
+        </div>
       )}
-      {currentUserLeftOutOfActivePairing && <SoloRoundNotice />}
+      {currentUserLeftOutOfActivePairing && (
+        <div className="animate-subtle-rise-delayed">
+          <SoloRoundNotice />
+        </div>
+      )}
 
       {(!groupInfo.hasActivePairing || currentUserLeftOutOfActivePairing) && (
-        <TaskCard
-          currentUserId={!groupInfo.hasActivePairing ? currentUserId : undefined}
-          groupId={!groupInfo.hasActivePairing ? groupInfo.id : undefined}
-          description={currentUserTask?.description}
-          userAvatar={groupInfo.avatarUrl}
-          fullName={groupInfo.fullName}
-          poolStatus={currentUserLeftOutOfActivePairing
-            ? 'solo'
-            : currentUserTask !== undefined
-              ? 'in-pool'
-              : 'not-in-pool'}
-        />
+        <div className="animate-subtle-rise-late">
+          <TaskCard
+            currentUserId={!groupInfo.hasActivePairing ? currentUserId : undefined}
+            groupId={!groupInfo.hasActivePairing ? groupInfo.id : undefined}
+            description={currentUserTask?.description}
+            userAvatar={groupInfo.avatarUrl}
+            fullName={groupInfo.fullName}
+            poolStatus={currentUserLeftOutOfActivePairing
+              ? 'solo'
+              : currentUserTask !== undefined
+                ? 'in-pool'
+                : 'not-in-pool'}
+          />
+        </div>
       )}
 
-      <OthersTasks
-        activePairCount={groupInfo.activePairCount}
-        activeRoundPairs={groupInfo.activeRoundPairs}
-        currentUserId={currentUserId}
-        groupId={groupInfo.id}
-        currentUserHasTask={
-          currentUserTask !== undefined || currentUserActivePairingTaskWithProfile !== null
-        }
-        currentUserInPool={currentUserTask !== undefined}
-        currentUserLeftOut={currentUserLeftOutOfActivePairing}
-        hasActivePairing={groupInfo.hasActivePairing}
-        isAdmin={groupInfo.isAdmin}
-        raceTasks={tasks}
-        tasks={othersTasks}
-      />
+      <div className="animate-subtle-rise-late">
+        <OthersTasks
+          activePairCount={groupInfo.activePairCount}
+          activeRoundPairs={groupInfo.activeRoundPairs}
+          currentUserId={currentUserId}
+          groupId={groupInfo.id}
+          currentUserHasTask={
+            currentUserTask !== undefined || currentUserActivePairingTaskWithProfile !== null
+          }
+          currentUserInPool={currentUserTask !== undefined}
+          currentUserLeftOut={currentUserLeftOutOfActivePairing}
+          hasActivePairing={groupInfo.hasActivePairing}
+          isAdmin={groupInfo.isAdmin}
+          raceTasks={tasks}
+          tasks={othersTasks}
+        />
+      </div>
     </div>
   )
 }
