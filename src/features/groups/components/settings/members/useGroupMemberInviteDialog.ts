@@ -74,6 +74,9 @@ export function useGroupMemberInviteDialog({
       return
     }
 
+    const existingInviteEmails = new Set(
+      inviteRows.map(row => row.email.trim().toLowerCase()),
+    )
     const { ignoredExistingEmails, invites, summary } = importGroupMemberInvites({
       existingInvites: inviteRows.map(({ email, roleId, isAdmin }) => ({ email, roleId, isAdmin })),
       existingMemberEmails,
@@ -103,9 +106,13 @@ export function useGroupMemberInviteDialog({
       return
     }
 
+    const newlyImportedInvites = invites.filter(
+      invite => !existingInviteEmails.has(invite.email.trim().toLowerCase()),
+    )
+
     setStoredInviteRows(currentRows => [
       ...currentRows,
-      ...invites.slice(inviteRows.length).map(createInviteRow),
+      ...newlyImportedInvites.map(createInviteRow),
     ])
     setDraftSource('')
     toast.success(buildImportSummaryMessage(summary))

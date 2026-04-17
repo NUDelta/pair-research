@@ -73,4 +73,50 @@ describe('useGroupMemberInviteDialog', () => {
     )
     expect(toast.error).not.toHaveBeenCalled()
   })
+
+  it('still appends new invites when a mixed import also contains existing group members', () => {
+    const { result } = renderHook(() =>
+      useGroupMemberInviteDialog({
+        existingMemberEmails: ['ada@example.com'],
+        groupId: 'group-1',
+        roles: [{ id: 'role-1', title: 'Researcher' }],
+      }),
+    )
+
+    act(() => {
+      result.current.handleImportSource('grace@example.com')
+    })
+
+    act(() => {
+      result.current.handleImportSource([
+        'email,role,access',
+        'ada@example.com,Researcher,admin',
+        'barbara@example.com,Researcher,member',
+      ].join('\n'))
+    })
+
+    expect(result.current.inviteRows).toEqual([
+      {
+        id: 'invite-1',
+        email: 'grace@example.com',
+        roleId: 'role-1',
+        isAdmin: false,
+      },
+      {
+        id: 'invite-2',
+        email: 'barbara@example.com',
+        roleId: 'role-1',
+        isAdmin: false,
+      },
+    ])
+    expect(toast.warning).toHaveBeenLastCalledWith(
+      '1 user is already in this group and was ignored.',
+      expect.objectContaining({
+        description: 'ada@example.com',
+      }),
+    )
+    expect(toast.success).toHaveBeenLastCalledWith(
+      'Imported 1 member. Skipped 1 member already in the group.',
+    )
+  })
 })
