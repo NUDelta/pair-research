@@ -19,11 +19,15 @@ function formatJoinedAt(joinedAt: string) {
 interface GroupCardProps {
   group: Group
   href?: string
+  isAccepting?: boolean
+  onAcceptInvitation?: (groupId: string) => Promise<void>
 }
 
 const GroupCard = ({
   group,
   href,
+  isAccepting: controlledIsAccepting,
+  onAcceptInvitation,
 }: GroupCardProps) => {
   const {
     groupName,
@@ -40,13 +44,19 @@ const GroupCard = ({
   const router = useRouter()
   const acceptGroupInvitationFn = useServerFn(acceptGroupInvitation)
   const isNavigable = href !== undefined
+  const acceptPending = controlledIsAccepting ?? isAccepting
 
   const onAccept = async () => {
+    if (onAcceptInvitation !== undefined) {
+      await onAcceptInvitation(group.id)
+      return
+    }
+
     startTransition(async () => {
       const { success, message } = await acceptGroupInvitationFn({ data: { groupId: group.id } })
       if (success) {
         toast.success(message)
-        await router.invalidate()
+        void router.invalidate()
       }
       else {
         toast.error(message)
@@ -111,16 +121,16 @@ const GroupCard = ({
                   variant="secondary"
                   size="sm"
                   type="button"
-                  disabled={isAccepting}
-                  aria-busy={isAccepting}
+                  disabled={acceptPending}
+                  aria-busy={acceptPending}
                   onClick={(event_) => {
                     event_.preventDefault()
                     event_.stopPropagation()
-                    onAccept()
+                    void onAccept()
                   }}
                   className="hover-lift-sm hover:shadow-lg hover:bg-green-400 hover:text-accent-foreground"
                 >
-                  {isAccepting
+                  {acceptPending
                     ? (
                         <Spinner text="Accepting..." className="h-4 w-4" />
                       )
