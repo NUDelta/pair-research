@@ -41,7 +41,6 @@ const OthersTasks = ({
   if (hasActivePairing) {
     return (
       <div className="space-y-4">
-        <HorseRace currentUserId={currentUserId} tasks={raceTasks} />
         <ActiveRoundPanel
           activePairCount={activePairCount}
           currentUserLeftOut={currentUserLeftOut}
@@ -49,6 +48,7 @@ const OthersTasks = ({
           pairSummaries={activeRoundPairs}
           leftOutNames={tasks.map(task => task.fullName ?? 'Group member')}
         />
+        <HorseRace currentUserId={currentUserId} tasks={raceTasks} />
       </div>
     )
   }
@@ -67,7 +67,6 @@ const OthersTasks = ({
 
   return (
     <div className="space-y-4">
-      <HorseRace currentUserId={currentUserId} tasks={raceTasks} />
       <div className="animate-subtle-rise w-full py-12 flex flex-col items-center text-center text-muted-foreground">
         <AlertCircle className="mb-2 h-10 w-10 text-gray-400 motion-smooth motion-safe:hover:scale-[1.03]" />
         <p className="text-lg font-medium">No tasks from others yet</p>
@@ -84,6 +83,7 @@ const OthersTasks = ({
           </p>
         )}
       </div>
+      <HorseRace currentUserId={currentUserId} tasks={raceTasks} />
     </div>
   )
 }

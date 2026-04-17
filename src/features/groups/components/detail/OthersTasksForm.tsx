@@ -184,11 +184,6 @@ const OthersTasksForm = ({
 
   return (
     <div className="space-y-4">
-      <HorseRace
-        currentUserId={currentUserId}
-        ratings={ratings}
-        tasks={raceTasks}
-      />
       <div className="space-y-3">
         <h2 id="others-task-list" className="text-xl font-semibold">Others Currently In the Pool</h2>
         {canRate
@@ -226,6 +221,11 @@ const OthersTasksForm = ({
           />
         ))}
       </div>
+      <HorseRace
+        currentUserId={currentUserId}
+        ratings={ratings}
+        tasks={raceTasks}
+      />
     </div>
   )
 }

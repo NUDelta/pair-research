@@ -168,6 +168,46 @@ describe('others tasks empty states', () => {
     expect(screen.queryByText('Left out task')).not.toBeInTheDocument()
   })
 
+  it('renders the horse race below the active-round panel', () => {
+    render(
+      <OthersTasks
+        activePairCount={1}
+        groupId="group-1"
+        currentUserId="user-1"
+        currentUserHasTask
+        currentUserInPool={false}
+        hasActivePairing
+        isAdmin={false}
+        raceTasks={[
+          {
+            id: 'task-1',
+            description: 'Task one',
+            userId: 'user-1',
+            fullName: 'Ada',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 1,
+          },
+          {
+            id: 'task-2',
+            description: 'Task two',
+            userId: 'user-2',
+            fullName: 'Grace',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+        ]}
+        tasks={[]}
+      />,
+    )
+
+    const roundHeading = screen.getByText('Round complete')
+    const horseRaceHeading = screen.getByText('Horse race')
+
+    expect(roundHeading.compareDocumentPosition(horseRaceHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('points members without a task to the task card above', () => {
     render(
       <OthersTasks
@@ -197,6 +237,43 @@ describe('others tasks empty states', () => {
 
     expect(screen.getByText('Ask another member to add a task so ratings can start.')).toBeInTheDocument()
     expect(screen.getByText('You\'re the only person in the pool right now.')).toBeInTheDocument()
+  })
+
+  it('renders the horse race below the empty others state', () => {
+    render(
+      <OthersTasks
+        groupId="group-1"
+        currentUserId="user-1"
+        currentUserHasTask
+        currentUserInPool
+        raceTasks={[
+          {
+            id: 'task-1',
+            description: 'Task one',
+            userId: 'user-1',
+            fullName: 'Ada',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 1,
+          },
+          {
+            id: 'task-2',
+            description: 'Task two',
+            userId: 'user-2',
+            fullName: 'Grace',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+        ]}
+        tasks={[]}
+      />,
+    )
+
+    const emptyHeading = screen.getByText('No tasks from others yet')
+    const horseRaceHeading = screen.getByText('Horse race')
+
+    expect(emptyHeading.compareDocumentPosition(horseRaceHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('tells members with a saved task but not in the pool how to rejoin', () => {

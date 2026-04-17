@@ -216,4 +216,50 @@ describe('groups detail controls', () => {
     expect(screen.queryByText('Needs your rating')).not.toBeInTheDocument()
     expect(screen.getByText('Join the pool to unlock ratings. Only members with an active task in the current pool can rate others.')).toBeInTheDocument()
   })
+
+  it('renders the horse race below the others task list', () => {
+    render(
+      <OthersTasksForm
+        currentUserId="user-1"
+        groupId="group-1"
+        raceTasks={[
+          {
+            id: 'task-self',
+            description: 'My draft',
+            userId: 'user-1',
+            fullName: 'Me',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+        ]}
+        canRate
+        tasks={[
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+        ]}
+      />,
+    )
+
+    const othersHeading = screen.getByText('Others Currently In the Pool')
+    const horseRaceHeading = screen.getByText('Horse race')
+
+    expect(othersHeading.compareDocumentPosition(horseRaceHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })
