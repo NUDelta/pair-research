@@ -41,12 +41,12 @@ export const OAuthButton = ({
   }
 
   return (
-    <div className="my-5 flex flex-col gap-4">
+    <div className="animate-subtle-rise-delayed my-5 flex flex-col gap-4">
       <Button
         type="button"
         variant="outline"
         onClick={handleGoogle}
-        className="w-full flex items-center justify-center gap-2"
+        className="group flex w-full items-center justify-center gap-2 hover-lift-sm hover:shadow-sm"
       >
         {loading
           ? (
@@ -59,16 +59,16 @@ export const OAuthButton = ({
                   alt="Google Icon"
                   width={20}
                   height={20}
-                  className="h-5 w-5"
+                  className="h-5 w-5 motion-smooth group-hover:scale-[1.03]"
                 />
                 {label}
               </>
             )}
       </Button>
       <div className="flex items-center gap-4">
-        <div className="h-px flex-1 bg-muted" />
+        <div className="h-px flex-1 bg-muted transition-opacity duration-300 ease-out" />
         <div className="text-sm text-muted-foreground">or</div>
-        <div className="h-px flex-1 bg-muted" />
+        <div className="h-px flex-1 bg-muted transition-opacity duration-300 ease-out" />
       </div>
     </div>
   )
