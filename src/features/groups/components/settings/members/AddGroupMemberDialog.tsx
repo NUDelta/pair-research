@@ -8,12 +8,14 @@ import MemberInviteBatchEditor from './MemberInviteBatchEditor'
 import { useGroupMemberInviteDialog } from './useGroupMemberInviteDialog'
 
 interface AddGroupMemberDialogProps {
+  existingMemberEmails?: string[]
   groupId: string
   roles: GroupSettingsRole[]
   triggerClassName?: string
 }
 
 export default function AddGroupMemberDialog({
+  existingMemberEmails = [],
   groupId,
   roles,
   triggerClassName,
@@ -44,7 +46,7 @@ export default function AddGroupMemberDialog({
     setDraftSource,
     setSelectedRowIds,
     toggleRowSelection,
-  } = useGroupMemberInviteDialog({ groupId, roles })
+  } = useGroupMemberInviteDialog({ existingMemberEmails, groupId, roles })
 
   return (
     <Dialog open={open} onOpenChange={handleDialogToggle}>
@@ -54,67 +56,74 @@ export default function AddGroupMemberDialog({
           Add members
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Add members</DialogTitle>
-          <DialogDescription>
-            Prepare up to
-            {' '}
-            {MAX_GROUP_MEMBER_INVITES}
-            {' '}
-            invites from pasted text or CSV, then apply shared or per-member access before sending.
-          </DialogDescription>
-        </DialogHeader>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          className="hidden"
-          onChange={event => void handleFileChange(event)}
-        />
-        <MemberInviteBatchEditor
-          defaultIsAdmin={defaultIsAdmin}
-          defaultRoleId={defaultRoleId}
-          draftSource={draftSource}
-          inviteRows={inviteRows}
-          maxInvites={MAX_GROUP_MEMBER_INVITES}
-          onAddBlankRow={handleAddBlankRow}
-          onApplyAssignment={handleApplyAssignment}
-          onDraftSourceChange={setDraftSource}
-          onImportSource={() => handleImportSource(draftSource)}
-          onOpenFilePicker={() => fileInputRef.current?.click()}
-          onRemoveRow={handleRemoveRow}
-          onSelectAllRows={checked => setSelectedRowIds(checked ? inviteRows.map(row => row.id) : [])}
-          onSelectRow={toggleRowSelection}
-          onUpdateDefaultAccess={setDefaultIsAdmin}
-          onUpdateDefaultRole={setDefaultRoleId}
-          onUpdateRow={handleUpdateRow}
-          roles={roles}
-          rowErrors={rowErrors}
-          selectedCount={selectedRowIds.length}
-          selectedRowIds={selectedRowIdSet}
-        />
-        <DialogFooter className="flex-col gap-2 sm:flex-row">
-          <Button variant="outline" onClick={handleCancel} disabled={isPending}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={inviteRows.length === 0 || isPending || roles.length === 0}
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-4xl">
+        <div className="flex min-h-0 flex-1 flex-col p-6">
+          <DialogHeader>
+            <DialogTitle>Add members</DialogTitle>
+            <DialogDescription>
+              Prepare up to
+              {' '}
+              {MAX_GROUP_MEMBER_INVITES}
+              {' '}
+              invites from pasted text or CSV, then apply shared or per-member access before sending.
+            </DialogDescription>
+          </DialogHeader>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={event => void handleFileChange(event)}
+          />
+          <div
+            data-testid="add-members-dialog-scroll-region"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
           >
-            {isPending
-              ? <Spinner text="Adding members..." />
-              : (
-                  <>
-                    {hasAdminInvite
-                      ? <ShieldPlusIcon data-icon="inline-start" />
-                      : <UserPlusIcon data-icon="inline-start" />}
-                    {hasAdminInvite ? 'Add members with access' : 'Add members'}
-                  </>
-                )}
-          </Button>
-        </DialogFooter>
+            <MemberInviteBatchEditor
+              defaultIsAdmin={defaultIsAdmin}
+              defaultRoleId={defaultRoleId}
+              draftSource={draftSource}
+              inviteRows={inviteRows}
+              maxInvites={MAX_GROUP_MEMBER_INVITES}
+              onAddBlankRow={handleAddBlankRow}
+              onApplyAssignment={handleApplyAssignment}
+              onDraftSourceChange={setDraftSource}
+              onImportSource={() => handleImportSource(draftSource)}
+              onOpenFilePicker={() => fileInputRef.current?.click()}
+              onRemoveRow={handleRemoveRow}
+              onSelectAllRows={checked => setSelectedRowIds(checked ? inviteRows.map(row => row.id) : [])}
+              onSelectRow={toggleRowSelection}
+              onUpdateDefaultAccess={setDefaultIsAdmin}
+              onUpdateDefaultRole={setDefaultRoleId}
+              onUpdateRow={handleUpdateRow}
+              roles={roles}
+              rowErrors={rowErrors}
+              selectedCount={selectedRowIds.length}
+              selectedRowIds={selectedRowIdSet}
+            />
+          </div>
+          <DialogFooter className="border-t pt-4">
+            <Button variant="outline" onClick={handleCancel} disabled={isPending}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={inviteRows.length === 0 || isPending || roles.length === 0}
+            >
+              {isPending
+                ? <Spinner text="Adding members..." />
+                : (
+                    <>
+                      {hasAdminInvite
+                        ? <ShieldPlusIcon data-icon="inline-start" />
+                        : <UserPlusIcon data-icon="inline-start" />}
+                      {hasAdminInvite ? 'Add members with access' : 'Add members'}
+                    </>
+                  )}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )
