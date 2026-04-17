@@ -58,9 +58,6 @@ export default function SingleGroupPageContent({
     = groupInfo.hasActivePairing
       && currentUserActivePairingTaskWithProfile === null
       && currentUserTask !== undefined
-  const totalRatingsNeededPerTask = Math.max(tasks.length - 1, 0)
-  const allRatingsSubmitted = tasks.length >= 2
-    && tasks.every(task => (task.ratingsCompletedCount ?? 0) >= totalRatingsNeededPerTask)
   const activeRoundRelativeTime = groupInfo.activePairingCreatedAt === null
     ? null
     : formatPairingRelativeTime(groupInfo.activePairingCreatedAt)
@@ -121,7 +118,6 @@ export default function SingleGroupPageContent({
                     <MakePairsButton
                       groupId={groupInfo.id}
                       eligibleTaskCount={tasks.length}
-                      allRatingsSubmitted={allRatingsSubmitted}
                     />
                   )}
                 </>

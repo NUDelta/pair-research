@@ -9,58 +9,28 @@ import { Button } from '@/shared/ui/button'
 interface Props {
   groupId: string
   eligibleTaskCount: number
-  allRatingsSubmitted: boolean
 }
 
-const MakePairsButton = ({ groupId, eligibleTaskCount, allRatingsSubmitted }: Props) => {
+const MakePairsButton = ({ groupId, eligibleTaskCount }: Props) => {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
   const makePairsFn = useServerFn(makePairs)
-  const isDisabled = eligibleTaskCount < 2 || !allRatingsSubmitted || isPending
+  const isDisabled = eligibleTaskCount < 2 || isPending
   const disabledReason = eligibleTaskCount === 0
     ? 'The pool is empty. At least two active tasks are required to make pairs.'
     : eligibleTaskCount < 2
       ? 'At least two active tasks are required to make pairs.'
-      : 'Everyone in the pool must finish rating every other task before making pairs.'
+      : undefined
 
-  const handleMakePairs = async (force = false) => {
+  const handleMakePairs = async () => {
     startTransition(async () => {
-      const response = await makePairsFn({ data: { groupId, force } })
+      const response = await makePairsFn({ data: { groupId } })
       if (response.success) {
         toast.success(response.message)
         await router.invalidate()
       }
       else {
-        if (response.data?.missingHelpCapacities) {
-          // Show missing help capacities in the confirmation dialog
-          const missingCount = response.data.missingHelpCapacities.length
-          const missingDetails = response.data.missingHelpCapacities
-            .map(m => `${m.userName} hasn't set help capacity for "${m.taskDescription}"`)
-            .join('\n')
-
-          toast.error(
-            <div>
-              <p>
-                There are
-                {missingCount}
-                {' '}
-                missing help capacities:
-              </p>
-              <pre className="mt-2 whitespace-pre-wrap text-sm">{missingDetails}</pre>
-              <p className="mt-2">Do you want to proceed anyway?</p>
-            </div>,
-            {
-              duration: 10000,
-              action: {
-                label: 'Proceed',
-                onClick: async () => handleMakePairs(true),
-              },
-            },
-          )
-        }
-        else {
-          toast.error(response.message)
-        }
+        toast.error(response.message)
       }
     })
   }

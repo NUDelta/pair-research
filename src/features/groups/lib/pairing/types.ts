@@ -14,6 +14,7 @@ export interface PairingTaskCandidate {
 
 /**
  * Directed "how much could I help?" score for one user on one task.
+ * Missing ratings are treated as `0` by the pairing pipeline.
  */
 export interface HelpCapacityCandidate {
   /** Task being rated. */

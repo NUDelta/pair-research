@@ -49,6 +49,21 @@ describe('findMissingHelpCapacities', () => {
 })
 
 describe('buildPairs', () => {
+  it('treats missing help-capacity ratings as zero when pairing tasks', () => {
+    const tasks = buildTasks(2)
+
+    expect(buildPairs(tasks, [
+      { taskId: '1', userId: 'user-2', helpCapacity: 4 },
+    ])).toEqual([
+      {
+        firstUser: 'user-1',
+        secondUser: 'user-2',
+        affinity: 4,
+        taskIds: ['1', '2'],
+      },
+    ])
+  })
+
   it('leaves the lowest-scoring task out of the resulting pairs when the pool size is odd', () => {
     const tasks = buildTasks(3)
 
