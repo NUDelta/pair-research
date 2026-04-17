@@ -177,10 +177,14 @@ jobs:
 
           if (total > 0) {
             lines.push(`- 🎯 E2E passed: **${passed} / ${total}**`);
-            lines.push(`- ⏭️ E2E skipped: **${skipped}**`);
-            lines.push(`- ❌ E2E failed: **${failed}**`);
+            if (skipped > 0) {
+              lines.push(`\t- ⏭️ E2E skipped: **${skipped}**`);
+            }
+            if (failed > 0) {
+              lines.push(`\t- ❌ E2E failed: **${failed}**`);
+            }
             if (unknown > 0) {
-              lines.push(`- ❓ E2E unknown: **${unknown}**`);
+              lines.push(`\t- ❓ E2E unknown: **${unknown}**`);
             }
             lines.push('');
           }
@@ -303,9 +307,9 @@ jobs:
               `- 🏗️ Build: ${icon(build)} **${build}**`,
               "",
               `- 🎯 E2E passed: **${e2ePassed} / ${e2eTotal}**`,
-              `- ⏭️ E2E skipped: **${e2eSkipped}**`,
-              `- ❌ E2E failed: **${e2eFailed}**`,
-              ...(e2eUnknown !== "0" ? [`- ❓ E2E unknown: **${e2eUnknown}**`] : []),
+              ...(e2eSkipped !== "0" ? [`\t- ⏭️ E2E skipped: **${e2eSkipped}**`] : []),
+              ...(e2eFailed !== "0" ? [`\t- ❌ E2E failed: **${e2eFailed}**`] : []),
+              ...(e2eUnknown !== "0" ? [`\t- ❓ E2E unknown: **${e2eUnknown}**`] : []),
               "",
               ...(failedTests.length
                 ? ["#### Failed E2E tests", "", ...failedTests.map(name => `- ${name}`), ""]
