@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-const TASK_DESCRIPTION_MIN_WORDS = 5
-const TASK_DESCRIPTION_MAX_WORDS = 150
+const TASK_DESCRIPTION_MIN_WORDS = 1
+const TASK_DESCRIPTION_MAX_WORDS = 50
 
 const WORD_REGEX = /\S+/g
 
