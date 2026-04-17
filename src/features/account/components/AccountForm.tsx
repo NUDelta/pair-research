@@ -26,6 +26,7 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
     resolver: zodResolver(accountSchema),
     defaultValues: {
       full_name: full_name ?? '',
+      avatar_source: 'current',
       avatar: undefined,
       content_type: undefined,
     },
@@ -34,10 +35,11 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
   useEffect(() => {
     methods.reset({
       full_name: full_name ?? '',
+      avatar_source: 'current',
       avatar: undefined,
       content_type: undefined,
     })
-  }, [full_name, methods])
+  }, [full_name, avatar_url, methods])
 
   const { handleSubmit, setValue, formState } = methods
 
@@ -49,6 +51,7 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
       const { success, message } = await updateProfileFn({
         data: {
           fullName: data.full_name !== full_name ? data.full_name : undefined,
+          avatarSource: data.avatar_source,
           imageBuffer: avatarBuffer,
           contentType: data.content_type,
         },
@@ -66,7 +69,11 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="animate-subtle-rise-delayed space-y-4">
-        <AvatarUploader fullName={full_name ?? ''} initialUrl={avatar_url ?? ''} setValue={setValue} />
+        <AvatarUploader
+          fullName={full_name ?? ''}
+          initialUrl={avatar_url ?? ''}
+          setValue={setValue}
+        />
         <FullNameInput />
         <EmailSection email={email} />
         <Button

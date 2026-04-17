@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+export const accountAvatarSourceSchema = z.enum(['current', 'upload', 'none'])
+
 const fullNameSchema = z
   .string()
   .nonempty('Name is required')
@@ -8,6 +10,7 @@ const fullNameSchema = z
 
 export const accountSchema = z.object({
   full_name: fullNameSchema.optional(),
+  avatar_source: accountAvatarSourceSchema,
   avatar: z
     .instanceof(File)
     .or(z.custom<ArrayBuffer>())

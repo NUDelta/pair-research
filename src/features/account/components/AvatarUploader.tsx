@@ -1,7 +1,7 @@
 import type { UseFormSetValue } from 'react-hook-form'
 import type { AccountFormValues } from '@/features/account/schemas/account'
 import { CheckCircle } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { getInitials, optimizeAvatar } from '@/features/account/lib/avatar'
 import { Spinner } from '@/shared/ui'
@@ -24,6 +24,10 @@ const AvatarUploader = ({
   const [previewUrl, setPreviewUrl] = useState(initialUrl ?? null)
   const [pending, setPending] = useState(false)
 
+  useEffect(() => {
+    setPreviewUrl(initialUrl ?? null)
+  }, [initialUrl])
+
   const isUpdated = previewUrl !== null && previewUrl !== initialUrl
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,6 +39,7 @@ const AvatarUploader = ({
     try {
       setPending(true)
       const { imageBuffer, contentType } = await optimizeAvatar(file)
+      setValue('avatar_source', 'upload', { shouldDirty: true })
       setValue('avatar', imageBuffer, { shouldDirty: true })
       setValue('content_type', contentType, { shouldDirty: true })
       const url = URL.createObjectURL(new Blob([imageBuffer], { type: contentType }))
@@ -49,6 +54,16 @@ const AvatarUploader = ({
       if (inputRef.current) {
         inputRef.current.value = ''
       }
+    }
+  }
+
+  const handleAvatarRemove = () => {
+    setPreviewUrl(null)
+    setValue('avatar_source', 'none', { shouldDirty: true })
+    setValue('avatar', undefined, { shouldDirty: true })
+    setValue('content_type', undefined, { shouldDirty: true })
+    if (inputRef.current) {
+      inputRef.current.value = ''
     }
   }
 
@@ -71,7 +86,7 @@ const AvatarUploader = ({
       </div>
 
       {/* File input + button */}
-      <div>
+      <div className="flex flex-wrap gap-2">
         <Input
           type="file"
           accept="image/*"
@@ -86,6 +101,14 @@ const AvatarUploader = ({
           onClick={() => inputRef.current?.click()}
         >
           {pending ? <Spinner text="Uploading..." /> : 'Change Avatar'}
+        </Button>
+        <Button
+          variant="ghost"
+          type="button"
+          onClick={handleAvatarRemove}
+          disabled={previewUrl === null}
+        >
+          Remove photo
         </Button>
       </div>
     </div>
