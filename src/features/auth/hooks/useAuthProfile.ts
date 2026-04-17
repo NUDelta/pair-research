@@ -30,7 +30,7 @@ export const useAuthProfile = (
   const updateProfileFn = useServerFn(updateProfile)
   const lastGoogleAvatarSyncUrlRef = useRef<string | null>(null)
 
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!anonymousE2E)
   const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>(emptyProfile)
 
   const setLoggedOut = useCallback(() => {
@@ -63,6 +63,12 @@ export const useAuthProfile = (
 
     const imageBuffer = await optimizeImageFromUrl(normalizedGoogleAvatarUrl)
     if (imageBuffer === null) {
+      return
+    }
+
+    const latestProfile = await getOrCreateProfileFn()
+    if (!isGoogleAvatarUrl(latestProfile.avatar_url)) {
+      setProfile(latestProfile)
       return
     }
 

@@ -1,6 +1,6 @@
+import '@tanstack/react-start/server-only'
 import { env as cloudflareEnv } from 'cloudflare:workers'
 import { z } from 'zod'
-import '@tanstack/react-start/server-only'
 
 const nonEmptyStringSchema = z.string().trim().min(1)
 

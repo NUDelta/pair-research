@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthProfile } from './useAuthProfile'
 
 const {
+  mockGetBrowserE2EAuthMode,
   getOrCreateProfileToken,
+  mockIsE2EAnonymousAuthMode,
   mockGetOrCreateProfileFn,
   mockGetUser,
   mockOnAuthStateChange,
@@ -12,7 +14,9 @@ const {
   mockUpdateProfileFn,
   updateProfileToken,
 } = vi.hoisted(() => ({
+  mockGetBrowserE2EAuthMode: vi.fn(),
   getOrCreateProfileToken: Symbol('getOrCreateProfile'),
+  mockIsE2EAnonymousAuthMode: vi.fn(),
   updateProfileToken: Symbol('updateProfile'),
   mockGetOrCreateProfileFn: vi.fn(),
   mockGetUser: vi.fn(),
@@ -56,8 +60,8 @@ vi.mock('@/shared/supabase/client', () => ({
 }))
 
 vi.mock('../lib/e2eAuth', () => ({
-  getBrowserE2EAuthMode: () => null,
-  isE2EAnonymousAuthMode: () => false,
+  getBrowserE2EAuthMode: mockGetBrowserE2EAuthMode,
+  isE2EAnonymousAuthMode: mockIsE2EAnonymousAuthMode,
   isMissingSupabaseSessionError: () => false,
 }))
 
@@ -94,6 +98,8 @@ describe('useAuthProfile', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     window.history.replaceState(null, '', '/')
+    mockGetBrowserE2EAuthMode.mockReturnValue(null)
+    mockIsE2EAnonymousAuthMode.mockReturnValue(false)
     mockOnAuthStateChange.mockReturnValue({
       data: {
         subscription: {
@@ -124,6 +130,7 @@ describe('useAuthProfile', () => {
     mockGetOrCreateProfileFn
       .mockResolvedValue(syncedProfile)
       .mockResolvedValueOnce(initialProfile)
+      .mockResolvedValueOnce(initialProfile)
     mockOptimizeImageFromUrl.mockResolvedValue(optimizedBuffer)
     mockUpdateProfileFn.mockResolvedValue({ success: true, message: 'ok' })
 
@@ -150,5 +157,60 @@ describe('useAuthProfile', () => {
       expect(result.current.profile.avatar_url).toBe('https://cdn.example.com/public/images/avatars/user-1.webp')
     })
     expect(setUserLoggedIn).toHaveBeenCalledWith(true)
+  })
+
+  it('does not overwrite a newer custom avatar while a Google sync is in flight', async () => {
+    const user = buildUser()
+    const optimizedBuffer = Uint8Array.from([1, 2, 3]).buffer
+    const initialProfile = {
+      id: 'user-1',
+      email: 'ada@example.com',
+      full_name: 'Ada Lovelace',
+      avatar_url: 'https://lh3.googleusercontent.com/a/abc=s96-c',
+    }
+    const customProfile = {
+      ...initialProfile,
+      avatar_url: 'https://cdn.example.com/public/images/avatars/user-1.webp',
+    }
+
+    mockGetUser.mockResolvedValue({
+      data: { user },
+      error: null,
+    })
+    mockGetOrCreateProfileFn
+      .mockResolvedValue(customProfile)
+      .mockResolvedValueOnce(initialProfile)
+    mockOptimizeImageFromUrl.mockResolvedValue(optimizedBuffer)
+    mockUpdateProfileFn.mockResolvedValue({ success: true, message: 'ok' })
+
+    const setUserLoggedIn = vi.fn()
+    const { result } = renderHook(() => useAuthProfile(setUserLoggedIn))
+
+    await waitFor(() => {
+      expect(mockOptimizeImageFromUrl).toHaveBeenCalledWith(
+        'https://lh3.googleusercontent.com/a/abc=s512-c',
+      )
+    })
+
+    await waitFor(() => {
+      expect(result.current.profile.avatar_url).toBe('https://cdn.example.com/public/images/avatars/user-1.webp')
+    })
+
+    expect(mockUpdateProfileFn).not.toHaveBeenCalled()
+  })
+
+  it('starts in a settled logged-out state for anonymous e2e mode', () => {
+    mockGetBrowserE2EAuthMode.mockReturnValue('anonymous')
+    mockIsE2EAnonymousAuthMode.mockReturnValue(true)
+
+    const setUserLoggedIn = vi.fn()
+    const { result } = renderHook(() => useAuthProfile(setUserLoggedIn))
+
+    expect(result.current.loading).toBe(false)
+    expect(result.current.profile).toEqual({
+      full_name: null,
+      avatar_url: null,
+    })
+    expect(setUserLoggedIn).toHaveBeenCalledWith(false)
   })
 })

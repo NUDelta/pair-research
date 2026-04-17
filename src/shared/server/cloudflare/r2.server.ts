@@ -1,6 +1,6 @@
+import '@tanstack/react-start/server-only'
 import { buildPublicImageUrl } from '@/shared/lib/cloudflare/R2PublicUrl'
 import { getR2Binding } from '@/shared/server/cloudflare/bindings.server'
-import '@tanstack/react-start/server-only'
 
 /**
  * Writes an object into R2.

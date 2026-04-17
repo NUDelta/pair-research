@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { getInitials, isGravatarAvatarUrl, optimizeAvatar } from '@/features/account/lib/avatar'
 import { gravatarLink } from '@/features/auth/lib'
-import { Spinner } from '@/shared/ui'
+import { DoubleConfirmDialog, Spinner } from '@/shared/ui'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -14,17 +14,25 @@ interface AvatarUploaderProps {
   email: string
   fullName: string
   initialUrl?: string
+  isRemoving: boolean
+  onRemove: () => Promise<boolean>
   setValue: UseFormSetValue<AccountFormValues>
 }
+
+const normalizePreviewUrl = (value?: string) => typeof value === 'string' && value.trim() !== ''
+  ? value
+  : null
 
 const AvatarUploader = ({
   email,
   fullName,
   initialUrl,
+  isRemoving,
+  onRemove,
   setValue,
 }: AvatarUploaderProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [previewUrl, setPreviewUrl] = useState(() => initialUrl ?? null)
+  const [previewUrl, setPreviewUrl] = useState(() => normalizePreviewUrl(initialUrl))
   const [pending, setPending] = useState(false)
   const [isUsingGravatar, setIsUsingGravatar] = useState(() => isGravatarAvatarUrl(initialUrl))
 
@@ -52,6 +60,18 @@ const AvatarUploader = ({
   }, [email, fullName, isUsingGravatar])
 
   const isUpdated = previewUrl !== null && previewUrl !== initialUrl
+
+  const clearRemovedAvatarState = () => {
+    setIsUsingGravatar(false)
+    setPreviewUrl(null)
+    setValue('avatar', undefined, { shouldDirty: false })
+    setValue('content_type', undefined, { shouldDirty: false })
+    setValue('avatar_source', 'current', { shouldDirty: false })
+
+    if (inputRef.current) {
+      inputRef.current.value = ''
+    }
+  }
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -81,17 +101,6 @@ const AvatarUploader = ({
     }
   }
 
-  const handleAvatarRemove = () => {
-    setIsUsingGravatar(false)
-    setPreviewUrl(null)
-    setValue('avatar_source', 'none', { shouldDirty: true })
-    setValue('avatar', undefined, { shouldDirty: true })
-    setValue('content_type', undefined, { shouldDirty: true })
-    if (inputRef.current) {
-      inputRef.current.value = ''
-    }
-  }
-
   const handleGravatarToggle = (checked: boolean) => {
     setIsUsingGravatar(checked)
     setValue('avatar', undefined, { shouldDirty: true })
@@ -105,44 +114,27 @@ const AvatarUploader = ({
       return
     }
 
-    setPreviewUrl(isGravatarAvatarUrl(initialUrl) ? null : initialUrl ?? null)
+    setPreviewUrl(isGravatarAvatarUrl(initialUrl) ? null : normalizePreviewUrl(initialUrl))
     setValue('avatar_source', isGravatarAvatarUrl(initialUrl) ? 'none' : 'current', { shouldDirty: true })
     if (inputRef.current) {
       inputRef.current.value = ''
     }
   }
 
+  const handleAvatarRemove = async () => {
+    const removed = await onRemove()
+
+    if (removed) {
+      clearRemovedAvatarState()
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-slate-950">Use Gravatar</p>
-          <p className="text-sm text-slate-600">
-            Fetch your avatar from `gravatar.zla.app` using your account email.
-          </p>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isUsingGravatar}
-          aria-label="Use Gravatar"
-          className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-            isUsingGravatar ? 'bg-sky-600' : 'bg-slate-300'
-          }`}
-          onClick={() => handleGravatarToggle(!isUsingGravatar)}
-        >
-          <span
-            className={`inline-block h-5 w-5 rounded-full bg-white transition-transform ${
-              isUsingGravatar ? 'translate-x-6' : 'translate-x-1'
-            }`}
-          />
-        </button>
-      </div>
-
       <div className="flex flex-col items-center gap-4 sm:flex-row">
         <div className="flex flex-col items-center gap-y-1">
           <Avatar className="h-24 w-24">
-            <AvatarImage src={previewUrl ?? ''} alt={`${fullName}'s avatar`} />
+            <AvatarImage src={previewUrl ?? undefined} alt={fullName === '' ? 'User avatar' : `${fullName}'s avatar`} />
             <AvatarFallback>
               {getInitials(fullName)}
             </AvatarFallback>
@@ -166,21 +158,67 @@ const AvatarUploader = ({
           <Button
             variant="outline"
             type="button"
-            className="hover-lift-sm hover:shadow-sm"
+            size="lg"
+            className="rounded-full hover-lift-sm hover:shadow-sm"
             onClick={() => inputRef.current?.click()}
-            disabled={isUsingGravatar}
+            disabled={isUsingGravatar || isRemoving}
           >
-            {pending ? <Spinner text="Uploading..." /> : 'Change Avatar'}
+            {pending ? <Spinner text="Uploading..." /> : 'Change photo'}
           </Button>
-          <Button
-            variant="ghost"
-            type="button"
-            onClick={handleAvatarRemove}
-            disabled={previewUrl === null && !isUsingGravatar}
-          >
-            Remove photo
-          </Button>
+          <DoubleConfirmDialog
+            title="Remove profile photo?"
+            description="This removes your current profile photo and restores the default avatar immediately."
+            confirmText="Remove photo"
+            pendingText="Removing photo..."
+            onConfirm={handleAvatarRemove}
+            trigger={(
+              <Button
+                variant="destructive"
+                type="button"
+                size="lg"
+                className="rounded-full hover-lift-sm hover:shadow-sm"
+                disabled={(previewUrl === null && !isUsingGravatar) || isRemoving || pending}
+              >
+                {isRemoving ? <Spinner text="Removing..." /> : 'Remove photo'}
+              </Button>
+            )}
+          />
         </div>
+      </div>
+
+      <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-slate-950">Use Gravatar</p>
+          <p className="text-sm text-slate-600">
+            Manage this image at
+            {' '}
+            <a
+              href="https://gravatar.com"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-sky-700 underline underline-offset-4 transition-colors hover:text-slate-950"
+            >
+              Gravatar
+            </a>
+            .
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isUsingGravatar}
+          aria-label="Use Gravatar"
+          className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+            isUsingGravatar ? 'bg-sky-600' : 'bg-slate-300'
+          }`}
+          onClick={() => handleGravatarToggle(!isUsingGravatar)}
+        >
+          <span
+            className={`inline-block h-5 w-5 rounded-full bg-white transition-transform ${
+              isUsingGravatar ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
       </div>
     </div>
   )

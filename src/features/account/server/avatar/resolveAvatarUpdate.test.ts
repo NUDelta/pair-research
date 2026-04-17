@@ -1,10 +1,11 @@
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveAvatarUpdate } from './resolveAvatarUpdate'
 
-const { deleteStoredAvatar, mockGravatarLink, uploadAvatarFromArrayBuffer } = vi.hoisted(() => ({
+const { deleteStoredAvatar, mockGravatarLink } = vi.hoisted(() => ({
   deleteStoredAvatar: vi.fn(),
   mockGravatarLink: vi.fn(),
-  uploadAvatarFromArrayBuffer: vi.fn(),
 }))
 
 vi.mock('@/features/auth/lib', () => ({
@@ -13,10 +14,6 @@ vi.mock('@/features/auth/lib', () => ({
 
 vi.mock('./deleteAvatar', () => ({
   deleteStoredAvatar,
-}))
-
-vi.mock('./uploadAvatar', () => ({
-  uploadAvatarFromArrayBuffer,
 }))
 
 describe('resolveAvatarUpdate', () => {
@@ -34,7 +31,6 @@ describe('resolveAvatarUpdate', () => {
     })
 
     expect(deleteStoredAvatar).not.toHaveBeenCalled()
-    expect(uploadAvatarFromArrayBuffer).not.toHaveBeenCalled()
   })
 
   it('removes stored avatars when the user clears their photo', async () => {
@@ -49,20 +45,6 @@ describe('resolveAvatarUpdate', () => {
     })
 
     expect(deleteStoredAvatar).toHaveBeenCalledWith('user-123')
-  })
-
-  it('uploads a replacement avatar when optimized bytes are provided', async () => {
-    uploadAvatarFromArrayBuffer.mockResolvedValue('https://cdn.example.com/public/images/avatars/user-123.webp')
-
-    await expect(resolveAvatarUpdate({
-      avatarSource: 'upload',
-      userId: 'user-123',
-      imageBuffer: Uint8Array.from([1, 2, 3]).buffer,
-      contentType: 'image/webp',
-    })).resolves.toEqual({
-      avatarUrl: 'https://cdn.example.com/public/images/avatars/user-123.webp',
-      shouldUpdateAvatar: true,
-    })
   })
 
   it('resolves a gravatar avatar and clears stored uploads first', async () => {

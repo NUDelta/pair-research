@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AvatarUploader from './AvatarUploader'
@@ -33,6 +33,7 @@ describe('avatarUploader', () => {
 
   it('marks the form for avatar removal when the user clears their photo', async () => {
     const user = userEvent.setup()
+    const onRemove = vi.fn().mockResolvedValue(true)
     const setValue = vi.fn()
 
     render(
@@ -40,15 +41,18 @@ describe('avatarUploader', () => {
         email="ada@example.com"
         fullName="Ada Lovelace"
         initialUrl="https://cdn.example.com/public/images/avatars/ada.webp"
+        isRemoving={false}
+        onRemove={onRemove}
         setValue={setValue}
       />,
     )
 
     await user.click(screen.getByRole('button', { name: /remove photo/i }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: /^remove photo$/i }))
 
-    expect(setValue).toHaveBeenCalledWith('avatar_source', 'none', { shouldDirty: true })
-    expect(setValue).toHaveBeenCalledWith('avatar', undefined, { shouldDirty: true })
-    expect(setValue).toHaveBeenCalledWith('content_type', undefined, { shouldDirty: true })
+    expect(onRemove).toHaveBeenCalledTimes(1)
+    expect(setValue).not.toHaveBeenCalledWith('avatar_source', 'none', { shouldDirty: true })
   })
 
   it('marks the form for avatar upload when a replacement image is chosen', async () => {
@@ -60,6 +64,8 @@ describe('avatarUploader', () => {
         email="ada@example.com"
         fullName="Ada Lovelace"
         initialUrl=""
+        isRemoving={false}
+        onRemove={vi.fn().mockResolvedValue(true)}
         setValue={setValue}
       />,
     )
@@ -91,6 +97,8 @@ describe('avatarUploader', () => {
         email="ada@example.com"
         fullName="Ada Lovelace"
         initialUrl="https://cdn.example.com/public/images/avatars/ada.webp"
+        isRemoving={false}
+        onRemove={vi.fn().mockResolvedValue(true)}
         setValue={setValue}
       />,
     )
@@ -101,5 +109,29 @@ describe('avatarUploader', () => {
     expect(setValue).toHaveBeenCalledWith('content_type', undefined, { shouldDirty: true })
     expect(setValue).toHaveBeenCalledWith('avatar_source', 'gravatar', { shouldDirty: true })
     expect(mockGravatarLink).toHaveBeenCalledWith('ada@example.com', 'Ada Lovelace')
+  })
+
+  it('turns off gravatar after removing the current photo', async () => {
+    const user = userEvent.setup()
+    const setValue = vi.fn()
+
+    render(
+      <AvatarUploader
+        email="ada@example.com"
+        fullName="Ada Lovelace"
+        initialUrl="https://gravatar.zla.app/avatar/example?s=200"
+        isRemoving={false}
+        onRemove={vi.fn().mockResolvedValue(true)}
+        setValue={setValue}
+      />,
+    )
+
+    expect(screen.getByRole('switch', { name: /use gravatar/i })).toHaveAttribute('aria-checked', 'true')
+
+    await user.click(screen.getByRole('button', { name: /remove photo/i }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: /^remove photo$/i }))
+
+    expect(screen.getByRole('switch', { name: /use gravatar/i })).toHaveAttribute('aria-checked', 'false')
   })
 })

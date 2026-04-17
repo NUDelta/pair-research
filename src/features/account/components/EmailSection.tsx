@@ -7,8 +7,18 @@ interface EmailSectionProps {
 
 const EmailSection = ({ email }: EmailSectionProps) => (
   <div className="space-y-2">
-    <Label htmlFor="email">Email (cannot change now)</Label>
-    <Input id="email" name="email" value={email} readOnly disabled />
+    <Label htmlFor="email" className="text-sm font-medium text-slate-900">Email</Label>
+    <Input
+      id="email"
+      name="email"
+      value={email}
+      readOnly
+      disabled
+      className="h-12 rounded-xl border-slate-200 bg-slate-50 text-slate-500"
+    />
+    <p className="text-sm text-slate-500">
+      Email updates are not available here yet.
+    </p>
   </div>
 )
 

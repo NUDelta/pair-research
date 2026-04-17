@@ -1,3 +1,4 @@
+import '@tanstack/react-start/server-only'
 import type { z } from 'zod'
 import type { accountAvatarSourceSchema } from '@/features/account/schemas/account'
 import { gravatarLink } from '@/features/auth/lib'

@@ -1,4 +1,5 @@
 import '@tanstack/react-start/server-only'
+import { nanoid } from 'nanoid'
 
 /**
  * Stores one optimized avatar image in R2 and returns its public URL.
@@ -28,7 +29,7 @@ export const uploadAvatarFromArrayBuffer = async (
     throw new Error('Unsupported image format')
   }
 
-  const filename = `images/avatars/${id}.${imageExtension}`
+  const filename = `images/avatars/${id}-${nanoid(6)}.${imageExtension}`
 
   // Use a platform-neutral byte view so the upload path works the same in
   // Workers and in isolated unit tests.
