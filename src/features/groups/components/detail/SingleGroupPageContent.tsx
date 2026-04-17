@@ -7,7 +7,6 @@ import OthersTasks from '@/features/groups/components/detail/OthersTasks'
 import Pairing from '@/features/groups/components/detail/Pairing'
 import PairingSuccessConfetti from '@/features/groups/components/detail/PairingSuccessConfetti'
 import { formatPairingRelativeTime } from '@/features/groups/components/detail/roundStatus'
-import SoloRoundNotice from '@/features/groups/components/detail/SoloRoundNotice'
 import TaskCard from '@/features/groups/components/detail/TaskCard'
 import { useRatingProgressRealtimeRefresh } from '@/features/groups/hooks/useRatingProgressRealtimeRefresh'
 import { useTaskRealtimeListener } from '@/features/groups/hooks/useTaskRealtimeListener'
@@ -135,11 +134,6 @@ export default function SingleGroupPageContent({
       {currentUserActivePairingTaskWithProfile !== null && (
         <div className="animate-subtle-rise-delayed">
           <Pairing pairingInfo={currentUserActivePairingTaskWithProfile} />
-        </div>
-      )}
-      {currentUserLeftOutOfActivePairing && (
-        <div className="animate-subtle-rise-delayed">
-          <SoloRoundNotice />
         </div>
       )}
 

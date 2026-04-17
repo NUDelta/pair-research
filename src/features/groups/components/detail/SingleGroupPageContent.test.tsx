@@ -85,11 +85,6 @@ vi.mock('@/features/groups/components/detail/OthersTasks', () => ({
   },
 }))
 
-vi.mock('@/features/groups/components/detail/SoloRoundNotice', () => ({
-
-  default: () => <div data-testid="solo-round-notice">Solo Round</div>,
-}))
-
 vi.mock('@/features/groups/components/detail/PairingSuccessConfetti', () => ({
   default: () => null,
 }))
@@ -204,7 +199,6 @@ describe('singleGroupPageContent', () => {
       />,
     )
 
-    expect(screen.getByTestId('solo-round-notice')).toBeInTheDocument()
     expect(screen.getByTestId('task-card')).toBeInTheDocument()
     expect(mockTaskCardProps).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -290,7 +284,6 @@ describe('singleGroupPageContent', () => {
       />,
     )
 
-    expect(screen.getByTestId('solo-round-notice')).toBeInTheDocument()
     expect(mockOthersTasksProps).toHaveBeenLastCalledWith(
       expect.objectContaining({
         activePairCount: 2,
