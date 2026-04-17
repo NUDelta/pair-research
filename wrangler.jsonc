@@ -23,15 +23,23 @@
       "head_sampling_rate": 0.6
     }
   },
-  "r2_buckets": [{
-    "binding": "R2_BUCKET",
-    "bucket_name": "pair-research",
-    "remote": true
-  }],
-  "routes": [{
-    "pattern": "pairresearch.io",
-    "custom_domain": true
-  }],
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "pair-research",
+      "remote": true
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "pairresearch.io",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.pairresearch.io",
+      "custom_domain": true
+    }
+  ],
   "workers_dev": false,
   "preview_urls": true
 }
