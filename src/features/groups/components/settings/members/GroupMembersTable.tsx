@@ -224,6 +224,7 @@ export default function GroupMembersTable({
 
               return (
                 <GroupMembersToolbar
+                  existingMemberEmails={members.map(member => member.email)}
                   groupId={groupId}
                   hasNonRemovableSelected={hasNonRemovableSelected}
                   isBulkRemoving={isBulkRemoving}

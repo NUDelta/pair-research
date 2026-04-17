@@ -12,10 +12,12 @@ describe('importGroupMemberInvites', () => {
   it('resolves role and access columns while skipping duplicates and invalid emails', () => {
     const result = importGroupMemberInvites({
       existingInvites: [{ email: 'existing@example.com', roleId: '1', isAdmin: false }],
+      existingMemberEmails: ['already-member@example.com'],
       roles,
       source: [
         'email,role,access',
         'existing@example.com,Owner,member',
+        'already-member@example.com,Owner,admin',
         'alpha@example.com,Reviewer,admin',
         'beta@example.com,Unknown role,member',
         'not-an-email,Researcher,admin',
@@ -29,9 +31,11 @@ describe('importGroupMemberInvites', () => {
       { email: 'alpha@example.com', roleId: '3', isAdmin: true },
       { email: 'beta@example.com', roleId: '2', isAdmin: false },
     ])
+    expect(result.ignoredExistingEmails).toEqual(['already-member@example.com'])
     expect(result.summary).toEqual({
       addedCount: 2,
       duplicateCount: 1,
+      existingMemberCount: 1,
       invalidCount: 1,
       unresolvedRoleCount: 1,
       truncatedCount: 0,
@@ -48,6 +52,7 @@ describe('importGroupMemberInvites', () => {
     })
 
     expect(result.invites).toHaveLength(MAX_GROUP_MEMBER_INVITES)
+    expect(result.ignoredExistingEmails).toEqual([])
     expect(result.summary.truncatedCount).toBe(2)
   })
 })

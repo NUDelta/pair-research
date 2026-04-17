@@ -17,6 +17,7 @@ import {
 import AddGroupMemberDialog from './AddGroupMemberDialog'
 
 interface GroupMembersToolbarProps {
+  existingMemberEmails: string[]
   groupId: string
   hasNonRemovableSelected: boolean
   isBulkRemoving: boolean
@@ -29,6 +30,7 @@ interface GroupMembersToolbarProps {
 }
 
 export default function GroupMembersToolbar({
+  existingMemberEmails,
   groupId,
   hasNonRemovableSelected,
   isBulkRemoving,
@@ -102,7 +104,12 @@ export default function GroupMembersToolbar({
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <AddGroupMemberDialog groupId={groupId} roles={roles} triggerClassName="flex-1 sm:flex-none" />
+        <AddGroupMemberDialog
+          existingMemberEmails={existingMemberEmails}
+          groupId={groupId}
+          roles={roles}
+          triggerClassName="flex-1 sm:flex-none"
+        />
       </div>
     </>
   )
