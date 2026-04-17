@@ -72,6 +72,7 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="animate-subtle-rise-delayed space-y-4">
         <AvatarUploader
+          key={avatar_url ?? initialAvatarSource}
           email={email}
           fullName={methods.watch('full_name') ?? ''}
           initialUrl={avatar_url ?? ''}

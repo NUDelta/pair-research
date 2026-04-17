@@ -24,14 +24,9 @@ const AvatarUploader = ({
   setValue,
 }: AvatarUploaderProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [previewUrl, setPreviewUrl] = useState(initialUrl ?? null)
+  const [previewUrl, setPreviewUrl] = useState(() => initialUrl ?? null)
   const [pending, setPending] = useState(false)
-  const [isUsingGravatar, setIsUsingGravatar] = useState(isGravatarAvatarUrl(initialUrl))
-
-  useEffect(() => {
-    setPreviewUrl(initialUrl ?? null)
-    setIsUsingGravatar(isGravatarAvatarUrl(initialUrl))
-  }, [initialUrl])
+  const [isUsingGravatar, setIsUsingGravatar] = useState(() => isGravatarAvatarUrl(initialUrl))
 
   useEffect(() => {
     if (!isUsingGravatar) {
