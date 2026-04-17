@@ -31,7 +31,7 @@
 1. Feature Updates:
 
 - [ ] Code follows project coding style.
-- [ ] Tested in a Next.js environment.
+- [ ] Tested in the TanStack Start + Vite environment.
 - [ ] Relevant documentation is updated.
 
 2. Bug Fixes:

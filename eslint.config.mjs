@@ -44,12 +44,12 @@ export default antfu({
     }],
   },
 }, {
-  files: ['src/components/pending/**.tsx'],
+  files: ['src/components/pending/**/*.tsx'],
   rules: {
     'react/no-array-index-key': 'off',
   },
 }, {
-  files: ['src/components/ui/**.tsx', 'src/routes/**/*.tsx'],
+  files: ['src/components/ui/**/*.tsx', 'src/routes/**/*.tsx'],
   rules: {
     'react-refresh/only-export-components': 'off',
   },

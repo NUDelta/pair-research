@@ -102,7 +102,7 @@ Use this file as the working contract for future Codex runs in this repository. 
   - input validation/parsing
   - route-level behavior with auth or redirects
 - For UI-only copy/layout tweaks, tests are optional unless behavior or accessibility changes.
-- Known caveat: `pnpm run test:e2e` currently has at least one unrelated smoke-test failure in `e2e/smoke.spec.ts` around the homepage `Sign in` assertion. Do not assume unrelated feature work caused that failure unless you changed the landing page or auth surface.
+- Known caveat: `pnpm run test:e2e` currently has at least one unrelated smoke-test failure in `e2e/anonymous/smoke.spec.ts` around the homepage `Sign in` assertion. Do not assume unrelated feature work caused that failure unless you changed the landing page or auth surface.
 
 ## Change Scope Rules
 
