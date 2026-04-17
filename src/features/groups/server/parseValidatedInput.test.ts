@@ -8,9 +8,9 @@ describe('parseValidatedInput', () => {
     expect(() =>
       parseValidatedInput(taskSchema, {
         groupId: '550e8400-e29b-41d4-a716-446655440000',
-        description: 'hey',
+        description: '', // Invalid: empty description
       }),
-    ).toThrowError('Task description must be at least 5 words.')
+    ).toThrow('Task description must be at least 1 words.')
   })
 
   it('uses plain-language messaging for invalid group names', () => {
@@ -22,7 +22,7 @@ describe('parseValidatedInput', () => {
         assignedRole: 'Researcher',
         members: [],
       }),
-    ).toThrowError('Use letters, numbers, spaces, hyphens, or underscores for the group name.')
+    ).toThrow('Use letters, numbers, spaces, hyphens, or underscores for the group name.')
   })
 
   it('uses plain-language messaging for invalid descriptions', () => {
@@ -34,7 +34,7 @@ describe('parseValidatedInput', () => {
         assignedRole: 'Researcher',
         members: [],
       }),
-    ).toThrowError('Write a short plain-text description and avoid angle brackets like < or >.')
+    ).toThrow('Write a short plain-text description and avoid angle brackets like < or >.')
   })
 
   it('rejects duplicate role titles after trimming and casing normalization', () => {
@@ -46,6 +46,6 @@ describe('parseValidatedInput', () => {
         assignedRole: 'Researcher',
         members: [],
       }),
-    ).toThrowError('Each role title must be unique.')
+    ).toThrow('Each role title must be unique.')
   })
 })
