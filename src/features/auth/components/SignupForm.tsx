@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { LoaderCircle } from 'lucide-react'
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
@@ -64,6 +64,16 @@ const SignupForm = ({
   const router = useRouter()
 
   const agreeToTerms = watch('agreeToTerms')
+
+  useEffect(() => {
+    reset({
+      name: '',
+      email: defaultEmail.trim(),
+      password: '',
+      confirmPassword: '',
+      agreeToTerms: false,
+    })
+  }, [defaultEmail, reset])
 
   const onSubmit = async ({ agreeToTerms: _agreeToTerms, confirmPassword: _confirmPassword, ...values }: SignupFormInput) => {
     if (!agreeToTerms) {
