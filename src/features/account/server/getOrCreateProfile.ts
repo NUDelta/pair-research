@@ -29,14 +29,10 @@ export const getOrCreateProfile = createServerFn({ method: 'GET' }).handler(asyn
     select: { full_name: true, avatar_url: true },
   })
 
-  const avatarNeedsUpdate = existing?.avatar_url === null && avatarUrl !== null
   const fullNameNeedsUpdate = existing?.full_name === null && fullName !== null
 
-  if (existing && (avatarNeedsUpdate || fullNameNeedsUpdate)) {
+  if (existing && fullNameNeedsUpdate) {
     const updateData: Record<string, unknown> = {}
-    if (avatarNeedsUpdate) {
-      updateData.avatar_url = avatarUrl
-    }
     if (fullNameNeedsUpdate) {
       updateData.full_name = fullName
     }

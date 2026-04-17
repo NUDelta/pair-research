@@ -9,6 +9,7 @@ import { defineConfig } from 'vite'
 
 export default defineConfig(({ mode }) => {
   const isVitest = mode === 'test' || process.env.VITEST === 'true'
+  const disableRemoteBindings = process.env.PAIR_RESEARCH_DISABLE_REMOTE_BINDINGS === '1'
 
   return {
     resolve: {
@@ -25,7 +26,12 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       devtools(),
-      ...isVitest ? [] : [cloudflare({ viteEnvironment: { name: 'ssr' } })],
+      ...isVitest
+        ? []
+        : [cloudflare({
+            viteEnvironment: { name: 'ssr' },
+            ...(disableRemoteBindings ? { remoteBindings: false } : {}),
+          })],
       tailwindcss(),
       tanstackStart(),
       viteReact(),

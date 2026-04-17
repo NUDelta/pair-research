@@ -1,7 +1,7 @@
+import '@tanstack/react-start/server-only'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { getRequiredServerEnv } from '@/shared/server/env.server'
 import { PrismaClient } from '../../../prisma/generated/client/client'
-import '@tanstack/react-start/server-only'
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 const isCloudflareWorkerRuntime = typeof navigator === 'object'

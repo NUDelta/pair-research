@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "vite dev",
-    "dev:e2e": "vite dev --host 127.0.0.1 --strictPort",
+    "dev:e2e": "PAIR_RESEARCH_DISABLE_REMOTE_BINDINGS=1 vite dev --host 127.0.0.1 --strictPort",
     "build": "pnpm run typecheck && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
@@ -50,6 +50,7 @@
     "clsx": "^2.1.1",
     "immer": "^11.1.4",
     "lucide-react": "^1.8.0",
+    "nanoid": "^5.1.9",
     "pg": "^8.20.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

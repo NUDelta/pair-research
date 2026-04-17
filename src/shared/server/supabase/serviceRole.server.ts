@@ -1,8 +1,8 @@
+import '@tanstack/react-start/server-only'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { getSupabasePublicEnv } from '@/shared/config/env'
 import { getRequiredServerEnv } from '@/shared/server/env.server'
-import '@tanstack/react-start/server-only'
 
 const supabaseUrlSchema = z.string().url().nonempty()
 const supabaseSecretKeySchema = z.string().nonempty()

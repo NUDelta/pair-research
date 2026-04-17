@@ -1,6 +1,14 @@
+import type { User } from '@supabase/supabase-js'
 import { useServerFn } from '@tanstack/react-start'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import {
+  getGoogleAvatarUrlForUser,
+  isGoogleAvatarUrl,
+  normalizeGoogleAvatarUrl,
+} from '@/features/account/lib/avatar'
+import { optimizeImageFromUrl } from '@/features/account/lib/avatar/optimizeImage'
+import { updateProfile } from '@/features/account/server'
 import { getOrCreateProfile } from '@/features/account/server/getOrCreateProfile'
 import { getAuthProfileSnapshot } from '@/features/auth/lib/authProfile'
 import { createClient } from '@/shared/supabase/client'
@@ -19,8 +27,10 @@ export const useAuthProfile = (
   const anonymousE2E = isE2EAnonymousAuthMode(e2eAuthMode)
   const supabaseAuth = anonymousE2E ? undefined : createClient().auth
   const getOrCreateProfileFn = useServerFn(getOrCreateProfile)
+  const updateProfileFn = useServerFn(updateProfile)
+  const lastGoogleAvatarSyncUrlRef = useRef<string | null>(null)
 
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!anonymousE2E)
   const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>(emptyProfile)
 
   const setLoggedOut = useCallback(() => {
@@ -30,6 +40,53 @@ export const useAuthProfile = (
     // eslint-disable-next-line react/set-state-in-effect
     setLoading(false)
   }, [setUserLoggedIn])
+
+  const syncGoogleAvatar = useCallback(async (
+    user: User,
+    currentAvatarUrl: string | null,
+  ) => {
+    if (!isGoogleAvatarUrl(currentAvatarUrl)) {
+      return
+    }
+
+    const googleAvatarUrl = getGoogleAvatarUrlForUser(user)
+    if (googleAvatarUrl === null) {
+      return
+    }
+
+    const normalizedGoogleAvatarUrl = normalizeGoogleAvatarUrl(googleAvatarUrl)
+    if (normalizedGoogleAvatarUrl === null || lastGoogleAvatarSyncUrlRef.current === normalizedGoogleAvatarUrl) {
+      return
+    }
+
+    lastGoogleAvatarSyncUrlRef.current = normalizedGoogleAvatarUrl
+
+    const imageBuffer = await optimizeImageFromUrl(normalizedGoogleAvatarUrl)
+    if (imageBuffer === null) {
+      return
+    }
+
+    const latestProfile = await getOrCreateProfileFn()
+    if (!isGoogleAvatarUrl(latestProfile.avatar_url)) {
+      setProfile(latestProfile)
+      return
+    }
+
+    const result = await updateProfileFn({
+      data: {
+        avatarSource: 'upload',
+        imageBuffer,
+        contentType: 'image/webp',
+      },
+    })
+
+    if (!result.success) {
+      return
+    }
+
+    const refreshedProfile = await getOrCreateProfileFn()
+    setProfile(refreshedProfile)
+  }, [getOrCreateProfileFn, updateProfileFn])
 
   const fetchProfile = useCallback(async () => {
     if (!supabaseAuth) {
@@ -83,10 +140,13 @@ export const useAuthProfile = (
       try {
         const result = await getOrCreateProfileFn()
         setProfile(result)
+        void syncGoogleAvatar(user, result.avatar_url)
       }
       catch (profileError) {
         console.error('Failed to fetch server profile, falling back to auth metadata:', profileError)
-        setProfile(getAuthProfileSnapshot(user))
+        const fallbackProfile = getAuthProfileSnapshot(user)
+        setProfile(fallbackProfile)
+        void syncGoogleAvatar(user, fallbackProfile.avatar_url)
       }
 
       setUserLoggedIn(true)
@@ -97,7 +157,7 @@ export const useAuthProfile = (
     finally {
       setLoading(false)
     }
-  }, [getOrCreateProfileFn, setLoggedOut, setUserLoggedIn, supabaseAuth])
+  }, [getOrCreateProfileFn, setLoggedOut, setUserLoggedIn, supabaseAuth, syncGoogleAvatar])
 
   useEffect(() => {
     if (anonymousE2E) {

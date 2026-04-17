@@ -153,8 +153,10 @@ describe('createGroupForm', () => {
     await user.click(screen.getByRole('button', { name: /add blank row/i }))
 
     const emailInputs = screen.getAllByPlaceholderText('member@example.com')
-    await user.type(emailInputs[0], 'First@Example.com')
-    await user.type(emailInputs[1], 'first@example.com')
+    await user.click(emailInputs[0])
+    await user.paste('First@Example.com')
+    await user.click(emailInputs[1])
+    await user.paste('first@example.com')
     await user.click(screen.getByRole('button', { name: /create group/i }))
 
     expect(mockUseServerFn).not.toHaveBeenCalled()

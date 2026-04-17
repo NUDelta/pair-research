@@ -18,20 +18,18 @@ function AccountPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
-      <h1 className="animate-subtle-rise text-2xl font-semibold">Account Settings</h1>
+      <div className="animate-subtle-rise space-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Account settings</h1>
+        <p className="max-w-2xl text-sm leading-6 text-slate-600">
+          Keep your profile and avatar current so your collaborators always see the right identity.
+        </p>
+      </div>
 
       <AccountForm
         full_name={full_name}
         avatar_url={avatar_url}
         email={email}
       />
-
-      <div className="animate-subtle-rise-delayed">
-        <h2 className="mt-8 text-lg font-medium">Account Management</h2>
-        <p className="text-sm text-muted-foreground">
-          Email and password updates coming soon...
-        </p>
-      </div>
 
       <div className="animate-subtle-rise-late rounded-3xl border border-slate-200/80 bg-white/80 p-5 transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:shadow-md">
         <h2 className="text-lg font-medium text-slate-950">Legal</h2>

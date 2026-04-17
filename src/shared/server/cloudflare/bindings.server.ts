@@ -1,6 +1,6 @@
+import '@tanstack/react-start/server-only'
 import { env } from 'cloudflare:workers'
 import { assertBinding } from '@/shared/lib/cloudflare/errors'
-import '@tanstack/react-start/server-only'
 
 /**
  * Returns the configured R2 bucket used by MomoPix image storage.

@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { uploadAvatarFromArrayBuffer } from '@/features/account/server/avatar/uploadAvatar'
+import { accountAvatarSourceSchema } from '@/features/account/schemas/account'
+import { resolveAvatarUpdate } from '@/features/account/server/avatar/resolveAvatarUpdate'
 import { getUser } from '@/shared/supabase/server'
 
 export const updateProfile = createServerFn({ method: 'POST' })
@@ -9,12 +10,14 @@ export const updateProfile = createServerFn({ method: 'POST' })
     }
 
     const payload = data as {
+      avatarSource?: string
       fullName?: string
       imageBuffer?: ArrayBuffer
       contentType?: string
     }
 
     return {
+      avatarSource: accountAvatarSourceSchema.parse(payload.avatarSource ?? 'current'),
       fullName: payload.fullName,
       imageBuffer: payload.imageBuffer,
       contentType: payload.contentType,
@@ -26,17 +29,33 @@ export const updateProfile = createServerFn({ method: 'POST' })
       const prisma = await getPrismaClient()
       const user = await getUser()
       const id = user.id
+      const email = user.email?.trim()
 
-      let avatarUrl: string | null = null
-      if (data.imageBuffer !== undefined && data.contentType !== undefined) {
-        avatarUrl = await uploadAvatarFromArrayBuffer(id, data.imageBuffer, data.contentType)
+      if (email === undefined || email === '') {
+        throw new Error('User email is required')
       }
+
+      const existingProfile = await prisma.profile.findUnique({
+        where: { id },
+        select: {
+          full_name: true,
+        },
+      })
+
+      const { avatarUrl, shouldUpdateAvatar } = await resolveAvatarUpdate({
+        avatarSource: data.avatarSource,
+        userId: id,
+        email,
+        fullName: data.fullName ?? existingProfile?.full_name ?? undefined,
+        imageBuffer: data.imageBuffer,
+        contentType: data.contentType,
+      })
 
       const updateData: Record<string, unknown> = {}
       if (data.fullName !== undefined) {
         updateData.full_name = data.fullName
       }
-      if (avatarUrl !== null) {
+      if (shouldUpdateAvatar) {
         updateData.avatar_url = avatarUrl
       }
 

@@ -28,19 +28,16 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
     {
       value: 'general' as const,
       title: 'General',
-      description: 'Update the name and description',
       icon: Settings2Icon,
     },
     {
       value: 'members' as const,
       title: 'Members',
-      description: 'Invite people and manage access',
       icon: UsersIcon,
     },
     {
       value: 'roles' as const,
       title: 'Roles',
-      description: 'Manage role definitions and assignments',
       icon: KeyRoundIcon,
     },
   ]
