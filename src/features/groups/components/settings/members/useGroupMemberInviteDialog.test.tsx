@@ -1,15 +1,17 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useGroupMemberInviteDialog } from './useGroupMemberInviteDialog'
 
-const invalidate = vi.fn()
-const mockUseRouter = vi.fn(() => ({ invalidate }))
-const mockUseServerFn = vi.fn(() => vi.fn())
-const toast = {
-  error: vi.fn(),
-  success: vi.fn(),
-  warning: vi.fn(),
-}
+const { invalidate, mockUseRouter, mockUseServerFn, toast } = vi.hoisted(() => ({
+  invalidate: vi.fn(),
+  mockUseRouter: vi.fn(() => ({ invalidate })),
+  mockUseServerFn: vi.fn(() => vi.fn()),
+  toast: {
+    error: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+  },
+}))
 
 vi.mock('@tanstack/react-router', () => ({
   useRouter: mockUseRouter,
@@ -37,12 +39,12 @@ describe('useGroupMemberInviteDialog', () => {
     toast.warning.mockReset()
   })
 
-  it('ignores emails that already belong to group members and warns with details', () => {
+  it('ignores emails that already belong to group members and warns with details', async () => {
     const { result } = renderHook(() =>
       useGroupMemberInviteDialog({
         existingMemberEmails: ['ada@example.com'],
         groupId: 'group-1',
-        roles: [{ id: 'role-1', title: 'Researcher' }],
+        roles: [{ id: '1', title: 'Researcher' }],
       }),
     )
 
@@ -54,14 +56,16 @@ describe('useGroupMemberInviteDialog', () => {
       ].join('\n'))
     })
 
-    expect(result.current.inviteRows).toEqual([
-      {
-        id: 'invite-1',
-        email: 'grace@example.com',
-        roleId: 'role-1',
-        isAdmin: false,
-      },
-    ])
+    await waitFor(() => {
+      expect(result.current.inviteRows).toEqual([
+        {
+          id: 'invite-1',
+          email: 'grace@example.com',
+          roleId: '1',
+          isAdmin: false,
+        },
+      ])
+    })
     expect(toast.warning).toHaveBeenCalledWith(
       '1 user is already in this group and was ignored.',
       expect.objectContaining({
@@ -74,12 +78,12 @@ describe('useGroupMemberInviteDialog', () => {
     expect(toast.error).not.toHaveBeenCalled()
   })
 
-  it('still appends new invites when a mixed import also contains existing group members', () => {
+  it('still appends new invites when a mixed import also contains existing group members', async () => {
     const { result } = renderHook(() =>
       useGroupMemberInviteDialog({
         existingMemberEmails: ['ada@example.com'],
         groupId: 'group-1',
-        roles: [{ id: 'role-1', title: 'Researcher' }],
+        roles: [{ id: '1', title: 'Researcher' }],
       }),
     )
 
@@ -95,20 +99,22 @@ describe('useGroupMemberInviteDialog', () => {
       ].join('\n'))
     })
 
-    expect(result.current.inviteRows).toEqual([
-      {
-        id: 'invite-1',
-        email: 'grace@example.com',
-        roleId: 'role-1',
-        isAdmin: false,
-      },
-      {
-        id: 'invite-2',
-        email: 'barbara@example.com',
-        roleId: 'role-1',
-        isAdmin: false,
-      },
-    ])
+    await waitFor(() => {
+      expect(result.current.inviteRows).toEqual([
+        {
+          id: 'invite-1',
+          email: 'grace@example.com',
+          roleId: '1',
+          isAdmin: false,
+        },
+        {
+          id: 'invite-2',
+          email: 'barbara@example.com',
+          roleId: '1',
+          isAdmin: false,
+        },
+      ])
+    })
     expect(toast.warning).toHaveBeenLastCalledWith(
       '1 user is already in this group and was ignored.',
       expect.objectContaining({

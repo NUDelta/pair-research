@@ -66,4 +66,9 @@ export default antfu({
     'perfectionist/sort-named-imports': 'off',
     'perfectionist/sort-named-exports': 'off',
   },
+}, {
+  files: ['src/**/*.test.{ts,tsx}'],
+  rules: {
+    'ts/no-unsafe-assignment': 'off',
+  },
 })

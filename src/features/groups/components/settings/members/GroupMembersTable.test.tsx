@@ -2,11 +2,21 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import GroupMembersTable from './GroupMembersTable'
 
-const mockUseNavigate = vi.fn(() => vi.fn())
-const mockUseRouter = vi.fn(() => ({
-  invalidate: vi.fn(),
+const { mockUseNavigate, mockUseRouter, mockUseServerFn } = vi.hoisted(() => ({
+  mockUseNavigate: vi.fn(() => vi.fn()),
+  mockUseRouter: vi.fn(() => ({
+    invalidate: vi.fn(),
+  })),
+  mockUseServerFn: vi.fn(() => vi.fn()),
 }))
-const mockUseServerFn = vi.fn(() => vi.fn())
+
+function MockDataTable() {
+  return <div data-testid="members-data-table">Members table</div>
+}
+
+function MockGroupMembersToolbar() {
+  return <div data-testid="group-members-toolbar">Toolbar</div>
+}
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: mockUseNavigate,
@@ -30,10 +40,14 @@ vi.mock('@/features/groups/server/groups/updateGroupMember', () => ({
 }))
 
 vi.mock('@/shared/ui/data-table', () => ({
-  DataTable: () => <div data-testid="members-data-table">Members table</div>,
+  DataTable: MockDataTable,
 }))
 
-describe('GroupMembersTable', () => {
+vi.mock('./GroupMembersToolbar', () => ({
+  default: MockGroupMembersToolbar,
+}))
+
+describe('groupMembersTable', () => {
   it('wraps large member lists in an internal scroll region', () => {
     render(
       <GroupMembersTable
