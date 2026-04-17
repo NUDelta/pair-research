@@ -13,7 +13,7 @@
     "deploy": "pnpm run build && wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings ./cloudflare-env.d.ts",
     "lint": "eslint .",
-    "lint:ci": "eslint . --max-warnings=0 || true",
+    "lint:ci": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "test": "pnpm run test:unit && pnpm run test:e2e",
     "test:unit": "vitest run",
