@@ -56,7 +56,7 @@ describe('groups detail controls', () => {
   })
 
   it('disables make pairs when fewer than two pool tasks are available', () => {
-    render(<MakePairsButton groupId="group-1" eligibleTaskCount={0} allRatingsSubmitted={false} />)
+    render(<MakePairsButton groupId="group-1" eligibleTaskCount={0} />)
 
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toHaveAttribute(
@@ -65,14 +65,11 @@ describe('groups detail controls', () => {
     )
   })
 
-  it('disables make pairs until every pool member has submitted all ratings', () => {
-    render(<MakePairsButton groupId="group-1" eligibleTaskCount={3} allRatingsSubmitted={false} />)
+  it('keeps make pairs available when some ratings are still missing', () => {
+    render(<MakePairsButton groupId="group-1" eligibleTaskCount={3} />)
 
-    expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Make Pairs' })).toHaveAttribute(
-      'title',
-      'Everyone in the pool must finish rating every other task before making pairs.',
-    )
+    expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Make Pairs' })).not.toHaveAttribute('title')
   })
 
   it('keeps reset pool available for admins via confirmation dialog', () => {

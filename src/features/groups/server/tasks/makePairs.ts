@@ -1,14 +1,13 @@
-import type { MissingHelpCapacity, PairingHistory } from '@/features/groups/lib/pairing'
+import type { PairingHistory } from '@/features/groups/lib/pairing'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { buildPairs, findMissingHelpCapacities } from '@/features/groups/lib/pairing'
+import { buildPairs } from '@/features/groups/lib/pairing'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 interface MakePairsResponse {
   success: boolean
   message: string
   data?: {
-    missingHelpCapacities?: MissingHelpCapacity[]
     pairingId?: string
     pairs?: Array<{
       firstUser: string
@@ -20,13 +19,12 @@ interface MakePairsResponse {
 
 const makePairsInputSchema = z.object({
   groupId: z.string(),
-  force: z.boolean().optional().default(false),
 })
 
 export const makePairs = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(makePairsInputSchema, data))
   .handler(async ({ data }): Promise<MakePairsResponse> => {
-    const { groupId, force } = data
+    const { groupId } = data
 
     try {
       const { getPrismaClient } = await import('@/shared/server/prisma')
@@ -150,16 +148,6 @@ export const makePairs = createServerFn({ method: 'POST' })
         helpCapacity: capacity.help_capacity,
       }))
       const pairingHistory = buildPairingHistory(pairingTasks, latestPairing?.pair ?? [])
-      const missingHelpCapacities = findMissingHelpCapacities(pairingTasks, pairingHelpCapacities)
-
-      if (!force && missingHelpCapacities.length > 0) {
-        return {
-          success: false,
-          message: `There are ${missingHelpCapacities.length} missing help capacities. Please confirm if you want to proceed.`,
-          data: { missingHelpCapacities },
-        }
-      }
-
       const pairs = buildPairs(pairingTasks, pairingHelpCapacities, pairingHistory)
 
       if (pairs.length === 0) {

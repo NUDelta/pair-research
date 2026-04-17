@@ -13,6 +13,7 @@ export interface GroupMemberInviteDraft {
 export interface GroupMemberInviteImportSummary {
   addedCount: number
   duplicateCount: number
+  existingMemberCount: number
   invalidCount: number
   unresolvedRoleCount: number
   truncatedCount: number
@@ -20,6 +21,7 @@ export interface GroupMemberInviteImportSummary {
 
 interface ImportGroupMemberInvitesOptions {
   existingInvites: GroupMemberInviteDraft[]
+  existingMemberEmails?: string[]
   roles: GroupSettingsRole[]
   source: string
   defaultRoleId: string
@@ -39,6 +41,7 @@ export function createEmptyGroupMemberInviteDraft(defaultRoleId: string): GroupM
 
 export function importGroupMemberInvites({
   existingInvites,
+  existingMemberEmails = [],
   roles,
   source,
   defaultRoleId,
@@ -46,15 +49,18 @@ export function importGroupMemberInvites({
 }: ImportGroupMemberInvitesOptions) {
   const rows = parseGroupMemberInviteRows(source)
   const existingEmails = new Set(existingInvites.map(invite => normalizeInviteEmail(invite.email)))
+  const existingGroupMemberEmails = new Set(existingMemberEmails.map(normalizeInviteEmail))
   const roleLookup = buildRoleLookup(roles)
   const summary: GroupMemberInviteImportSummary = {
     addedCount: 0,
     duplicateCount: 0,
+    existingMemberCount: 0,
     invalidCount: 0,
     unresolvedRoleCount: 0,
     truncatedCount: 0,
   }
   const nextInvites = [...existingInvites]
+  const ignoredExistingEmails: string[] = []
 
   for (const row of rows) {
     if (nextInvites.length >= MAX_GROUP_MEMBER_INVITES) {
@@ -79,6 +85,12 @@ export function importGroupMemberInvites({
       continue
     }
 
+    if (existingGroupMemberEmails.has(normalizedEmail)) {
+      summary.existingMemberCount += 1
+      ignoredExistingEmails.push(normalizedEmail)
+      continue
+    }
+
     const resolvedRole = resolveRoleId({
       defaultRoleId,
       roleLookup,
@@ -100,6 +112,7 @@ export function importGroupMemberInvites({
 
   return {
     invites: nextInvites,
+    ignoredExistingEmails,
     summary,
   }
 }

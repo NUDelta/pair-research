@@ -118,7 +118,7 @@ const GroupCard = ({
                     event_.stopPropagation()
                     onAccept()
                   }}
-                  className="hover-lift-sm hover:shadow-lg hover:bg-accent hover:text-accent-foreground"
+                  className="hover-lift-sm hover:shadow-lg hover:bg-green-400 hover:text-accent-foreground"
                 >
                   {isAccepting
                     ? (

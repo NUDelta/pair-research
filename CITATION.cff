@@ -23,7 +23,7 @@ identifiers:
   - type: doi
     value: 10.1145/2531602.2531703
     description: ACM CSCW '14 Proceedings
-repository-code: 'https://github.com/NUDelta/pair-research-meteor'
+repository-code: 'https://github.com/NUDelta/pair-research'
 abstract: >-
   To increase productivity, informal learning, and
   collaborations within and across research groups, we have

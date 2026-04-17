@@ -24,9 +24,11 @@ import {
 const addGroupMembersFormSchema = addGroupMembersSchema.omit({ groupId: true })
 
 export function useGroupMemberInviteDialog({
+  existingMemberEmails = [],
   groupId,
   roles,
 }: {
+  existingMemberEmails?: string[]
   groupId: string
   roles: GroupSettingsRole[]
 }) {
@@ -72,22 +74,45 @@ export function useGroupMemberInviteDialog({
       return
     }
 
-    const { invites, summary } = importGroupMemberInvites({
+    const existingInviteEmails = new Set(
+      inviteRows.map(row => row.email.trim().toLowerCase()),
+    )
+    const { ignoredExistingEmails, invites, summary } = importGroupMemberInvites({
       existingInvites: inviteRows.map(({ email, roleId, isAdmin }) => ({ email, roleId, isAdmin })),
+      existingMemberEmails,
       roles,
       source: trimmedSource,
       defaultRoleId: resolvedDefaultRoleId,
       defaultIsAdmin,
     })
 
+    if (summary.existingMemberCount > 0) {
+      toast.warning(
+        summary.existingMemberCount === 1
+          ? '1 user is already in this group and was ignored.'
+          : `${summary.existingMemberCount} users are already in this group and were ignored.`,
+        {
+          description: ignoredExistingEmails.join('\n'),
+        },
+      )
+    }
+
     if (summary.addedCount === 0) {
+      if (summary.existingMemberCount > 0 && summary.duplicateCount === 0 && summary.invalidCount === 0 && summary.unresolvedRoleCount === 0 && summary.truncatedCount === 0) {
+        return
+      }
+
       toast.error(buildImportSummaryMessage(summary))
       return
     }
 
+    const newlyImportedInvites = invites.filter(
+      invite => !existingInviteEmails.has(invite.email.trim().toLowerCase()),
+    )
+
     setStoredInviteRows(currentRows => [
       ...currentRows,
-      ...invites.slice(inviteRows.length).map(createInviteRow),
+      ...newlyImportedInvites.map(createInviteRow),
     ])
     setDraftSource('')
     toast.success(buildImportSummaryMessage(summary))

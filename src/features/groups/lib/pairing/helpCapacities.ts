@@ -71,7 +71,8 @@ export function createHelpCapacityLookup(helpCapacities: HelpCapacityCandidate[]
  * @param helpCapacityLookup - Nested lookup built from the persisted ratings.
  * @param taskId - Task being helped.
  * @param helperUserId - User who could help on the task.
- * @returns The directed help score, or `0` when no score exists.
+ * @returns The directed help score, or `0` when no score exists because the
+ * rating was never submitted.
  */
 export function getDirectedAffinity(
   helpCapacityLookup: HelpCapacityLookup,

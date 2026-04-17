@@ -33,6 +33,7 @@ export function applySharedAssignmentToInviteRows(
 export function buildImportSummaryMessage(summary: {
   addedCount: number
   duplicateCount: number
+  existingMemberCount: number
   invalidCount: number
   unresolvedRoleCount: number
   truncatedCount: number
@@ -41,6 +42,10 @@ export function buildImportSummaryMessage(summary: {
 
   if (summary.duplicateCount > 0) {
     segments.push(`Skipped ${summary.duplicateCount} duplicate ${summary.duplicateCount === 1 ? 'entry' : 'entries'}.`)
+  }
+
+  if (summary.existingMemberCount > 0) {
+    segments.push(`Skipped ${summary.existingMemberCount} ${summary.existingMemberCount === 1 ? 'member' : 'members'} already in the group.`)
   }
 
   if (summary.invalidCount > 0) {

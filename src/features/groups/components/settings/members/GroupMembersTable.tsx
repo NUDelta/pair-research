@@ -188,7 +188,7 @@ export default function GroupMembersTable({
   )
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <div className="flex flex-col gap-1">
           <CardTitle>Members</CardTitle>
@@ -197,96 +197,102 @@ export default function GroupMembersTable({
           </CardDescription>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 px-0 pb-0">
-        {hasActivePairing && (
-          <div className="mx-4 rounded-lg border border-dashed px-4 py-3 sm:mx-6">
-            <p className="font-medium">Active pairing in progress</p>
-            <p className="text-sm text-muted-foreground">
-              Confirmed members stay locked until the pool is reset. Pending invitations can still be removed.
-            </p>
-          </div>
-        )}
-        <DataTable
-          columns={columns}
-          data={data}
-          emptyMessage="No members found for this group."
-          filterColumnId="displayName"
-          filterPlaceholder="Filter members..."
-          getRowId={row => row.userId}
-          renderToolbar={(table) => {
-            const selectedMembers = table.getFilteredSelectedRowModel().rows.map(row => row.original)
-            const selectedRemovableMembers = selectedMembers.filter(member => member.canRemove)
-            const hasNonRemovableSelected = selectedMembers.some(member => !member.canRemove)
+      <CardContent className="px-0 pb-0">
+        <div
+          data-testid="group-members-scroll-region"
+          className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto overscroll-contain"
+        >
+          {hasActivePairing && (
+            <div className="mx-4 rounded-lg border border-dashed px-4 py-3 sm:mx-6">
+              <p className="font-medium">Active pairing in progress</p>
+              <p className="text-sm text-muted-foreground">
+                Confirmed members stay locked until the pool is reset. Pending invitations can still be removed.
+              </p>
+            </div>
+          )}
+          <DataTable
+            columns={columns}
+            data={data}
+            emptyMessage="No members found for this group."
+            filterColumnId="displayName"
+            filterPlaceholder="Filter members..."
+            getRowId={row => row.userId}
+            renderToolbar={(table) => {
+              const selectedMembers = table.getFilteredSelectedRowModel().rows.map(row => row.original)
+              const selectedRemovableMembers = selectedMembers.filter(member => member.canRemove)
+              const hasNonRemovableSelected = selectedMembers.some(member => !member.canRemove)
 
-            return (
-              <GroupMembersToolbar
-                groupId={groupId}
-                hasNonRemovableSelected={hasNonRemovableSelected}
-                isBulkRemoving={isBulkRemoving}
-                isBulkUpdatingRole={isBulkUpdatingRole}
-                onBulkRemove={async () => {
-                  startBulkRemoveTransition(async () => {
-                    let removedCount = 0
-                    const failures: string[] = []
+              return (
+                <GroupMembersToolbar
+                  existingMemberEmails={members.map(member => member.email)}
+                  groupId={groupId}
+                  hasNonRemovableSelected={hasNonRemovableSelected}
+                  isBulkRemoving={isBulkRemoving}
+                  isBulkUpdatingRole={isBulkUpdatingRole}
+                  onBulkRemove={async () => {
+                    startBulkRemoveTransition(async () => {
+                      let removedCount = 0
+                      const failures: string[] = []
 
-                    for (const member of selectedRemovableMembers) {
-                      const response = await removeGroupMemberFn({
+                      for (const member of selectedRemovableMembers) {
+                        const response = await removeGroupMemberFn({
+                          data: {
+                            groupId,
+                            userId: member.userId,
+                          },
+                        })
+
+                        if (response.success) {
+                          removedCount += 1
+                          continue
+                        }
+
+                        failures.push(`${member.displayName}: ${response.message}`)
+                      }
+
+                      table.resetRowSelection()
+                      await router.invalidate()
+
+                      if (removedCount > 0) {
+                        toast.success(`Removed ${removedCount} selected ${removedCount === 1 ? 'member' : 'members'}.`)
+                      }
+
+                      if (failures.length === 1) {
+                        toast.error(failures[0])
+                      }
+                      else if (failures.length > 1) {
+                        toast.error(`${failures.length} selected members could not be removed.`)
+                      }
+                    })
+                  }}
+                  onBulkRoleUpdate={async (roleId) => {
+                    startBulkUpdateRoleTransition(async () => {
+                      const response = await bulkUpdateGroupMemberRolesFn({
                         data: {
                           groupId,
-                          userId: member.userId,
+                          roleId,
+                          userIds: selectedMembers.map(member => member.userId),
                         },
                       })
 
-                      if (response.success) {
-                        removedCount += 1
-                        continue
+                      if (!response.success) {
+                        toast.error(response.message)
+                        return
                       }
 
-                      failures.push(`${member.displayName}: ${response.message}`)
-                    }
-
-                    table.resetRowSelection()
-                    await router.invalidate()
-
-                    if (removedCount > 0) {
-                      toast.success(`Removed ${removedCount} selected ${removedCount === 1 ? 'member' : 'members'}.`)
-                    }
-
-                    if (failures.length === 1) {
-                      toast.error(failures[0])
-                    }
-                    else if (failures.length > 1) {
-                      toast.error(`${failures.length} selected members could not be removed.`)
-                    }
-                  })
-                }}
-                onBulkRoleUpdate={async (roleId) => {
-                  startBulkUpdateRoleTransition(async () => {
-                    const response = await bulkUpdateGroupMemberRolesFn({
-                      data: {
-                        groupId,
-                        roleId,
-                        userIds: selectedMembers.map(member => member.userId),
-                      },
+                      toast.success(response.message)
+                      table.resetRowSelection()
+                      await router.invalidate()
                     })
-
-                    if (!response.success) {
-                      toast.error(response.message)
-                      return
-                    }
-
-                    toast.success(response.message)
-                    table.resetRowSelection()
-                    await router.invalidate()
-                  })
-                }}
-                roles={roles}
-                selectedMembers={selectedMembers}
-                selectedRemovableMembers={selectedRemovableMembers}
-              />
-            )
-          }}
-        />
+                  }}
+                  roles={roles}
+                  selectedMembers={selectedMembers}
+                  selectedRemovableMembers={selectedRemovableMembers}
+                />
+              )
+            }}
+          />
+        </div>
       </CardContent>
     </Card>
   )

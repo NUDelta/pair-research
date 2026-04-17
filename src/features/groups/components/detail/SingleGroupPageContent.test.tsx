@@ -21,9 +21,55 @@ const {
   mockPairingProps: vi.fn(),
 }))
 
+function MockLink({ children }: { children: ReactNode }) {
+  return <>{children}</>
+}
+
+function MockGroupDetailHeader(props: {
+  actions?: ReactNode
+  roundStatusLabel?: string
+  roundStatusNote?: string | null
+}) {
+  mockGroupDetailHeaderProps(props)
+
+  return (
+    <div data-testid="group-detail-header">
+      <span>{props.roundStatusLabel}</span>
+      <span>{props.roundStatusNote}</span>
+      {props.actions}
+    </div>
+  )
+}
+
+function MockTaskCard(props: unknown) {
+  mockTaskCardProps(props)
+  return <div data-testid="task-card">Task Card</div>
+}
+
+function MockPairing(props: unknown) {
+  mockPairingProps(props)
+  return <div data-testid="pairing-card">Current Pairing</div>
+}
+
+function MockOthersTasks(props: unknown) {
+  mockOthersTasksProps(props)
+  return <div data-testid="others-tasks">Others Tasks</div>
+}
+
+function MockLeavePoolButton() {
+  return <button type="button">Leave Pool</button>
+}
+
+function MockMakePairsButton() {
+  return <button type="button">Make Pairs</button>
+}
+
+function MockResetPoolButton() {
+  return <button type="button">Reset Pool</button>
+}
+
 vi.mock('@tanstack/react-router', () => ({
-  // eslint-disable-next-line react/component-hook-factories
-  Link: ({ children }: { children: ReactNode }) => <>{children}</>,
+  Link: MockLink,
 }))
 
 vi.mock('@/features/groups/hooks/useTaskRealtimeListener', () => ({
@@ -43,46 +89,19 @@ vi.mock('@/features/groups/components/detail/roundStatus', () => ({
 }))
 
 vi.mock('@/features/groups/components/detail/GroupDetailHeader', () => ({
-
-  default: (props: {
-    actions?: ReactNode
-    roundStatusLabel?: string
-    roundStatusNote?: string | null
-  }) => {
-    mockGroupDetailHeaderProps(props)
-
-    return (
-      <div data-testid="group-detail-header">
-        <span>{props.roundStatusLabel}</span>
-        <span>{props.roundStatusNote}</span>
-        {props.actions}
-      </div>
-    )
-  },
+  default: MockGroupDetailHeader,
 }))
 
 vi.mock('@/features/groups/components/detail/TaskCard', () => ({
-
-  default: (props: unknown) => {
-    mockTaskCardProps(props)
-    return <div data-testid="task-card">Task Card</div>
-  },
+  default: MockTaskCard,
 }))
 
 vi.mock('@/features/groups/components/detail/Pairing', () => ({
-
-  default: (props: unknown) => {
-    mockPairingProps(props)
-    return <div data-testid="pairing-card">Current Pairing</div>
-  },
+  default: MockPairing,
 }))
 
 vi.mock('@/features/groups/components/detail/OthersTasks', () => ({
-
-  default: (props: unknown) => {
-    mockOthersTasksProps(props)
-    return <div data-testid="others-tasks">Others Tasks</div>
-  },
+  default: MockOthersTasks,
 }))
 
 vi.mock('@/features/groups/components/detail/PairingSuccessConfetti', () => ({
@@ -90,12 +109,9 @@ vi.mock('@/features/groups/components/detail/PairingSuccessConfetti', () => ({
 }))
 
 vi.mock('@/features/groups/components/detail/buttons', () => ({
-  // eslint-disable-next-line react/component-hook-factories
-  LeavePoolButton: () => <button type="button">Leave Pool</button>,
-  // eslint-disable-next-line react/component-hook-factories
-  MakePairsButton: () => <button type="button">Make Pairs</button>,
-  // eslint-disable-next-line react/component-hook-factories
-  ResetPoolButton: () => <button type="button">Reset Pool</button>,
+  LeavePoolButton: MockLeavePoolButton,
+  MakePairsButton: MockMakePairsButton,
+  ResetPoolButton: MockResetPoolButton,
 }))
 
 const baseTask: Task = {
