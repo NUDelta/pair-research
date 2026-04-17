@@ -32,5 +32,6 @@
     "pattern": "pairresearch.io",
     "custom_domain": true
   }],
-  "workers_dev": false
+  "workers_dev": false,
+  "preview_urls": true
 }
