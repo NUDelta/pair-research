@@ -53,11 +53,11 @@
 
 ### 📜 Dependency Changes
 
-| Dependency Name | Old Version | New Version | Reason                             |
-| --------------- | ----------- | ----------- | ---------------------------------- |
-| Next.js         | 14.2.3      | 15.1.6      | Upgrade to latest stable version   |
-| React           | 18.3.1      | 19.0.0      | Required for Next.js compatibility |
-| Tailwind CSS    | 3.4.3       | 4.0.1       | Performance improvements           |
+| Dependency Name       | Old Version | New Version | Reason                                    |
+| --------------------- | ----------- | ----------- | ----------------------------------------- |
+| @tanstack/react-start | 1.167.41    | 1.167.42    | Upgrade to latest stable version          |
+| React                 | 19.0.0      | 19.1.0      | Required for Tanstack Start compatibility |
+| Tailwind CSS          | 4.0.0       | 4.0.1       | Performance improvements                  |
 
 ### 📝 Steps to Reproduce (before fix)
 

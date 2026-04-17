@@ -1,0 +1,51 @@
+name: 🏗️ Production Deploy (main only)
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - README.md
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to Cloudflare Worker (Production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    concurrency:
+      group: production-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: 📂 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Set up Node.js and pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+          run_install: |
+            - recursive: true
+              args: [--frozen-lockfile, --ignore-scripts]
+
+      - name: 🚨 Lint Code
+        run: pnpm run lint:ci
+
+      - name: 🧪 Run tests
+        run: pnpm run test
+
+      - name: ✅ Run build
+        run: pnpm run build
+
+      - name: 🚀 Deploy Worker (Production)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: deploy
