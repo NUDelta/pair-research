@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 
 interface ActiveRoundPanelProps {
   activePairCount?: number
+  currentUserHasActivePairing?: boolean
+  currentUserId?: string
   currentUserLeftOut: boolean
   isAdmin: boolean
   leftOutNames?: string[]
@@ -27,6 +29,57 @@ interface PairMemberSummaryProps {
     avatarUrl: string | null
     taskDescription: string | null
   }
+}
+
+type PairSummary = NonNullable<ActiveRoundPanelProps['pairSummaries']>[number]
+
+function orderPairMembers(
+  members: PairSummary['members'],
+  currentUserId?: string,
+) {
+  if (currentUserId === undefined) {
+    return members
+  }
+
+  const currentUserIndex = members.findIndex(member => member.userId === currentUserId)
+
+  if (currentUserIndex <= 0) {
+    return members
+  }
+
+  return [
+    members[currentUserIndex],
+    ...members.slice(0, currentUserIndex),
+    ...members.slice(currentUserIndex + 1),
+  ]
+}
+
+function orderPairSummaries(
+  pairSummaries: NonNullable<ActiveRoundPanelProps['pairSummaries']>,
+  currentUserId?: string,
+) {
+  const normalizedPairs = pairSummaries.map(pairSummary => ({
+    ...pairSummary,
+    members: orderPairMembers(pairSummary.members, currentUserId),
+  }))
+
+  if (currentUserId === undefined) {
+    return normalizedPairs
+  }
+
+  const currentUserPairIndex = normalizedPairs.findIndex(pairSummary =>
+    pairSummary.members.some(member => member.userId === currentUserId),
+  )
+
+  if (currentUserPairIndex <= 0) {
+    return normalizedPairs
+  }
+
+  return [
+    normalizedPairs[currentUserPairIndex],
+    ...normalizedPairs.slice(0, currentUserPairIndex),
+    ...normalizedPairs.slice(currentUserPairIndex + 1),
+  ]
 }
 
 function PairMemberSummary({ member }: PairMemberSummaryProps) {
@@ -85,11 +138,15 @@ function PairMemberSummary({ member }: PairMemberSummaryProps) {
 
 export default function ActiveRoundPanel({
   activePairCount = 0,
+  currentUserHasActivePairing = false,
+  currentUserId,
   currentUserLeftOut,
   isAdmin,
   leftOutNames = [],
   pairSummaries = [],
 }: ActiveRoundPanelProps) {
+  const orderedPairSummaries = orderPairSummaries(pairSummaries, currentUserId)
+  const canViewPairSummaries = isAdmin || currentUserHasActivePairing
   const icon = isAdmin
     ? <RotateCcwIcon className="size-5 text-amber-600" />
     : currentUserLeftOut
@@ -114,13 +171,13 @@ export default function ActiveRoundPanel({
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-muted-foreground">
         <p>{description}</p>
-        {isAdmin && pairSummaries.length > 0 && (
+        {canViewPairSummaries && orderedPairSummaries.length > 0 && (
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Pairs this round
             </p>
             <div className="grid gap-3 md:grid-cols-2">
-              {pairSummaries.map((pairSummary) => {
+              {orderedPairSummaries.map((pairSummary) => {
                 return (
                   <div
                     key={pairSummary.id}

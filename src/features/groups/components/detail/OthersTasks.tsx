@@ -17,6 +17,7 @@ interface OthersTasksProps {
   currentUserId: string
   groupId: string
   currentUserHasTask?: boolean
+  currentUserHasActivePairing?: boolean
   currentUserInPool?: boolean
   currentUserLeftOut?: boolean
   hasActivePairing?: boolean
@@ -31,6 +32,7 @@ const OthersTasks = ({
   currentUserId,
   groupId,
   currentUserHasTask,
+  currentUserHasActivePairing = false,
   currentUserInPool,
   currentUserLeftOut = false,
   hasActivePairing,
@@ -43,6 +45,8 @@ const OthersTasks = ({
       <div className="space-y-4">
         <ActiveRoundPanel
           activePairCount={activePairCount}
+          currentUserHasActivePairing={currentUserHasActivePairing}
+          currentUserId={currentUserId}
           currentUserLeftOut={currentUserLeftOut}
           isAdmin={isAdmin === true}
           pairSummaries={activeRoundPairs}

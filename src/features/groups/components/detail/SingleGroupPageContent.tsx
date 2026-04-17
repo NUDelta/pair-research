@@ -165,6 +165,7 @@ export default function SingleGroupPageContent({
           activePairCount={groupInfo.activePairCount}
           activeRoundPairs={groupInfo.activeRoundPairs}
           currentUserId={currentUserId}
+          currentUserHasActivePairing={currentUserActivePairingTaskWithProfile !== null}
           groupId={groupInfo.id}
           currentUserHasTask={
             currentUserTask !== undefined || currentUserActivePairingTaskWithProfile !== null

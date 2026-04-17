@@ -436,6 +436,7 @@ describe('singleGroupPageContent', () => {
 
     expect(mockOthersTasksProps).toHaveBeenLastCalledWith(
       expect.objectContaining({
+        currentUserHasActivePairing: false,
         activeRoundPairs: [
           expect.objectContaining({
             id: 'pair-1',
@@ -445,6 +446,60 @@ describe('singleGroupPageContent', () => {
             ],
           }),
         ],
+      }),
+    )
+  })
+
+  it('passes the active-pair flag to the others-tasks section for paired members', () => {
+    render(
+      <SingleGroupPageContent
+        {...baseProps}
+        groupInfo={{
+          ...baseProps.groupInfo,
+          activePairingId: 'pairing-1',
+          activePairingCreatedAt: '2026-04-14T12:00:00.000Z',
+          activePairCount: 1,
+          activeRoundPairs: [
+            {
+              id: 'pair-1',
+              members: [
+                {
+                  userId: 'user-1',
+                  fullName: 'Ada Lovelace',
+                  avatarUrl: null,
+                  taskDescription: 'Draft my methods section',
+                },
+                {
+                  userId: 'user-2',
+                  fullName: 'Grace Hopper',
+                  avatarUrl: null,
+                  taskDescription: 'Review figures',
+                },
+              ],
+            },
+          ],
+          hasActivePairing: true,
+        }}
+        initialTasks={[teammateTask]}
+        currentUserActivePairingTaskWithProfile={{
+          id: 'pairing-1',
+          helperId: 'user-1',
+          helperFullName: 'Ada Lovelace',
+          helperAvatarUrl: null,
+          helperTaskId: 'task-self',
+          helperTaskDescription: 'Draft my methods section',
+          helpeeId: 'user-2',
+          helpeeFullName: 'Grace Hopper',
+          helpeeAvatarUrl: null,
+          helpeeTaskId: 'task-2',
+          helpeeTaskDescription: 'Review figures',
+        }}
+      />,
+    )
+
+    expect(mockOthersTasksProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        currentUserHasActivePairing: true,
       }),
     )
   })

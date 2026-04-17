@@ -108,10 +108,94 @@ describe('others tasks empty states', () => {
     expect(screen.getByText('This round is complete. Wait for an admin to reset the pool from the header before the next round begins.')).toBeInTheDocument()
   })
 
+  it('shows all pairs to non-admin members who were matched, with their pair first and their profile first', () => {
+    render(
+      <OthersTasks
+        activePairCount={2}
+        activeRoundPairs={[
+          {
+            id: 'pair-2',
+            members: [
+              {
+                userId: 'user-3',
+                fullName: 'Barbara Liskov',
+                avatarUrl: null,
+                taskDescription: 'Refine analysis',
+              },
+              {
+                userId: 'user-4',
+                fullName: 'Donald Knuth',
+                avatarUrl: null,
+                taskDescription: 'Review appendix',
+              },
+            ],
+          },
+          {
+            id: 'pair-1',
+            members: [
+              {
+                userId: 'user-2',
+                fullName: 'Grace Hopper',
+                avatarUrl: null,
+                taskDescription: 'Review figures',
+              },
+              {
+                userId: 'user-1',
+                fullName: 'Ada Lovelace',
+                avatarUrl: null,
+                taskDescription: 'Draft methods',
+              },
+            ],
+          },
+        ]}
+        currentUserHasActivePairing
+        groupId="group-1"
+        currentUserId="user-1"
+        currentUserHasTask
+        currentUserInPool={false}
+        hasActivePairing
+        isAdmin={false}
+        raceTasks={[]}
+        tasks={[]}
+      />,
+    )
+
+    expect(screen.getByText('Pairs this round')).toBeInTheDocument()
+    expect(
+      screen
+        .getAllByRole('button', { name: /Show .*'s task/ })
+        .map(button => button.getAttribute('aria-label')),
+    ).toEqual([
+      'Show Ada Lovelace\'s task',
+      'Show Grace Hopper\'s task',
+      'Show Barbara Liskov\'s task',
+      'Show Donald Knuth\'s task',
+    ])
+  })
+
   it('shows a personalized member message when they were left out', () => {
     render(
       <OthersTasks
         activePairCount={1}
+        activeRoundPairs={[
+          {
+            id: 'pair-1',
+            members: [
+              {
+                userId: 'user-2',
+                fullName: 'Grace Hopper',
+                avatarUrl: null,
+                taskDescription: 'Review figures',
+              },
+              {
+                userId: 'user-3',
+                fullName: 'Barbara Liskov',
+                avatarUrl: null,
+                taskDescription: 'Refine analysis',
+              },
+            ],
+          },
+        ]}
         groupId="group-1"
         currentUserId="user-1"
         currentUserHasTask
@@ -126,6 +210,7 @@ describe('others tasks empty states', () => {
 
     expect(screen.getByText('No pair this round')).toBeInTheDocument()
     expect(screen.getByText('You were not paired this round. Wait for an admin to reset the pool from the header before the next round begins.')).toBeInTheDocument()
+    expect(screen.queryByText('Pairs this round')).not.toBeInTheDocument()
   })
 
   it('does not show leftover unpaired tasks under others during an active round', () => {
