@@ -1,0 +1,89 @@
+import { useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
+import { useTransition } from 'react'
+import { toast } from 'sonner'
+import { makePairs } from '@/features/groups/server/tasks'
+import { DoubleConfirmDialog } from '@/shared/ui'
+import { Button } from '@/shared/ui/button'
+
+interface Props {
+  groupId: string
+  eligibleTaskCount: number
+  allRatingsSubmitted: boolean
+}
+
+const MakePairsButton = ({ groupId, eligibleTaskCount, allRatingsSubmitted }: Props) => {
+  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+  const makePairsFn = useServerFn(makePairs)
+  const isDisabled = eligibleTaskCount < 2 || !allRatingsSubmitted || isPending
+  const disabledReason = eligibleTaskCount === 0
+    ? 'The pool is empty. At least two active tasks are required to make pairs.'
+    : eligibleTaskCount < 2
+      ? 'At least two active tasks are required to make pairs.'
+      : 'Everyone in the pool must finish rating every other task before making pairs.'
+
+  const handleMakePairs = async (force = false) => {
+    startTransition(async () => {
+      const response = await makePairsFn({ data: { groupId, force } })
+      if (response.success) {
+        toast.success(response.message)
+        await router.invalidate()
+      }
+      else {
+        if (response.data?.missingHelpCapacities) {
+          // Show missing help capacities in the confirmation dialog
+          const missingCount = response.data.missingHelpCapacities.length
+          const missingDetails = response.data.missingHelpCapacities
+            .map(m => `${m.userName} hasn't set help capacity for "${m.taskDescription}"`)
+            .join('\n')
+
+          toast.error(
+            <div>
+              <p>
+                There are
+                {missingCount}
+                {' '}
+                missing help capacities:
+              </p>
+              <pre className="mt-2 whitespace-pre-wrap text-sm">{missingDetails}</pre>
+              <p className="mt-2">Do you want to proceed anyway?</p>
+            </div>,
+            {
+              duration: 10000,
+              action: {
+                label: 'Proceed',
+                onClick: async () => handleMakePairs(true),
+              },
+            },
+          )
+        }
+        else {
+          toast.error(response.message)
+        }
+      }
+    })
+  }
+
+  return (
+    <DoubleConfirmDialog
+      trigger={(
+        <Button
+          disabled={isDisabled}
+          aria-busy={isPending}
+          aria-label="Make Pairs"
+          title={isDisabled ? disabledReason : undefined}
+        >
+          {isPending ? 'Making pairs...' : 'Make Pairs'}
+        </Button>
+      )}
+      title="Make Pairs"
+      description="Are you sure you want to make pairs? This will create pairs of tasks that will be able to help each other."
+      confirmText="Make Pairs"
+      cancelText="Cancel"
+      onConfirm={handleMakePairs}
+    />
+  )
+}
+
+export default MakePairsButton

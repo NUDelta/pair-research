@@ -1,77 +1,143 @@
 # Pair Research
 
-[Pair Research](https://groups.csail.mit.edu/uid/other-pubs/cscw14-pair-research.pdf) is a new
-kind of interaction developed by Miller, Zhang, Gilbert & Gerber designed to pair members of
-group together weekly to work on each other's projects.
+[Pair Research](http://users.eecs.northwestern.edu/~hq/papers/pairresearch.pdf) is a group collaboration method developed by Miller, Zhang, Gilbert, and Gerber to pair members together each round so they can work through one another’s blockers and projects. Based on the original Pair Research method from Delta Lab, this application extends the earlier Google Sheets and spreadsheet-based workflow into a full web app where users can create customized groups, generate pairings, view analytics, and support collaboration across specific subgroups, such as professors and students in a research lab.
 
-This application takes the original Google Sheets prototype further, developing platform on
-which users can create customized groups to make pairings with, view analytics, and promote
-pairings and collaboration between certain subgroups (e.g. professors with students in a
-research lab)
+## What the app does
 
-## Development
+- lets people create and join groups
+- tracks each member's current task
+- collects "how much can I help?" ratings between members
+- builds pairings for the current round
+- shows live group updates in realtime
+- supports group settings, roles, invitations, and profile avatars
 
-This project was developed with [Meteor 1.3/1.4](https://guide.meteor.com/) best practices in
-mind. This section describes some architectural design decisions and any nonconventional
-dev solutions.
+## Tech stack
 
-### API Organization
-Pair Research's general functionality depends on the following collections:
+- TanStack Start + Vite
+- React 19 + TypeScript
+- Tailwind CSS v4 + shadcn/ui
+- Prisma for app data (orm)
+- Supabase for auth and realtime
+- Cloudflare Workers for deployment
+- Cloudflare R2 for avatar storage
+- Cloudflare Turnstile for bot protection
+- Vitest + Testing Library for unit and component tests
+- Playwright for end-to-end tests
 
- * `Affinities`: The current set of `N x N` ratings between group members about how much
- they are capable of helping the other person with their task.
- * `Groups`: This is the main organizational unit of Pair Research, in which people
- participate in Pair Research together.
- * `Pairings`: This is the set of all pairings results generated per group
- * `Tasks`: The current set of tasks each group member wants to complete in a Pair Research
- session.
- * `Meteor.users`: The user organization unit, pulled in by the `accounts-base` and
- `accounts-password` packages.
- 
-Each collection has an appropriate set of methods in the same folder as the collection definition.
+## Project structure
 
-The Pair Research app provides a number of analytic functions in some archival collections.
-In particular, `Affinities` and `Tasks` only contains the current tasks of a user, so additional
-`AffinitiesHistory` and `TasksHistory` collections store historic info with some additional
-metadata. Currently, a `PairsHistory` collection also archives Pairing information. This might 
-not be necessary.
+```text
+src/
+  routes/      Route files and page entry points
+  features/    Feature code by domain
+    auth/      Sign in, sign up, password reset, redirects
+    account/   Profile editing and avatar upload
+    groups/    Group creation, invites, tasks, pairing, settings
+    home/      Public landing page
+  shared/      Shared UI, config, server helpers, styles
+prisma/        Prisma schema and generated client
+e2e/           Playwright tests
+tests/         Test setup and mocks
+```
 
-We also extend the `lodash` and `ReactiveDict` packages in `/imports/api/extensions` and add
-some Blaze helpers in `/imports/ui/blaze-helpers.js`.
+## Main routes
 
-Any new files with package extensions or server-side API startup registrations (e.g. defining 
-methods or publications) must be added to the appropriate `register-api.js` file in 
-`/imports/startup/[client|server]`.
+- `/` public home page
+- `/login` sign in
+- `/signup` sign up
+- `/forgot-password` request password reset
+- `/reset-password` set a new password from the reset link
+- `/groups` list joined and pending groups
+- `/groups/create` create a group
+- `/groups/$slug` active group page
+- `/groups/$slug/settings` group settings
+- `/account` profile and avatar settings
 
-### Authentication
-We've defined an authentication mixin that can be attached to any method. See 
-`/imports/api/authentication.js`.
+## Pairing flow
 
-### The Pair Research Script
-Pair Research actually relies on a Python script to do the matching after we create the
-graph in Javascript (`/imports/api/pairings/methods.js:makePairs`). To run this script,
-we load it as an asset in the `private/` folder and `exec` it.
+Each member adds a task for the current round and rates how much they can help on other members' tasks. The app uses those ratings to build pairings.
 
-### Git Setup
-There's two really important branches here: `deploy` and `master`. `master` is the main branch: be sure
-to never force push to master. `deploy` is always expected to be a number of commits ahead of masters
-(e.g. deploy settings, database migrations). In general, migrations consists of two commits: one for the
-actual deployment and one with the migration commented out and timestamped. To keep track of what version
-is live, avoid force pushing `deploy` until it's live. Use `git rebase` to keep the migrations as the latest commit.
+The pairing code lives under `src/features/groups/lib/pairing`. It tries a stable-roommates pass first, then fills any remaining unmatched people with maximum-weight matching. This keeps pairings stable when possible and still gives good results for hard or odd-sized pools.
+
+## Environment variables
+
+Copy `.env.example` to `.env` and fill in the values.
+
+### Required
+
+- `VITE_SUPABASE_URL` public Supabase project URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY` public Supabase browser key
+- `DATABASE_URL` Postgres connection string for Prisma
+- `SUPABASE_SECRET_KEY` server-only Supabase secret for admin actions
+- `VITE_SITE_BASE_URL` public site URL used for links and auth redirects
+- `R2_PUBLIC_DOMAIN` public base URL for avatar files in R2
+- `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY` public Turnstile site key
+- `CLOUDFLARE_TURNSTILE_SECRET_KEY` server-only Turnstile secret
+
+### Runtime binding
+
+- `R2_BUCKET` Cloudflare R2 bucket binding configured in `wrangler.jsonc`
+
+## Local development
+
+```bash
+pnpm install
+cp .env.example .env
+pnpm dev
+```
+
+The local dev server runs on `http://127.0.0.1:3000`.
+
+If you change the Prisma schema, regenerate the client:
+
+```bash
+pnpm run prisma:generate
+```
+
+## Scripts
+
+- `pnpm dev` start the app locally
+- `pnpm dev:e2e` start a local server for Playwright
+- `pnpm build` typecheck and build
+- `pnpm preview` preview the production build
+- `pnpm lint` run ESLint
+- `pnpm typecheck` run TypeScript checks
+- `pnpm test:unit` run Vitest
+- `pnpm test:e2e` run Playwright smoke tests
+- `pnpm test:e2e:auth` run authenticated Playwright tests
+- `pnpm test` run unit tests and e2e tests
+- `pnpm deploy` build and deploy with Wrangler
+
+## Testing
+
+For TypeScript changes, run:
+
+```bash
+pnpm test
+```
+
+Useful focused commands:
+
+- `pnpm test:unit` for fast local feedback
+- `pnpm test:e2e` for public route smoke tests
+- `pnpm test:e2e:auth` for authenticated flows
+
+Playwright uses a local server by default. Authenticated e2e tests require `PLAYWRIGHT_AUTH_EMAIL` and `PLAYWRIGHT_AUTH_PASSWORD`.
 
 ## Deployment
-Pair Research is hosted on [Galaxy](https://galaxy.meteor.com) and [mLab](https://mlab.com). We host a production and staging server. It is recommended that all major changes be deployed to the staging server first for testing.
 
-### Setup
-You will need the `settings-staging.json` and `settings-production.json` to deploy to the staging and production servers respectively. Please contact Kapil for the latest versions of these files. 
+The app deploys to Cloudflare Workers with Wrangler.
 
-Additionally, you will need access the the Galaxy and mLab accounts. Ask Haoqi to add you to DTR Galaxy account and ask Yongsung for his mLab credientials since the Pair Research database is under his account (*note: In the future, we should probably do a migration to more easily scalable DB since we should be wary of hitting rate limits on this application*).
+```bash
+pnpm deploy
+```
 
-Emails are sent using [SendGrid](https://sendgrid.com/). The details for the SMTP server used to send these emails are included in the `.json` files mentioned above. 
+Before deploying, make sure:
 
-### Deploying
-We provide two scripts that allow you to easily deploy to the servers, given you have completed the above steps. 
+- the required environment variables are set
+- the `R2_BUCKET` binding exists
+- Wrangler is authenticated for the target Cloudflare account
 
-`npm run-script deploy-staging` will deploy to the staging server at [pair-staging.meteorapp.com](pair-staging.meteorapp.com]). 
+## Notes
 
-`npm run-script deploy-production` will deploy to the production server at [pairresearch.io](pairresearch.io).
+- Generated files such as `src/routeTree.gen.ts`, `cloudflare-env.d.ts`, and `prisma/generated/client/**` should not be edited by hand.

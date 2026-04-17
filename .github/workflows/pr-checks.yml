@@ -1,0 +1,481 @@
+name: 🔎 PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - '**/README.md'
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: 🚨 Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📂 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - name: 🧱 Setup Node (cache pnpm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: pnpm
+
+      - name: 📦 Install deps (frozen)
+        run: pnpm install --frozen-lockfile
+
+      - name: 🚨 Run lint
+        run: pnpm run lint:ci
+
+  typecheck:
+    name: 🧾 Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📂 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - name: 🧱 Setup Node (cache pnpm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: pnpm
+
+      - name: 📦 Install deps (frozen)
+        run: pnpm install --frozen-lockfile
+
+      - name: 🧾 Run typecheck
+        run: pnpm run typecheck
+
+  unit:
+    name: 🧪 Unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📂 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - name: 🧱 Setup Node (cache pnpm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: pnpm
+
+      - name: 📦 Install deps (frozen)
+        run: pnpm install --frozen-lockfile
+
+      - name: 🧪 Run unit tests
+        run: pnpm run test:unit
+
+  e2e:
+    name: 🎭 E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SITE_BASE_URL: ${{ secrets.VITE_SITE_BASE_URL }}
+      R2_PUBLIC_DOMAIN: ${{ secrets.R2_PUBLIC_DOMAIN }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+
+    outputs:
+      e2e_passed: ${{ steps.summarize.outputs.e2e_passed }}
+      e2e_total: ${{ steps.summarize.outputs.e2e_total }}
+      e2e_failed: ${{ steps.summarize.outputs.e2e_failed }}
+      e2e_skipped: ${{ steps.summarize.outputs.e2e_skipped }}
+      e2e_unknown: ${{ steps.summarize.outputs.e2e_unknown }}
+      e2e_executed: ${{ steps.summarize.outputs.e2e_executed }}
+      failed_e2e_tests: ${{ steps.summarize.outputs.failed_e2e_tests }}
+      parse_warning: ${{ steps.summarize.outputs.parse_warning }}
+
+    steps:
+      - name: 📂 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - name: 🧱 Setup Node (cache pnpm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: pnpm
+
+      - name: 📦 Install deps (frozen)
+        run: pnpm install --frozen-lockfile
+
+      - name: 🎭 Install Playwright browsers
+        run: pnpm run test:e2e:install
+
+      - name: 🎭 Prepare Playwright output dir
+        run: mkdir -p output/playwright
+
+      - name: 🎭 Run E2E tests
+        id: run_e2e
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: output/playwright/report.json
+        run: pnpm exec playwright test --reporter=line,json
+
+      - name: 🧾 Summarize E2E results
+        id: summarize
+        if: always()
+        shell: bash
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+
+          const outPath = process.env.GITHUB_OUTPUT;
+          const reportPath = 'output/playwright/report.json';
+
+          let total = 0;
+          let passed = 0;
+          let failed = 0;
+          let skipped = 0;
+          let unknown = 0;
+          let parseWarning = '';
+          const failedTests = [];
+
+          function classifyTest(test) {
+            const statuses = (test.results || []).map(r => r.status).filter(Boolean);
+
+            if (statuses.includes('passed')) return 'passed';
+            if (statuses.some(s => s === 'failed' || s === 'timedOut' || s === 'interrupted')) return 'failed';
+            if (statuses.length > 0 && statuses.every(s => s === 'skipped')) return 'skipped';
+            return 'unknown';
+          }
+
+          function visitSuite(suite, parents = []) {
+            const titleParts = [...parents, suite.title].filter(Boolean);
+
+            for (const spec of suite.specs || []) {
+              for (const test of spec.tests || []) {
+                total += 1;
+
+                const fullName = [...titleParts, spec.title].filter(Boolean).join(' › ');
+                const classification = classifyTest(test);
+
+                if (classification === 'passed') {
+                  passed += 1;
+                } else if (classification === 'failed') {
+                  failed += 1;
+                  failedTests.push(fullName);
+                } else if (classification === 'skipped') {
+                  skipped += 1;
+                } else {
+                  unknown += 1;
+                }
+              }
+            }
+
+            for (const child of suite.suites || []) {
+              visitSuite(child, titleParts);
+            }
+          }
+
+          if (fs.existsSync(reportPath)) {
+            try {
+              const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+              for (const suite of report.suites || []) {
+                visitSuite(suite, []);
+              }
+            } catch (err) {
+              parseWarning = `Failed to parse Playwright report: ${err.message}`;
+            }
+          } else {
+            parseWarning = 'Playwright JSON report was not generated.';
+          }
+
+          const executed = passed + failed + unknown;
+
+          fs.appendFileSync(outPath, `e2e_passed=${passed}\n`);
+          fs.appendFileSync(outPath, `e2e_total=${total}\n`);
+          fs.appendFileSync(outPath, `e2e_failed=${failed}\n`);
+          fs.appendFileSync(outPath, `e2e_skipped=${skipped}\n`);
+          fs.appendFileSync(outPath, `e2e_unknown=${unknown}\n`);
+          fs.appendFileSync(outPath, `e2e_executed=${executed}\n`);
+          fs.appendFileSync(outPath, `parse_warning=${parseWarning}\n`);
+          fs.appendFileSync(outPath, `failed_e2e_tests=${JSON.stringify(failedTests)}\n`);
+          EOF
+
+      - name: ❌ Fail E2E job if tests failed
+        if: steps.run_e2e.outcome == 'failure'
+        run: exit 1
+
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SITE_BASE_URL: ${{ secrets.VITE_SITE_BASE_URL }}
+      R2_PUBLIC_DOMAIN: ${{ secrets.R2_PUBLIC_DOMAIN }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+
+    steps:
+      - name: 📂 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - name: 🧱 Setup Node (cache pnpm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: pnpm
+
+      - name: 📦 Install deps (frozen)
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Run build
+        run: pnpm run build
+
+  report:
+    name: 💬 Report
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [lint, typecheck, unit, e2e, build]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: 🧾 Write job summary
+        shell: bash
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+          UNIT_RESULT: ${{ needs.unit.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          E2E_PASSED: ${{ needs.e2e.outputs.e2e_passed }}
+          E2E_TOTAL: ${{ needs.e2e.outputs.e2e_total }}
+          E2E_FAILED: ${{ needs.e2e.outputs.e2e_failed }}
+          E2E_SKIPPED: ${{ needs.e2e.outputs.e2e_skipped }}
+          E2E_UNKNOWN: ${{ needs.e2e.outputs.e2e_unknown }}
+          E2E_EXECUTED: ${{ needs.e2e.outputs.e2e_executed }}
+          FAILED_E2E_TESTS: ${{ needs.e2e.outputs.failed_e2e_tests }}
+          PARSE_WARNING: ${{ needs.e2e.outputs.parse_warning }}
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+          const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+
+          const icon = (o) => o === 'success' ? '✅' : o === 'failure' ? '❌' : '⏭️';
+
+          const lint = process.env.LINT_RESULT || 'skipped';
+          const typecheck = process.env.TYPECHECK_RESULT || 'skipped';
+          const unit = process.env.UNIT_RESULT || 'skipped';
+          const e2e = process.env.E2E_RESULT || 'skipped';
+          const build = process.env.BUILD_RESULT || 'skipped';
+
+          const e2ePassed = process.env.E2E_PASSED || '0';
+          const e2eTotal = process.env.E2E_TOTAL || '0';
+          const e2eFailed = process.env.E2E_FAILED || '0';
+          const e2eSkipped = process.env.E2E_SKIPPED || '0';
+          const e2eUnknown = process.env.E2E_UNKNOWN || '0';
+          const e2eExecuted = process.env.E2E_EXECUTED || '0';
+          const parseWarning = process.env.PARSE_WARNING || '';
+
+          let failedTests = [];
+          try {
+            failedTests = JSON.parse(process.env.FAILED_E2E_TESTS || '[]');
+          } catch {}
+
+          const lines = [];
+          lines.push('## 🧪 PR Checks');
+          lines.push('');
+          lines.push(`- 🚨 Lint: ${icon(lint)} **${lint}**`);
+          lines.push(`- 🧾 Typecheck: ${icon(typecheck)} **${typecheck}**`);
+          lines.push(`- 🧪 Unit tests: ${icon(unit)} **${unit}**`);
+          lines.push(`- 🎭 E2E tests: ${icon(e2e)} **${e2e}**`);
+          lines.push(`- 🏗️ Build: ${icon(build)} **${build}**`);
+          lines.push('');
+
+          if (e2eTotal !== '0') {
+            lines.push(`- ▶️ E2E executed: **${e2eExecuted} / ${e2eTotal}**`);
+            lines.push(`- ✅ E2E passed: **${e2ePassed}**`);
+            lines.push(`- ❌ E2E failed: **${e2eFailed}**`);
+            lines.push(`- ⏭️ E2E skipped: **${e2eSkipped}**`);
+            if (e2eUnknown !== '0') {
+              lines.push(`- ❓ E2E unknown: **${e2eUnknown}**`);
+            }
+            lines.push('');
+          }
+
+          if (failedTests.length > 0) {
+            lines.push('### Failed E2E tests');
+            lines.push('');
+            for (const name of failedTests.slice(0, 10)) {
+              lines.push(`- ${name}`);
+            }
+            if (failedTests.length > 10) {
+              lines.push(`- … and **${failedTests.length - 10}** more`);
+            }
+            lines.push('');
+          }
+
+          if (parseWarning) {
+            lines.push('### E2E report warning');
+            lines.push('');
+            lines.push(`- ${parseWarning}`);
+            lines.push('');
+          }
+
+          fs.appendFileSync(summaryPath, lines.join('\n') + '\n');
+          EOF
+
+      - name: 💬 Upsert PR comment
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+          UNIT_RESULT: ${{ needs.unit.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          E2E_PASSED: ${{ needs.e2e.outputs.e2e_passed }}
+          E2E_TOTAL: ${{ needs.e2e.outputs.e2e_total }}
+          E2E_FAILED: ${{ needs.e2e.outputs.e2e_failed }}
+          E2E_SKIPPED: ${{ needs.e2e.outputs.e2e_skipped }}
+          E2E_UNKNOWN: ${{ needs.e2e.outputs.e2e_unknown }}
+          E2E_EXECUTED: ${{ needs.e2e.outputs.e2e_executed }}
+          FAILED_E2E_TESTS: ${{ needs.e2e.outputs.failed_e2e_tests }}
+        with:
+          script: |
+            const marker = "<!-- pair-research-pr-checks -->";
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const icon = (o) => (o === "success" ? "✅" : o === "failure" ? "❌" : "⏭️");
+
+            const lint = process.env.LINT_RESULT || "skipped";
+            const typecheck = process.env.TYPECHECK_RESULT || "skipped";
+            const unit = process.env.UNIT_RESULT || "skipped";
+            const e2e = process.env.E2E_RESULT || "skipped";
+            const build = process.env.BUILD_RESULT || "skipped";
+
+            const e2ePassed = process.env.E2E_PASSED || "0";
+            const e2eTotal = process.env.E2E_TOTAL || "0";
+            const e2eFailed = process.env.E2E_FAILED || "0";
+            const e2eSkipped = process.env.E2E_SKIPPED || "0";
+            const e2eUnknown = process.env.E2E_UNKNOWN || "0";
+            const e2eExecuted = process.env.E2E_EXECUTED || "0";
+
+            let failedTests = [];
+            try {
+              failedTests = JSON.parse(process.env.FAILED_E2E_TESTS || "[]");
+            } catch {}
+
+            const body = [
+              marker,
+              "### 🧪 Pair Research PR Checks",
+              "",
+              `- 🚨 Lint: ${icon(lint)} **${lint}**`,
+              `- 🧾 Typecheck: ${icon(typecheck)} **${typecheck}**`,
+              `- 🧪 Unit tests: ${icon(unit)} **${unit}**`,
+              `- 🎭 E2E tests: ${icon(e2e)} **${e2e}**`,
+              `- 🏗️ Build: ${icon(build)} **${build}**`,
+              "",
+              ...(e2eTotal !== "0"
+                ? [
+                    `- ▶️ E2E executed: **${e2eExecuted} / ${e2eTotal}**`,
+                    `- ✅ E2E passed: **${e2ePassed}**`,
+                    `- ❌ E2E failed: **${e2eFailed}**`,
+                    `- ⏭️ E2E skipped: **${e2eSkipped}**`,
+                    ...(e2eUnknown !== "0" ? [`- ❓ E2E unknown: **${e2eUnknown}**`] : []),
+                    "",
+                  ]
+                : []),
+              ...(failedTests.length
+                ? ["#### Failed E2E tests", "", ...failedTests.slice(0, 10).map(name => `- ${name}`), ""]
+                : []),
+              ...(failedTests.length > 10 ? [`- … and **${failedTests.length - 10}** more`, ""] : []),
+              `🔗 Run: ${runUrl}`,
+            ].join("\n");
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+
+            const existing = comments.find(c => (c.body || "").includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }
+
+      - name: ❌ Fail workflow if any required check failed
+        shell: bash
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+          UNIT_RESULT: ${{ needs.unit.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          if [ "$LINT_RESULT" = "failure" ] || \
+             [ "$TYPECHECK_RESULT" = "failure" ] || \
+             [ "$UNIT_RESULT" = "failure" ] || \
+             [ "$E2E_RESULT" = "failure" ] || \
+             [ "$BUILD_RESULT" = "failure" ]; then
+            echo "One or more required PR checks failed."
+            exit 1
+          fi

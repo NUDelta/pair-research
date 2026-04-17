@@ -1,0 +1,38 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Pair Research
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Robert
+    family-names: Miller
+    name-particle: C.
+  - given-names: Haoqi
+    family-names: Zhang
+  - given-names: Eric
+    name-particle: E
+    family-names: Gilbert
+  - given-names: Elizabeth
+    family-names: Gerber
+    name-particle: M
+identifiers:
+  - type: doi
+    value: 10.1145/2531602.2531703
+    description: ACM CSCW '14 Proceedings
+repository-code: 'https://github.com/NUDelta/pair-research-meteor'
+abstract: >-
+  To increase productivity, informal learning, and
+  collaborations within and across research groups, we have
+  been experimenting with a new kind of interaction that we
+  call pair research, in which members are paired up
+  weekly to work together on each other's projects. In this
+  paper, we present a system for making pairings and present
+  results from two deployments. Results show that members
+  used pair research in a wide variety of ways including
+  pair programming, user testing, brainstorming, and data
+  collection and analysis. Pair research helped members get
+  things done and share their expertise with others.

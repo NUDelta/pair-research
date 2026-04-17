@@ -1,0 +1,117 @@
+/* Underline Utilities */
+@utility underline-interactive {
+  @apply underline decoration-dashed underline-offset-2 hover:underline-offset-4 transition-all-300;
+  @variant hover {
+    @apply decoration-dotted;
+  }
+}
+
+/* Transition Utilities */
+@utility transition-all-300 {
+  @apply transition-all duration-300 ease-in-out;
+}
+@utility transition-all-500 {
+  @apply transition-all duration-500 ease-in-out;
+}
+@utility transition-all-700 {
+  @apply transition-all duration-700 ease-in-out;
+}
+@utility transition-colors-300 {
+  @apply transition-colors duration-300 ease-in-out;
+}
+@utility transition-colors-500 {
+  @apply transition-colors duration-500 ease-in-out;
+}
+@utility transition-colors-700 {
+  @apply transition-colors duration-700 ease-in-out;
+}
+@utility transition-transform-300 {
+  @apply transition-transform duration-300 ease-in-out;
+}
+@utility transition-transform-500 {
+  @apply transition-transform duration-500 ease-in-out;
+}
+@utility transition-transform-700 {
+  @apply transition-transform duration-700 ease-in-out;
+}
+@utility transition-opacity-300 {
+  @apply transition-opacity duration-300 ease-in-out;
+}
+@utility transition-opacity-500 {
+  @apply transition-opacity duration-500 ease-in-out;
+}
+@utility transition-opacity-700 {
+  @apply transition-opacity duration-700 ease-in-out;
+}
+
+@keyframes subtle-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.985);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@utility animate-subtle-rise {
+  animation: subtle-rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-subtle-rise-delayed {
+  animation: subtle-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+@utility animate-subtle-rise-late {
+  animation: subtle-rise 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+}
+
+@utility motion-smooth {
+  transition-property: transform, box-shadow, background-color, border-color, color, opacity;
+  transition-duration: 320ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+@utility hover-lift-sm {
+  @apply motion-smooth;
+
+  @variant hover {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@utility hover-lift-md {
+  @apply motion-smooth;
+
+  @variant hover {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+@utility hover-scale-soft {
+  @apply motion-smooth;
+
+  @variant hover {
+    transform: scale(1.03);
+  }
+}
+
+@utility interactive-link {
+  transition-property: color, text-decoration-color, text-underline-offset, opacity;
+  transition-duration: 260ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}

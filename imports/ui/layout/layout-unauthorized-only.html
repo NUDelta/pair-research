@@ -1,7 +1,0 @@
-<template name="layout_unauthorized_only">
-  {{#if ($or loggingIn currentUser)}}
-    {{> loading}}
-  {{else}}
-    {{> Template.dynamic template=main}}
-  {{/if}}
-</template>
