@@ -205,7 +205,7 @@ export default function GroupMembersTable({
       <CardContent className="px-0 pb-0">
         <div
           data-testid="group-members-scroll-region"
-          className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto overscroll-contain"
+          className="flex flex-col gap-4"
         >
           {hasActivePairing && (
             <div className="mx-4 rounded-lg border border-dashed px-4 py-3 sm:mx-6">
