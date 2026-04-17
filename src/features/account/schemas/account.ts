@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const accountAvatarSourceSchema = z.enum(['current', 'upload', 'none'])
+export const accountAvatarSourceSchema = z.enum(['current', 'upload', 'none', 'gravatar'])
 
 const fullNameSchema = z
   .string()

@@ -4,6 +4,7 @@ import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useTransition } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { isGravatarAvatarUrl } from '@/features/account/lib/avatar'
 import { accountSchema } from '@/features/account/schemas/account'
 import { updateProfile } from '@/features/account/server'
 import { Spinner } from '@/shared/ui'
@@ -21,12 +22,13 @@ interface AccountFormProps {
 const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
   const [isPending, startTransition] = useTransition()
   const updateProfileFn = useServerFn(updateProfile)
+  const initialAvatarSource = isGravatarAvatarUrl(avatar_url) ? 'gravatar' : 'current'
 
   const methods = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
     defaultValues: {
       full_name: full_name ?? '',
-      avatar_source: 'current',
+      avatar_source: initialAvatarSource,
       avatar: undefined,
       content_type: undefined,
     },
@@ -35,11 +37,11 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
   useEffect(() => {
     methods.reset({
       full_name: full_name ?? '',
-      avatar_source: 'current',
+      avatar_source: initialAvatarSource,
       avatar: undefined,
       content_type: undefined,
     })
-  }, [full_name, avatar_url, methods])
+  }, [full_name, initialAvatarSource, avatar_url, methods])
 
   const { handleSubmit, setValue, formState } = methods
 
@@ -70,7 +72,8 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="animate-subtle-rise-delayed space-y-4">
         <AvatarUploader
-          fullName={full_name ?? ''}
+          email={email}
+          fullName={methods.watch('full_name') ?? ''}
           initialUrl={avatar_url ?? ''}
           setValue={setValue}
         />

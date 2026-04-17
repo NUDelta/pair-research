@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AvatarUploader from './AvatarUploader'
 
-const { mockOptimizeAvatar } = vi.hoisted(() => ({
+const { mockGravatarLink, mockOptimizeAvatar } = vi.hoisted(() => ({
+  mockGravatarLink: vi.fn(),
   mockOptimizeAvatar: vi.fn(),
 }))
 
@@ -15,9 +16,14 @@ vi.mock('@/features/account/lib/avatar', async (importOriginal) => {
   }
 })
 
+vi.mock('@/features/auth/lib', () => ({
+  gravatarLink: mockGravatarLink,
+}))
+
 describe('avatarUploader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGravatarLink.mockResolvedValue('https://gravatar.zla.app/avatar/example?s=200')
     mockOptimizeAvatar.mockResolvedValue({
       imageBuffer: Uint8Array.from([1, 2, 3]).buffer,
       contentType: 'image/webp',
@@ -31,6 +37,7 @@ describe('avatarUploader', () => {
 
     render(
       <AvatarUploader
+        email="ada@example.com"
         fullName="Ada Lovelace"
         initialUrl="https://cdn.example.com/public/images/avatars/ada.webp"
         setValue={setValue}
@@ -50,6 +57,7 @@ describe('avatarUploader', () => {
 
     render(
       <AvatarUploader
+        email="ada@example.com"
         fullName="Ada Lovelace"
         initialUrl=""
         setValue={setValue}
@@ -72,5 +80,26 @@ describe('avatarUploader', () => {
       { shouldDirty: true },
     )
     expect(setValue).toHaveBeenCalledWith('content_type', 'image/webp', { shouldDirty: true })
+  })
+
+  it('switches the form to gravatar mode when the toggle is enabled', async () => {
+    const user = userEvent.setup()
+    const setValue = vi.fn()
+
+    render(
+      <AvatarUploader
+        email="ada@example.com"
+        fullName="Ada Lovelace"
+        initialUrl="https://cdn.example.com/public/images/avatars/ada.webp"
+        setValue={setValue}
+      />,
+    )
+
+    await user.click(screen.getByRole('switch', { name: /use gravatar/i }))
+
+    expect(setValue).toHaveBeenCalledWith('avatar', undefined, { shouldDirty: true })
+    expect(setValue).toHaveBeenCalledWith('content_type', undefined, { shouldDirty: true })
+    expect(setValue).toHaveBeenCalledWith('avatar_source', 'gravatar', { shouldDirty: true })
+    expect(mockGravatarLink).toHaveBeenCalledWith('ada@example.com', 'Ada Lovelace')
   })
 })

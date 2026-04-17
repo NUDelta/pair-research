@@ -29,10 +29,24 @@ export const updateProfile = createServerFn({ method: 'POST' })
       const prisma = await getPrismaClient()
       const user = await getUser()
       const id = user.id
+      const email = user.email?.trim()
+
+      if (email === undefined || email === '') {
+        throw new Error('User email is required')
+      }
+
+      const existingProfile = await prisma.profile.findUnique({
+        where: { id },
+        select: {
+          full_name: true,
+        },
+      })
 
       const { avatarUrl, shouldUpdateAvatar } = await resolveAvatarUpdate({
         avatarSource: data.avatarSource,
         userId: id,
+        email,
+        fullName: data.fullName ?? existingProfile?.full_name ?? undefined,
         imageBuffer: data.imageBuffer,
         contentType: data.contentType,
       })
