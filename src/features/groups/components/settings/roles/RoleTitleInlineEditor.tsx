@@ -1,3 +1,4 @@
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
@@ -8,13 +9,16 @@ import { updateGroupRoleSchema } from '@/features/groups/schemas/groupManagement
 import { updateGroupRole } from '@/features/groups/server/groups/updateGroupRole'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
+import { applyRoleUpdate } from '../optimisticGroupSettings'
 
 interface RoleTitleInlineEditorProps {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   groupId: string
   role: GroupSettingsRole
 }
 
 export default function RoleTitleInlineEditor({
+  applyOptimisticUpdate,
   groupId,
   role,
 }: RoleTitleInlineEditorProps) {
@@ -37,6 +41,15 @@ export default function RoleTitleInlineEditor({
       return
     }
 
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyRoleUpdate(draft, {
+        roleId: role.id,
+        title: draftTitle,
+      })
+    })
+
+    setIsEditing(false)
+
     startTransition(async () => {
       const response = await updateGroupRoleFn({
         data: {
@@ -47,13 +60,15 @@ export default function RoleTitleInlineEditor({
       })
 
       if (!response.success) {
+        rollback()
+        setDraftTitle(draftTitle.trim())
+        setIsEditing(true)
         toast.error(response.message)
         return
       }
 
       toast.success(response.message)
-      setIsEditing(false)
-      await router.invalidate()
+      void router.invalidate()
     })
   }
 
@@ -62,6 +77,7 @@ export default function RoleTitleInlineEditor({
       <button
         type="button"
         className="inline-flex items-center gap-2 text-left font-medium hover:text-foreground"
+        disabled={role.isOptimistic === true}
         onClick={() => {
           setDraftTitle(role.title)
           setIsEditing(true)

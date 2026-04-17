@@ -1,3 +1,4 @@
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import { MoreHorizontalIcon } from 'lucide-react'
 import { useState } from 'react'
@@ -14,12 +15,14 @@ import BulkRoleActionDialog from './BulkRoleActionDialog'
 import CreateGroupRoleDialog from './CreateGroupRoleDialog'
 
 interface GroupRolesToolbarProps {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   groupId: string
   roles: GroupSettingsRole[]
   selectedRoles: GroupSettingsRole[]
 }
 
 export default function GroupRolesToolbar({
+  applyOptimisticUpdate,
   groupId,
   roles,
   selectedRoles,
@@ -59,9 +62,14 @@ export default function GroupRolesToolbar({
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <CreateGroupRoleDialog groupId={groupId} triggerClassName="flex-1 sm:flex-none" />
+        <CreateGroupRoleDialog
+          applyOptimisticUpdate={applyOptimisticUpdate}
+          groupId={groupId}
+          triggerClassName="flex-1 sm:flex-none"
+        />
         <BulkRoleActionDialog
           action="merge"
+          applyOptimisticUpdate={applyOptimisticUpdate}
           groupId={groupId}
           onOpenChange={setMergeOpen}
           open={mergeOpen}
@@ -70,6 +78,7 @@ export default function GroupRolesToolbar({
         />
         <BulkRoleActionDialog
           action="remove"
+          applyOptimisticUpdate={applyOptimisticUpdate}
           groupId={groupId}
           onOpenChange={setRemoveOpen}
           open={removeOpen}

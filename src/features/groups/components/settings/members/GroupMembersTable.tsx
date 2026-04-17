@@ -1,3 +1,4 @@
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsMember, GroupSettingsRole } from '../types'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
@@ -8,11 +9,13 @@ import { removeGroupMember } from '@/features/groups/server/groups/removeGroupMe
 import { updateGroupMember } from '@/features/groups/server/groups/updateGroupMember'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { DataTable } from '@/shared/ui/data-table'
+import { applyBulkMemberRoleUpdate, applyMemberRemoval, applyMemberUpdate } from '../optimisticGroupSettings'
 import GroupMembersToolbar from './GroupMembersToolbar'
 import { createGroupMemberColumns } from './memberTableColumns'
 import { buildGroupMemberTableRows } from './memberTableRows'
 
 interface GroupMembersTableProps {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   creatorId: string
   currentUserId: string
   groupId: string
@@ -24,6 +27,7 @@ interface GroupMembersTableProps {
 type MemberPendingActions = Record<string, { access?: boolean, remove?: boolean, role?: boolean }>
 
 export default function GroupMembersTable({
+  applyOptimisticUpdate,
   creatorId,
   currentUserId,
   groupId,
@@ -36,7 +40,6 @@ export default function GroupMembersTable({
   const bulkUpdateGroupMemberRolesFn = useServerFn(bulkUpdateGroupMemberRoles)
   const removeGroupMemberFn = useServerFn(removeGroupMember)
   const updateGroupMemberFn = useServerFn(updateGroupMember)
-  const [memberOverrides, setMemberOverrides] = useState<Record<string, { isAdmin: boolean, roleId: string }>>({})
   const [pendingActions, setPendingActions] = useState<MemberPendingActions>({})
   const [isBulkRemoving, startBulkRemoveTransition] = useTransition()
   const [isBulkUpdatingRole, startBulkUpdateRoleTransition] = useTransition()
@@ -51,17 +54,15 @@ export default function GroupMembersTable({
   )
 
   const memberState = useMemo(
-    () => ({
-      ...Object.fromEntries(members.map(member => [
+    () =>
+      Object.fromEntries(members.map(member => [
         member.userId,
         {
           isAdmin: member.isAdmin,
           roleId: member.roleId,
         },
       ])),
-      ...memberOverrides,
-    }),
-    [memberOverrides, members],
+    [members],
   )
 
   const setMemberPendingAction = useCallback((
@@ -92,15 +93,13 @@ export default function GroupMembersTable({
     nextState: { isAdmin: boolean, roleId: string },
     action: 'access' | 'role',
   ) => {
-    const previousState = memberState[member.userId] ?? {
-      isAdmin: member.isAdmin,
-      roleId: member.roleId,
-    }
-
-    setMemberOverrides(current => ({
-      ...current,
-      [member.userId]: nextState,
-    }))
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyMemberUpdate(draft, {
+        userId: member.userId,
+        isAdmin: nextState.isAdmin,
+        roleId: nextState.roleId,
+      })
+    })
     setMemberPendingAction(member.userId, action, true)
 
     const response = await updateGroupMemberFn({
@@ -115,10 +114,7 @@ export default function GroupMembersTable({
     setMemberPendingAction(member.userId, action, false)
 
     if (!response.success) {
-      setMemberOverrides(current => ({
-        ...current,
-        [member.userId]: previousState,
-      }))
+      rollback()
       toast.error(response.message)
       return
     }
@@ -130,10 +126,13 @@ export default function GroupMembersTable({
       return
     }
 
-    await router.invalidate()
-  }, [currentUserId, groupId, memberState, navigate, router, setMemberPendingAction, updateGroupMemberFn])
+    void router.invalidate()
+  }, [applyOptimisticUpdate, currentUserId, groupId, navigate, router, setMemberPendingAction, updateGroupMemberFn])
 
   const removeMember = useCallback(async (member: GroupSettingsMember) => {
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyMemberRemoval(draft, [member.userId])
+    })
     setMemberPendingAction(member.userId, 'remove', true)
 
     const response = await removeGroupMemberFn({
@@ -146,13 +145,19 @@ export default function GroupMembersTable({
     setMemberPendingAction(member.userId, 'remove', false)
 
     if (!response.success) {
+      rollback()
       toast.error(response.message)
       return
     }
 
     toast.success(response.message)
-    await router.invalidate()
-  }, [groupId, removeGroupMemberFn, router, setMemberPendingAction])
+    void router.invalidate()
+  }, [applyOptimisticUpdate, groupId, removeGroupMemberFn, router, setMemberPendingAction])
+
+  const actionableRoles = useMemo(
+    () => roles.filter(role => !role.isOptimistic),
+    [roles],
+  )
 
   const columns = useMemo(
     () => createGroupMemberColumns({
@@ -224,6 +229,7 @@ export default function GroupMembersTable({
 
               return (
                 <GroupMembersToolbar
+                  applyOptimisticUpdate={applyOptimisticUpdate}
                   existingMemberEmails={members.map(member => member.email)}
                   groupId={groupId}
                   hasNonRemovableSelected={hasNonRemovableSelected}
@@ -231,8 +237,15 @@ export default function GroupMembersTable({
                   isBulkUpdatingRole={isBulkUpdatingRole}
                   onBulkRemove={async () => {
                     startBulkRemoveTransition(async () => {
+                      const removableMemberIds = selectedRemovableMembers.map(member => member.userId)
+                      const failedMemberIds: string[] = []
+                      const rollback = applyOptimisticUpdate((draft) => {
+                        applyMemberRemoval(draft, removableMemberIds)
+                      })
                       let removedCount = 0
                       const failures: string[] = []
+
+                      table.resetRowSelection()
 
                       for (const member of selectedRemovableMembers) {
                         const response = await removeGroupMemberFn({
@@ -247,11 +260,23 @@ export default function GroupMembersTable({
                           continue
                         }
 
+                        failedMemberIds.push(member.userId)
                         failures.push(`${member.displayName}: ${response.message}`)
                       }
 
-                      table.resetRowSelection()
-                      await router.invalidate()
+                      if (failedMemberIds.length > 0) {
+                        rollback()
+                        const succeededMemberIds = removableMemberIds.filter(userId => !failedMemberIds.includes(userId))
+                        if (succeededMemberIds.length > 0) {
+                          applyOptimisticUpdate((draft) => {
+                            applyMemberRemoval(draft, succeededMemberIds)
+                          })
+                        }
+                      }
+
+                      if (removedCount > 0) {
+                        void router.invalidate()
+                      }
 
                       if (removedCount > 0) {
                         toast.success(`Removed ${removedCount} selected ${removedCount === 1 ? 'member' : 'members'}.`)
@@ -267,6 +292,15 @@ export default function GroupMembersTable({
                   }}
                   onBulkRoleUpdate={async (roleId) => {
                     startBulkUpdateRoleTransition(async () => {
+                      const rollback = applyOptimisticUpdate((draft) => {
+                        applyBulkMemberRoleUpdate(draft, {
+                          userIds: selectedMembers.map(member => member.userId),
+                          roleId,
+                        })
+                      })
+
+                      table.resetRowSelection()
+
                       const response = await bulkUpdateGroupMemberRolesFn({
                         data: {
                           groupId,
@@ -276,16 +310,16 @@ export default function GroupMembersTable({
                       })
 
                       if (!response.success) {
+                        rollback()
                         toast.error(response.message)
                         return
                       }
 
                       toast.success(response.message)
-                      table.resetRowSelection()
-                      await router.invalidate()
+                      void router.invalidate()
                     })
                   }}
-                  roles={roles}
+                  roles={actionableRoles}
                   selectedMembers={selectedMembers}
                   selectedRemovableMembers={selectedRemovableMembers}
                 />

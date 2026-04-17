@@ -13,6 +13,8 @@ const { invalidate, mockUseRouter, mockUseServerFn, toast } = vi.hoisted(() => (
   },
 }))
 
+const applyOptimisticUpdate = vi.fn(() => vi.fn())
+
 vi.mock('@tanstack/react-router', () => ({
   useRouter: mockUseRouter,
 }))
@@ -42,6 +44,7 @@ describe('useGroupMemberInviteDialog', () => {
   it('ignores emails that already belong to group members and warns with details', async () => {
     const { result } = renderHook(() =>
       useGroupMemberInviteDialog({
+        applyOptimisticUpdate,
         existingMemberEmails: ['ada@example.com'],
         groupId: 'group-1',
         roles: [{ id: '1', title: 'Researcher' }],
@@ -81,6 +84,7 @@ describe('useGroupMemberInviteDialog', () => {
   it('still appends new invites when a mixed import also contains existing group members', async () => {
     const { result } = renderHook(() =>
       useGroupMemberInviteDialog({
+        applyOptimisticUpdate,
         existingMemberEmails: ['ada@example.com'],
         groupId: 'group-1',
         roles: [{ id: '1', title: 'Researcher' }],

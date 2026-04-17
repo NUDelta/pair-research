@@ -1,3 +1,4 @@
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsMember, GroupSettingsRole } from '../types'
 import { useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -7,18 +8,23 @@ import { createRoleTableColumns } from './roleTableColumns'
 import { buildGroupRoleTableRows } from './roleTableRows'
 
 interface GroupRolesSectionProps {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   groupId: string
   members: GroupSettingsMember[]
   roles: GroupSettingsRole[]
 }
 
 export default function GroupRolesSection({
+  applyOptimisticUpdate,
   groupId,
   members,
   roles,
 }: GroupRolesSectionProps) {
   const data = useMemo(() => buildGroupRoleTableRows(roles, members), [members, roles])
-  const columns = useMemo(() => createRoleTableColumns({ groupId, roles }), [groupId, roles])
+  const columns = useMemo(
+    () => createRoleTableColumns({ applyOptimisticUpdate, groupId, roles }),
+    [applyOptimisticUpdate, groupId, roles],
+  )
 
   return (
     <Card>
@@ -40,11 +46,13 @@ export default function GroupRolesSection({
           getRowId={row => row.id}
           renderToolbar={table => (
             <GroupRolesToolbar
+              applyOptimisticUpdate={applyOptimisticUpdate}
               groupId={groupId}
               roles={roles}
               selectedRoles={table.getFilteredSelectedRowModel().rows.map(row => ({
                 id: row.original.id,
                 title: row.original.title,
+                isOptimistic: row.original.isOptimistic,
               }))}
             />
           )}

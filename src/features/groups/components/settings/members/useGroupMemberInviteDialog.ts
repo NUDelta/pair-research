@@ -1,4 +1,5 @@
 import type { ChangeEvent } from 'react'
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import type { InviteRow, InviteRowErrors } from './memberInviteRowState'
 import type { GroupMemberInviteDraft } from '@/features/groups/lib/groupMemberInviteBatch'
@@ -13,6 +14,7 @@ import {
 } from '@/features/groups/lib/groupMemberInviteBatch'
 import { addGroupMembersSchema } from '@/features/groups/schemas/groupManagement'
 import { addGroupMembers } from '@/features/groups/server/groups/addGroupMembers'
+import { applyGroupMemberInvites } from '../optimisticGroupSettings'
 import {
   applySharedAssignmentToInviteRows,
   buildImportSummaryMessage,
@@ -24,10 +26,12 @@ import {
 const addGroupMembersFormSchema = addGroupMembersSchema.omit({ groupId: true })
 
 export function useGroupMemberInviteDialog({
+  applyOptimisticUpdate,
   existingMemberEmails = [],
   groupId,
   roles,
 }: {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   existingMemberEmails?: string[]
   groupId: string
   roles: GroupSettingsRole[]
@@ -187,6 +191,28 @@ export function useGroupMemberInviteDialog({
       return
     }
 
+    const optimisticInvites = validationResult.data.invites.map(invite => ({
+      email: invite.email,
+      roleId: invite.roleId,
+      isAdmin: invite.isAdmin,
+    }))
+    const optimisticMembers = optimisticInvites.map((invite, index) => ({
+      userId: `optimistic-member-${nextRowIdRef.current + index + 1}`,
+      email: invite.email,
+      roleId: invite.roleId,
+      isAdmin: invite.isAdmin,
+      joinedAt: new Date().toISOString(),
+    }))
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyGroupMemberInvites(draft, {
+        invites: optimisticInvites,
+        tempMembers: optimisticMembers,
+      })
+    })
+
+    resetDialogState()
+    setOpen(false)
+
     startTransition(async () => {
       const response = await addGroupMembersFn({
         data: {
@@ -196,13 +222,12 @@ export function useGroupMemberInviteDialog({
       })
 
       if (!response.success) {
+        rollback()
         toast.error(response.message)
         return
       }
       toast.success(response.message)
-      resetDialogState()
-      setOpen(false)
-      await router.invalidate()
+      void router.invalidate()
     })
   }
 

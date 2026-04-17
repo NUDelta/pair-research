@@ -1,3 +1,4 @@
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import type { GroupMemberTableRow } from './memberTableRows'
 import { MoreHorizontalIcon, Trash2Icon } from 'lucide-react'
@@ -17,6 +18,7 @@ import {
 import AddGroupMemberDialog from './AddGroupMemberDialog'
 
 interface GroupMembersToolbarProps {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   existingMemberEmails: string[]
   groupId: string
   hasNonRemovableSelected: boolean
@@ -30,6 +32,7 @@ interface GroupMembersToolbarProps {
 }
 
 export default function GroupMembersToolbar({
+  applyOptimisticUpdate,
   existingMemberEmails,
   groupId,
   hasNonRemovableSelected,
@@ -105,6 +108,7 @@ export default function GroupMembersToolbar({
           </DropdownMenuContent>
         </DropdownMenu>
         <AddGroupMemberDialog
+          applyOptimisticUpdate={applyOptimisticUpdate}
           existingMemberEmails={existingMemberEmails}
           groupId={groupId}
           roles={roles}

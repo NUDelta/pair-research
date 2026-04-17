@@ -1,6 +1,7 @@
 export interface GroupSettingsRole {
   id: string
   title: string
+  isOptimistic?: boolean
 }
 
 export interface GroupSettingsMember {

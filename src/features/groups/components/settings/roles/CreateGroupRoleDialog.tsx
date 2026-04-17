@@ -1,11 +1,13 @@
 import type { infer as Infer } from 'zod'
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { PlusIcon } from 'lucide-react'
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { normalizeRoleTitle } from '@/features/groups/lib/groupNormalization'
 import { createGroupRoleSchema } from '@/features/groups/schemas/groupManagement'
 import { createGroupRole } from '@/features/groups/server/groups/createGroupRole'
 import { Spinner } from '@/shared/ui'
@@ -13,8 +15,10 @@ import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { applyRoleCreate } from '../optimisticGroupSettings'
 
 interface CreateGroupRoleDialogProps {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   groupId: string
   triggerClassName?: string
 }
@@ -23,6 +27,7 @@ const createRoleFormSchema = createGroupRoleSchema.omit({ groupId: true })
 type CreateRoleFormValues = Infer<typeof createRoleFormSchema>
 
 export default function CreateGroupRoleDialog({
+  applyOptimisticUpdate,
   groupId,
   triggerClassName,
 }: CreateGroupRoleDialogProps) {
@@ -30,6 +35,7 @@ export default function CreateGroupRoleDialog({
   const createGroupRoleFn = useServerFn(createGroupRole)
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const nextOptimisticRoleIdRef = useRef(0)
   const form = useForm<CreateRoleFormValues>({
     resolver: zodResolver(createRoleFormSchema),
     mode: 'onChange',
@@ -46,6 +52,19 @@ export default function CreateGroupRoleDialog({
   } = form
 
   const onSubmit = handleSubmit((values) => {
+    nextOptimisticRoleIdRef.current += 1
+    const optimisticRole = {
+      id: `optimistic-role-${nextOptimisticRoleIdRef.current}`,
+      title: normalizeRoleTitle(values.title),
+      isOptimistic: true,
+    } as const
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyRoleCreate(draft, optimisticRole)
+    })
+
+    reset({ title: '' })
+    setOpen(false)
+
     startTransition(async () => {
       const response = await createGroupRoleFn({
         data: {
@@ -55,14 +74,15 @@ export default function CreateGroupRoleDialog({
       })
 
       if (!response.success) {
+        rollback()
+        reset({ title: values.title })
+        setOpen(true)
         toast.error(response.message)
         return
       }
 
       toast.success(response.message)
-      reset({ title: '' })
-      setOpen(false)
-      await router.invalidate()
+      void router.invalidate()
     })
   })
 

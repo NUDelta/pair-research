@@ -1,3 +1,4 @@
+import type { ApplyGroupSettingsOptimisticUpdate } from './optimisticGroupSettings'
 import type { GroupSettingsData } from './types'
 import { Link } from '@tanstack/react-router'
 import {
@@ -8,12 +9,13 @@ import {
   ShieldCheckIcon,
   UsersIcon,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import GroupBasicsFormCard from './GroupBasicsFormCard'
 import GroupMembersTable from './members/GroupMembersTable'
+import { createGroupSettingsOptimisticUpdate } from './optimisticGroupSettings'
 import GroupRolesSection from './roles/GroupRolesSection'
 
 interface GroupSettingsPageProps {
@@ -21,9 +23,30 @@ interface GroupSettingsPageProps {
 }
 
 export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) {
-  const confirmedMembers = settings.members.filter(member => !member.isPending)
-  const adminMembers = confirmedMembers.filter(member => member.isAdmin)
   const [activeSection, setActiveSection] = useState<'general' | 'members' | 'roles'>('general')
+  const [optimisticSettings, setOptimisticSettings] = useState(settings)
+
+  useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
+    setOptimisticSettings(settings)
+  }, [settings])
+
+  const applyOptimisticUpdate = useCallback<ApplyGroupSettingsOptimisticUpdate>((recipe) => {
+    let rollback = (currentState: GroupSettingsData) => currentState
+
+    setOptimisticSettings((currentSettings) => {
+      const update = createGroupSettingsOptimisticUpdate(currentSettings, recipe)
+      rollback = update.rollback
+      return update.nextState
+    })
+
+    return () => {
+      setOptimisticSettings(currentSettings => rollback(currentSettings))
+    }
+  }, [])
+
+  const confirmedMembers = optimisticSettings.members.filter(member => !member.isPending)
+  const adminMembers = confirmedMembers.filter(member => member.isAdmin)
   const sections = [
     {
       value: 'general' as const,
@@ -59,7 +82,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
           <p className="max-w-3xl text-muted-foreground">
             Manage settings for
             {' '}
-            <span className="font-medium text-foreground">{settings.group.name}</span>
+            <span className="font-medium text-foreground">{optimisticSettings.group.name}</span>
             .
           </p>
         </div>
@@ -85,7 +108,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
         <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1">
           <KeyRoundIcon className="size-4" />
           <span>
-            {settings.roles.length}
+            {optimisticSettings.roles.length}
             {' '}
             roles
           </span>
@@ -132,23 +155,28 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
 
         <div className="min-w-0">
           <TabsContent value="general" className="mt-0 flex flex-col gap-6">
-            <GroupBasicsFormCard group={settings.group} />
+            <GroupBasicsFormCard
+              applyOptimisticUpdate={applyOptimisticUpdate}
+              group={optimisticSettings.group}
+            />
           </TabsContent>
           <TabsContent value="members" className="mt-0 flex flex-col gap-6">
             <GroupMembersTable
-              creatorId={settings.group.creatorId}
-              currentUserId={settings.currentUserId}
-              groupId={settings.group.id}
-              hasActivePairing={settings.group.activePairingId !== null}
-              members={settings.members}
-              roles={settings.roles}
+              applyOptimisticUpdate={applyOptimisticUpdate}
+              creatorId={optimisticSettings.group.creatorId}
+              currentUserId={optimisticSettings.currentUserId}
+              groupId={optimisticSettings.group.id}
+              hasActivePairing={optimisticSettings.group.activePairingId !== null}
+              members={optimisticSettings.members}
+              roles={optimisticSettings.roles}
             />
           </TabsContent>
           <TabsContent value="roles" className="mt-0 flex flex-col gap-6">
             <GroupRolesSection
-              groupId={settings.group.id}
-              members={settings.members}
-              roles={settings.roles}
+              applyOptimisticUpdate={applyOptimisticUpdate}
+              groupId={optimisticSettings.group.id}
+              members={optimisticSettings.members}
+              roles={optimisticSettings.roles}
             />
           </TabsContent>
         </div>

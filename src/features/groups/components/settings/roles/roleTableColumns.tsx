@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import type { GroupRoleTableRow } from './roleTableRows'
 import { createColumnHelper } from '@tanstack/react-table'
@@ -12,11 +13,13 @@ import RoleTitleInlineEditor from './RoleTitleInlineEditor'
 const columnHelper = createColumnHelper<GroupRoleTableRow>()
 
 interface CreateRoleTableColumnsOptions {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   groupId: string
   roles: GroupSettingsRole[]
 }
 
 export function createRoleTableColumns({
+  applyOptimisticUpdate,
   groupId,
   roles,
 }: CreateRoleTableColumnsOptions) {
@@ -42,6 +45,7 @@ export function createRoleTableColumns({
         <Checkbox
           aria-label={`Select ${row.original.title}`}
           checked={row.getIsSelected()}
+          disabled={row.original.isOptimistic === true}
           onCheckedChange={value => row.toggleSelected(value === true)}
         />
       ),
@@ -50,8 +54,13 @@ export function createRoleTableColumns({
       header: ({ column }) => <DataTableColumnHeader column={column} title="Role" />,
       cell: ({ row }) => (
         <RoleTitleInlineEditor
+          applyOptimisticUpdate={applyOptimisticUpdate}
           groupId={groupId}
-          role={{ id: row.original.id, title: row.original.title }}
+          role={{
+            id: row.original.id,
+            title: row.original.title,
+            isOptimistic: row.original.isOptimistic,
+          }}
         />
       ),
     }),
@@ -92,8 +101,13 @@ export function createRoleTableColumns({
         <div className="flex justify-end">
           <DeleteGroupRoleDialog
             assignedMemberCount={row.original.assignedMemberCount}
+            applyOptimisticUpdate={applyOptimisticUpdate}
             groupId={groupId}
-            role={{ id: row.original.id, title: row.original.title }}
+            role={{
+              id: row.original.id,
+              title: row.original.title,
+              isOptimistic: row.original.isOptimistic,
+            }}
             roles={roles}
           />
         </div>

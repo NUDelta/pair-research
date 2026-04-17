@@ -10,6 +10,8 @@ const { mockUseNavigate, mockUseRouter, mockUseServerFn } = vi.hoisted(() => ({
   mockUseServerFn: vi.fn(() => vi.fn()),
 }))
 
+const applyOptimisticUpdate = vi.fn(() => vi.fn())
+
 function MockDataTable() {
   return <div data-testid="members-data-table">Members table</div>
 }
@@ -51,6 +53,7 @@ describe('groupMembersTable', () => {
   it('wraps large member lists in an internal scroll region', () => {
     render(
       <GroupMembersTable
+        applyOptimisticUpdate={applyOptimisticUpdate}
         creatorId="user-1"
         currentUserId="user-1"
         groupId="group-1"
