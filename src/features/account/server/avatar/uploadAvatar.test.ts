@@ -14,7 +14,7 @@ vi.mock('@/shared/server/cloudflare/r2', () => ({
 describe('uploadAvatarFromArrayBuffer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    process.env.R2_PUBLIC_DOMAIN = 'https://cdn.example.com/public'
+    process.env.R2_PUBLIC_DOMAIN = 'https://r2.pairresearch.io'
   })
 
   it('uploads the avatar to R2 and returns the public URL', async () => {
@@ -23,7 +23,7 @@ describe('uploadAvatarFromArrayBuffer', () => {
     const imageBuffer = Uint8Array.from([1, 2, 3]).buffer
     await expect(
       uploadAvatarFromArrayBuffer('user-123', imageBuffer, 'image/webp'),
-    ).resolves.toBe('https://cdn.example.com/public/images/avatars/user-123.webp')
+    ).resolves.toBe('https://r2.pairresearch.io/images/avatars/user-123.webp')
 
     expect(putObject).toHaveBeenCalledTimes(1)
     const [key, body, options] = putObject.mock.calls[0] as [
@@ -46,7 +46,7 @@ describe('uploadAvatarFromArrayBuffer', () => {
 
     await expect(
       uploadAvatarFromArrayBuffer('user-123', Uint8Array.from([9]).buffer, 'image/avif'),
-    ).resolves.toBe('https://cdn.example.com/public/images/avatars/user-123.avif')
+    ).resolves.toBe('https://r2.pairresearch.io/images/avatars/user-123.avif')
 
     expect(putObject).toHaveBeenCalledWith(
       'images/avatars/user-123.avif',
