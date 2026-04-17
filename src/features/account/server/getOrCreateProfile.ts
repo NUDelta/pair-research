@@ -11,7 +11,8 @@ export const getOrCreateProfile = createServerFn({ method: 'GET' }).handler(asyn
   id: string
   email: string
 }> => {
-  const { prisma } = await import('@/shared/lib/prismaClient')
+  const { getPrismaClient } = await import('@/shared/server/prisma')
+  const prisma = await getPrismaClient()
   const user = await getUser()
 
   const {
@@ -85,7 +86,8 @@ export const createProfileWithName = async (
   email: string,
   fullName?: string,
 ) => {
-  const { prisma } = await import('@/shared/lib/prismaClient')
+  const { getPrismaClient } = await import('@/shared/server/prisma')
+  const prisma = await getPrismaClient()
   await prisma.profile.create({
     data: {
       id,

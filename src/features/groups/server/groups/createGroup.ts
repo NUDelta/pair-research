@@ -27,10 +27,8 @@ export const createGroup = createServerFn({ method: 'POST' })
     }
 
     try {
-      const [{ prisma }, { createServiceRoleSupabase }] = await Promise.all([
-        import('@/shared/lib/prismaClient'),
-        import('@/shared/supabase/serviceRole'),
-      ])
+      const { getPrismaClient } = await import('@/shared/server/prisma')
+      const prisma = await getPrismaClient()
       const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const {
@@ -84,10 +82,10 @@ export const createGroup = createServerFn({ method: 'POST' })
         ),
       )
 
-      const createdRolesMap = createdRoles.reduce((acc, role) => {
+      const createdRolesMap = createdRoles.reduce<Record<string, { id: bigint }>>((acc, role) => {
         acc[role.title.trim()] = role
         return acc
-      }, {} as Record<string, { id: bigint }>)
+      }, {})
 
       if (createdRoles.length === 0) {
         throw new Error('Roles creation failed')
@@ -115,7 +113,8 @@ export const createGroup = createServerFn({ method: 'POST' })
         m => !existingUsers.some(u => u.email === m.email),
       )
 
-      const serviceRoleSupabase = createServiceRoleSupabase()
+      const { createServiceRoleSupabase } = await import('@/shared/server/supabase/serviceRole')
+      const serviceRoleSupabase = await createServiceRoleSupabase()
       const userCreations = await Promise.allSettled(
         newUsers.map(async ({ email }) => {
           const {

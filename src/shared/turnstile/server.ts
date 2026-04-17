@@ -81,7 +81,7 @@ export async function verifyTurnstileToken({
     }
   }
 
-  const payload = await response.json() as TurnstileServerValidationResponse
+  const payload: TurnstileServerValidationResponse = await response.json()
   const actionMismatch = payload.action !== undefined && payload.action !== action
 
   if (!payload.success || actionMismatch) {

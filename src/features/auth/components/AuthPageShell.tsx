@@ -30,10 +30,10 @@ export default function AuthPageShell({
       <div className="absolute inset-0 -z-20" />
       <div className="absolute inset-x-0 top-0 -z-10 h-72 blur-3xl" />
 
-      <div className="w-full max-w-lg">
-        <section className="rounded-4xl border border-slate-200/80 bg-white/92 p-5 shadow-md backdrop-blur sm:p-7 lg:p-8">
+      <div className="animate-subtle-rise w-full max-w-lg">
+        <section className="rounded-4xl border border-slate-200/80 bg-white/92 p-5 shadow-md backdrop-blur hover-lift-sm hover:shadow-xl sm:p-7 lg:p-8">
           <div className="flex h-full flex-col gap-6">
-            <div className="space-y-3">
+            <div className="animate-subtle-rise-delayed space-y-3">
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
                   {resolvedTitle}
@@ -44,7 +44,7 @@ export default function AuthPageShell({
               </div>
             </div>
 
-            <div className="flex-1">
+            <div className="animate-subtle-rise-late flex-1">
               {children}
             </div>
 
@@ -53,10 +53,10 @@ export default function AuthPageShell({
               {' '}
               <a
                 href={alternateHref}
-                className="inline-flex items-center gap-1 font-semibold text-slate-950 transition hover:text-sky-700"
+                className="group inline-flex items-center gap-1 font-semibold text-slate-950 interactive-link hover:text-sky-700"
               >
                 {alternateLabel}
-                <ArrowRight className="size-4" aria-hidden="true" />
+                <ArrowRight className="size-4 motion-smooth group-hover:translate-x-0.5" aria-hidden="true" />
               </a>
             </div>
           </div>

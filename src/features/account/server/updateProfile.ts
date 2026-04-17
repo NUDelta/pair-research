@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { uploadAvatarFromArrayBuffer } from '@/features/account/lib/avatar'
+import { uploadAvatarFromArrayBuffer } from '@/features/account/server/avatar/uploadAvatar'
 import { getUser } from '@/shared/supabase/server'
 
 export const updateProfile = createServerFn({ method: 'POST' })
@@ -22,7 +22,8 @@ export const updateProfile = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
-      const { prisma } = await import('@/shared/lib/prismaClient')
+      const { getPrismaClient } = await import('@/shared/server/prisma')
+      const prisma = await getPrismaClient()
       const user = await getUser()
       const id = user.id
 

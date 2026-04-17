@@ -27,7 +27,8 @@
     "e2e/**/*.ts",
     "vite.config.ts",
     "playwright.config.ts",
-    "prisma.config.ts"
+    "prisma.config.ts",
+    "cloudflare-env.d.ts"
   ],
   "exclude": ["node_modules"]
 }

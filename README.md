@@ -6,7 +6,7 @@ This application takes the original Google Sheets prototype further, developing 
 
 ## Development
 
-This project is built with [TanStack Start](https://tanstack.com/start/latest) and Vite. Routes live under `src/app`, Prisma is used for relational app data, and Supabase handles authentication, storage, and realtime updates.
+This project is built with [TanStack Start](https://tanstack.com/start/latest) and Vite. Routes live under `src/routes`, Prisma is used for relational app data, and Supabase Auth handles authentication, storage, and realtime updates.
 
 ### API Organization
 
@@ -26,23 +26,15 @@ TO BE WRITTEN
 
 ## Deployment
 
-The production build is a TanStack Start server output intended to run on a Node host. The current start command is:
-
-```bash
-pnpm run start
-```
+The production application is deployed on Cloudflare Workers. The `deploy` script in `package.json` builds the application and deploys it using Wrangler. Make sure you have the Cloudflare CLI tool installed and configured with your account credentials to use this deployment method.
 
 ### Setup
 
 You will need the following information to be set up in the `.env` file:
 
 - `DATABASE_URL`: This is the URL to your PostgreSQL database. It should be in the format `postgres://username:password@host:port/postgres`.
-- `S3_ACCESS_KEY`: This is the access key for your Supabase storage bucket.
-- `S3_SECRET_KEY`: This is the secret key for your Supabase storage bucket.
-- `SUPABASE_URL`: Optional server-side Supabase project URL. If omitted, the server falls back to `VITE_SUPABASE_URL`.
 - `SUPABASE_SECRET_KEY`: This is the server-only Supabase secret key for admin operations. You need it to create new users and send invitations when they are invited to join a group but not yet registered.
-- `RESEND_API_KEY`: This is the server-only Resend API key for sending emails. You need it to send auth confirmation emails and other transactional emails.
-- `RESEND_EMAIL_DOMAIN`: This is the email domain for Resend emails.
+- `R2_PUBLIC_DOMAIN`: This is the public domain for your Cloudflare R2 bucket, used for direct image access. It should be in the format `https://r2.your-domain.com`.
 - `CLOUDFLARE_TURNSTILE_SECRET_KEY`: This is the server-only Cloudflare Turnstile secret key for verifying captcha responses.
 
 Below are public client variables. These can live in `.env.local` for local development:
@@ -51,21 +43,3 @@ Below are public client variables. These can live in `.env.local` for local deve
 - `VITE_SUPABASE_PUBLISHABLE_KEY`: This is the browser-safe Supabase publishable key.
 - `VITE_SITE_BASE_URL`: Optional canonical site URL used for sitemap generation in production and for auth email confirmation redirects.
 - `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`: This is the public client Cloudflare Turnstile site key for verifying captcha responses.
-
-Sample `.env` file:
-
-```env
-DATABASE_URL="postgres://prisma.[Supabase Project ID]:[Password]@[Supabase Project Location].pooler.supabase.com:5432/postgres"
-S3_ACCESS_KEY="[Supabase Storage S3 Compatible Access Key]"
-S3_SECRET_KEY="[Supabase Storage S3 Compatible Secret Key]"
-SUPABASE_SECRET_KEY="[Supabase Project Service Role Secret]"
-SUPABASE_URL="https://[Supabase Project Ref].supabase.co"
-```
-
-Sample `.env.local` file:
-
-```env
-VITE_SUPABASE_URL="https://[Supabase Project Ref].supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="[Supabase Project Publishable Key]"
-VITE_SITE_BASE_URL="https://example.com"
-```

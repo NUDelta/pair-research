@@ -19,7 +19,7 @@ export default function GroupDetailHeader({
 }: GroupDetailHeaderProps) {
   return (
     <div className="flex flex-col gap-4">
-      <Button variant="ghost" size="sm" asChild className="w-fit">
+      <Button variant="ghost" size="sm" asChild className="w-fit hover-lift-sm">
         <Link to="/groups">
           <ArrowLeftIcon data-icon="inline-start" />
           Back to groups

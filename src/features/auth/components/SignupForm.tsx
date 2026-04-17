@@ -126,16 +126,18 @@ const SignupForm = ({
 
   if (pendingConfirmationEmail !== null) {
     return (
-      <AuthEmailStatusNotice
-        actionHref={buildAuthPageHref('/login', {
-          email: pendingConfirmationEmail,
-          nextPath,
-          notice: 'check-email',
-        })}
-        actionLabel="Go to sign in"
-        email={pendingConfirmationEmail}
-        variant="check-email"
-      />
+      <div className="animate-subtle-rise">
+        <AuthEmailStatusNotice
+          actionHref={buildAuthPageHref('/login', {
+            email: pendingConfirmationEmail,
+            nextPath,
+            notice: 'check-email',
+          })}
+          actionLabel="Go to sign in"
+          email={pendingConfirmationEmail}
+          variant="check-email"
+        />
+      </div>
     )
   }
 
@@ -143,7 +145,7 @@ const SignupForm = ({
     <div className="space-y-5">
       <OAuthButton nextPath={nextPath} />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="animate-subtle-rise-late space-y-5">
         <AuthField
           id="name"
           label="Full Name"
@@ -189,10 +191,10 @@ const SignupForm = ({
             id="agreeToTerms"
             checked={agreeToTerms}
             onCheckedChange={checked => setValue('agreeToTerms', checked === true)}
-            className="mt-1"
+            className="mt-1 transition-transform duration-200 ease-out data-[state=checked]:scale-105"
           />
           <div className="space-y-2 leading-none">
-            <Label htmlFor="agreeToTerms" className="text-sm font-normal cursor-pointer">
+            <Label htmlFor="agreeToTerms" className="cursor-pointer text-sm font-normal transition-colors duration-200 ease-out hover:text-foreground">
               I agree to the Terms of Service and Privacy Policy.
             </Label>
             <p className="text-sm leading-6 text-muted-foreground">
@@ -200,7 +202,7 @@ const SignupForm = ({
               {' '}
               <a
                 href={buildLegalPageHref('/terms', 'signup')}
-                className="underline hover:text-foreground transition-colors"
+                className="underline interactive-link hover:text-foreground"
               >
                 Terms of Service
               </a>
@@ -209,7 +211,7 @@ const SignupForm = ({
               {' '}
               <a
                 href={buildLegalPageHref('/privacy', 'signup')}
-                className="underline hover:text-foreground transition-colors"
+                className="underline interactive-link hover:text-foreground"
               >
                 Privacy Policy
               </a>
@@ -227,14 +229,14 @@ const SignupForm = ({
         />
 
         {errors.root && (
-          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
+          <div className="animate-subtle-rise text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
             {errors.root.message}
           </div>
         )}
 
         <Button
           type="submit"
-          className="h-12 w-full rounded-xl text-sm font-semibold"
+          className="h-12 w-full rounded-xl text-sm font-semibold hover-lift-sm hover:shadow-md"
           disabled={!isValid || !agreeToTerms || !isTurnstileVerified || isPending}
         >
           {isPending

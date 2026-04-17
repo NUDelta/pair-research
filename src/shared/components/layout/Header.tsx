@@ -5,11 +5,15 @@ import AuthControlsLoading from '@/features/auth/components/AuthControlsLoading'
 
 const Header = () => {
   return (
-    <header className="border-b">
+    <header className="animate-subtle-rise border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <nav className="flex h-16 items-center justify-between" aria-label="Main navigation">
           {/* Logo / App Name */}
-          <Link to="/" aria-label="Pair Research home" className="text-lg sm:text-xl font-semibold">
+          <Link
+            to="/"
+            aria-label="Pair Research home"
+            className="text-lg font-semibold interactive-link hover:text-foreground/80 sm:text-xl"
+          >
             Pair Research
           </Link>
 

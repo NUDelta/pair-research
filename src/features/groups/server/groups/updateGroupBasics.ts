@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
+import { normalizeNullableDescription } from '@/features/groups/lib/groupNormalization'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { updateGroupBasicsSchema } from '../../schemas/groupManagement'
-import { findManagedGroup, normalizeNullableDescription } from './groupManagement'
+import { findManagedGroup } from './groupManagement'
 
 export const updateGroupBasics = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(updateGroupBasicsSchema, data))

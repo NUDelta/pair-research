@@ -12,7 +12,8 @@ export const resetPool = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
-      const { prisma } = await import('@/shared/lib/prismaClient')
+      const { getPrismaClient } = await import('@/shared/server/prisma')
+      const prisma = await getPrismaClient()
       const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
       const membership = await prisma.group_member.findFirst({

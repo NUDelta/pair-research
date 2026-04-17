@@ -50,7 +50,8 @@ export default function TaskCard({
 
   return (
     <Card className={cn(
-      currentUserId === undefined && 'animate-mask-reveal',
+      currentUserId === undefined && 'animate-mask-reveal hover-lift-md hover:shadow-lg',
+      currentUserId !== undefined && 'hover-lift-sm hover:shadow-md',
       poolStatus === 'in-pool' && 'border-emerald-200 bg-emerald-50/40',
       poolStatus === 'not-in-pool' && 'border-slate-200 bg-slate-50/60',
       poolStatus === 'paired' && 'border-amber-200 bg-amber-50/50',
@@ -71,7 +72,7 @@ export default function TaskCard({
               {poolStatus !== undefined && (
                 <span
                   className={cn(
-                    'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide',
+                    'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide transition-[transform,background-color] duration-300 ease-out',
                     poolStatus === 'in-pool' && 'bg-emerald-100 text-emerald-900',
                     poolStatus === 'not-in-pool' && 'bg-slate-200 text-slate-700',
                     poolStatus === 'paired' && 'bg-amber-100 text-amber-900',
@@ -103,7 +104,7 @@ export default function TaskCard({
               )}
 
           <div className="flex items-center gap-2 pt-1">
-            <Avatar className="h-5 w-5">
+            <Avatar className="h-5 w-5 hover-scale-soft">
               <AvatarImage
                 src={userAvatar ?? undefined}
                 alt={`${fullName}'s avatar`}

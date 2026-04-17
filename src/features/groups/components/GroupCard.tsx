@@ -57,13 +57,15 @@ const GroupCard = ({
   const CardContentComponent = (
     <Card
       className={cn(
-        'group flex h-full w-full flex-col justify-between transition',
-        isNavigable && 'cursor-pointer hover:shadow-lg',
+        'group animate-subtle-rise flex h-full w-full flex-col justify-between',
+        isNavigable && 'cursor-pointer hover-lift-md hover:shadow-xl',
       )}
     >
       <div className="space-y-2">
         <CardHeader className="flex justify-between items-center">
-          <CardTitle>{groupName}</CardTitle>
+          <CardTitle className="transition-colors duration-300 ease-out group-hover:text-foreground/80">
+            {groupName}
+          </CardTitle>
           {isAdmin && !isPending && (
             <Button
               variant="ghost"
@@ -78,6 +80,7 @@ const GroupCard = ({
                 })
               }}
               aria-label="Settings"
+              className="hover-lift-sm hover:rotate-2"
             >
               <Settings aria-hidden="true" />
             </Button>
@@ -115,7 +118,7 @@ const GroupCard = ({
                     event_.stopPropagation()
                     onAccept()
                   }}
-                  className="hover:shadow-lg hover:scale-105 hover:bg-accent hover:text-accent-foreground transition duration-200"
+                  className="hover-lift-sm hover:shadow-lg hover:bg-accent hover:text-accent-foreground"
                 >
                   {isAccepting
                     ? (
