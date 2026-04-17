@@ -11,13 +11,6 @@
     "R2_PUBLIC_DOMAIN": "https://r2.pairresearch.io",
     "VITE_CLOUDFLARE_TURNSTILE_SITE_KEY": "0x4AAAAAAC9k1bsuMhNHCEY9"
   },
-  "secrets": {
-    "required": [
-      "DATABASE_URL",
-      "SUPABASE_SECRET_KEY",
-      "CLOUDFLARE_TURNSTILE_SECRET_KEY"
-    ]
-  },
   "observability": {
     "traces": {
       "enabled": true,
