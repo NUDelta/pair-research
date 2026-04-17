@@ -19,6 +19,16 @@ jobs:
       pull-requests: write
       issues: write
 
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SITE_BASE_URL: ${{ secrets.VITE_SITE_BASE_URL }}
+      R2_PUBLIC_DOMAIN: ${{ secrets.R2_PUBLIC_DOMAIN }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+
     steps:
       - name: 📂 Checkout
         uses: actions/checkout@v4
