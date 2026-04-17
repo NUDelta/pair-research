@@ -81,7 +81,6 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
       })
 
       if (success) {
-        await router.invalidate()
         reset({
           full_name: data.full_name ?? '',
           avatar_source: data.avatar_source,
@@ -93,6 +92,7 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
           message,
         })
         toast.success(message)
+        void router.invalidate()
       }
       else {
         setFeedback({
@@ -115,7 +115,6 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
         })
 
         if (success) {
-          await router.invalidate()
           reset({
             full_name: methods.getValues('full_name'),
             avatar_source: 'current',
@@ -127,6 +126,7 @@ const AccountForm = ({ full_name, avatar_url, email }: AccountFormProps) => {
             message,
           })
           toast.success(message)
+          void router.invalidate()
           resolve(true)
         }
         else {

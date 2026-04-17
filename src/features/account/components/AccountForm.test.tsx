@@ -104,4 +104,28 @@ describe('accountForm', () => {
       'bg-amber-50/90',
     )
   })
+
+  it('shows success feedback before router invalidation settles', async () => {
+    const user = userEvent.setup()
+
+    mockInvalidate.mockImplementationOnce(async () => {
+      await new Promise(() => {})
+    })
+
+    render(
+      <AccountForm
+        full_name="Ada Lovelace"
+        avatar_url={null}
+        email="ada@example.com"
+      />,
+    )
+
+    await user.clear(screen.getByLabelText('Full name'))
+    await user.type(screen.getByLabelText('Full name'), 'Ada Byron')
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    expect(await screen.findByText('Profile updated successfully')).toBeVisible()
+    expect(mockToastSuccess).toHaveBeenCalledWith('Profile updated successfully')
+    expect(mockInvalidate).toHaveBeenCalledTimes(1)
+  })
 })
