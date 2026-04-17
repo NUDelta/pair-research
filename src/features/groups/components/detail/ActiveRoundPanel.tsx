@@ -176,12 +176,12 @@ export default function ActiveRoundPanel({
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Pairs this round
             </p>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid items-start gap-3 md:grid-cols-2">
               {orderedPairSummaries.map((pairSummary) => {
                 return (
                   <div
                     key={pairSummary.id}
-                    className="rounded-xl border bg-background/90 p-4 shadow-sm hover-lift-sm hover:shadow-md"
+                    className="relative z-0 rounded-xl border bg-background/90 p-4 shadow-sm hover-lift-sm hover:z-20 hover:shadow-md focus-within:z-20"
                   >
                     <div className="flex flex-col items-center gap-4 sm:grid sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
                       <div className="flex justify-center sm:justify-end">
