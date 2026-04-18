@@ -47,6 +47,7 @@ export function useGroupMemberInviteDialog({
   const [defaultRoleId, setDefaultRoleId] = useState(roles[0]?.id ?? '')
   const [isPending, startTransition] = useTransition()
   const nextRowIdRef = useRef(0)
+  const nextOptimisticMemberIdRef = useRef(0)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const roleIds = useMemo(() => new Set(roles.map(role => role.id)), [roles])
   const resolvedDefaultRoleId = roleIds.has(defaultRoleId) ? defaultRoleId : (roles[0]?.id ?? '')
@@ -69,6 +70,20 @@ export function useGroupMemberInviteDialog({
   function createInviteRow(draft: GroupMemberInviteDraft): InviteRow {
     nextRowIdRef.current += 1
     return { id: `invite-${nextRowIdRef.current}`, ...draft }
+  }
+
+  function createOptimisticMembers(invites: GroupMemberInviteDraft[]) {
+    return invites.map((invite) => {
+      nextOptimisticMemberIdRef.current += 1
+
+      return {
+        userId: `optimistic-member-${nextOptimisticMemberIdRef.current}`,
+        email: invite.email,
+        roleId: invite.roleId,
+        isAdmin: invite.isAdmin,
+        joinedAt: new Date().toISOString(),
+      }
+    })
   }
 
   function handleImportSource(source: string) {
@@ -196,13 +211,7 @@ export function useGroupMemberInviteDialog({
       roleId: invite.roleId,
       isAdmin: invite.isAdmin,
     }))
-    const optimisticMembers = optimisticInvites.map((invite, index) => ({
-      userId: `optimistic-member-${nextRowIdRef.current + index + 1}`,
-      email: invite.email,
-      roleId: invite.roleId,
-      isAdmin: invite.isAdmin,
-      joinedAt: new Date().toISOString(),
-    }))
+    const optimisticMembers = createOptimisticMembers(optimisticInvites)
     const rollback = applyOptimisticUpdate((draft) => {
       applyGroupMemberInvites(draft, {
         invites: optimisticInvites,
