@@ -4,6 +4,10 @@ import { useServerFn } from '@tanstack/react-start'
 import { Check, Settings } from 'lucide-react'
 import { useTransition } from 'react'
 import { toast } from 'sonner'
+import {
+  getGroupInvitationAcceptanceErrorMessage,
+  runGroupInvitationAcceptance,
+} from '@/features/groups/lib/groupInvitationAcceptance'
 import { acceptGroupInvitation } from '@/features/groups/server/groups/acceptGroupInvitation'
 import { cn } from '@/shared/lib/utils'
 import { Spinner } from '@/shared/ui'
@@ -48,19 +52,24 @@ const GroupCard = ({
 
   const onAccept = async () => {
     if (onAcceptInvitation !== undefined) {
-      await onAcceptInvitation(group.id)
+      try {
+        await onAcceptInvitation(group.id)
+      }
+      catch (error) {
+        toast.error(getGroupInvitationAcceptanceErrorMessage(error))
+      }
       return
     }
 
     startTransition(async () => {
-      const { success, message } = await acceptGroupInvitationFn({ data: { groupId: group.id } })
-      if (success) {
-        toast.success(message)
-        void router.invalidate()
-      }
-      else {
-        toast.error(message)
-      }
+      await runGroupInvitationAcceptance({
+        acceptInvitation: async () => acceptGroupInvitationFn({ data: { groupId: group.id } }),
+        onFailed: message => toast.error(message),
+        onSucceeded: (message) => {
+          toast.success(message)
+          void router.invalidate()
+        },
+      })
     })
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import GroupCard from '@/features/groups/components/GroupCard'
 import GroupsPagePending from '@/features/groups/components/pending/GroupsPagePending'
+import { runGroupInvitationAcceptance } from '@/features/groups/lib/groupInvitationAcceptance'
 import { applyInvitationAcceptance, createGroupListOptimisticUpdate } from '@/features/groups/lib/optimisticGroups'
 import { acceptGroupInvitation } from '@/features/groups/server/groups/acceptGroupInvitation'
 import { getUserGroups } from '@/features/groups/server/groups/getUserGroups'
@@ -61,21 +62,23 @@ function GroupsPage() {
       [groupId]: true,
     }))
 
-    const { success, message } = await acceptGroupInvitationFn({ data: { groupId } })
-
-    setAcceptingGroupIds((current) => {
-      const { [groupId]: _removed, ...rest } = current
-      return rest
+    await runGroupInvitationAcceptance({
+      acceptInvitation: async () => acceptGroupInvitationFn({ data: { groupId } }),
+      onFailed: (message) => {
+        rollback()
+        toast.error(message)
+      },
+      onSettled: () => {
+        setAcceptingGroupIds((current) => {
+          const { [groupId]: _removed, ...rest } = current
+          return rest
+        })
+      },
+      onSucceeded: (message) => {
+        toast.success(message)
+        void router.invalidate()
+      },
     })
-
-    if (!success) {
-      rollback()
-      toast.error(message)
-      return
-    }
-
-    toast.success(message)
-    void router.invalidate()
   }
 
   const pending = optimisticGroups.filter(group => group.isPending).sort(compareJoinedAtDesc)

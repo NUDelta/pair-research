@@ -10,6 +10,7 @@ import { updateGroupMember } from '@/features/groups/server/groups/updateGroupMe
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { DataTable } from '@/shared/ui/data-table'
 import { applyBulkMemberRoleUpdate, applyMemberRemoval, applyMemberUpdate } from '../optimisticGroupSettings'
+import { performBulkMemberRemoval } from './bulkMemberRemoval'
 import GroupMembersToolbar from './GroupMembersToolbar'
 import { createGroupMemberColumns } from './memberTableColumns'
 import { buildGroupMemberTableRows } from './memberTableRows'
@@ -238,57 +239,24 @@ export default function GroupMembersTable({
                   isBulkUpdatingRole={isBulkUpdatingRole}
                   onBulkRemove={async () => {
                     startBulkRemoveTransition(async () => {
-                      const removableMemberIds = selectedRemovableMembers.map(member => member.userId)
-                      const failedMemberIds: string[] = []
-                      const rollback = applyOptimisticUpdate((draft) => {
-                        applyMemberRemoval(draft, removableMemberIds)
-                      })
-                      let removedCount = 0
-                      const failures: string[] = []
-
-                      table.resetRowSelection()
-
-                      for (const member of selectedRemovableMembers) {
-                        const response = await removeGroupMemberFn({
-                          data: {
-                            groupId,
-                            userId: member.userId,
-                          },
-                        })
-
-                        if (response.success) {
-                          removedCount += 1
-                          continue
-                        }
-
-                        failedMemberIds.push(member.userId)
-                        failures.push(`${member.displayName}: ${response.message}`)
-                      }
-
-                      if (failedMemberIds.length > 0) {
-                        rollback()
-                        const succeededMemberIds = removableMemberIds.filter(userId => !failedMemberIds.includes(userId))
-                        if (succeededMemberIds.length > 0) {
+                      await performBulkMemberRemoval({
+                        applyOptimisticRemoval: userIds =>
                           applyOptimisticUpdate((draft) => {
-                            applyMemberRemoval(draft, succeededMemberIds)
-                          })
-                        }
-                      }
-
-                      if (removedCount > 0) {
-                        void router.invalidate()
-                      }
-
-                      if (removedCount > 0) {
-                        toast.success(`Removed ${removedCount} selected ${removedCount === 1 ? 'member' : 'members'}.`)
-                      }
-
-                      if (failures.length === 1) {
-                        toast.error(failures[0])
-                      }
-                      else if (failures.length > 1) {
-                        toast.error(`${failures.length} selected members could not be removed.`)
-                      }
+                            applyMemberRemoval(draft, userIds)
+                          }),
+                        members: selectedRemovableMembers,
+                        onError: message => toast.error(message),
+                        onInvalidate: () => void router.invalidate(),
+                        onSelectionReset: () => table.resetRowSelection(),
+                        onSuccess: message => toast.success(message),
+                        removeMember: async member =>
+                          removeGroupMemberFn({
+                            data: {
+                              groupId,
+                              userId: member.userId,
+                            },
+                          }),
+                      })
                     })
                   }}
                   onBulkRoleUpdate={async (roleId) => {

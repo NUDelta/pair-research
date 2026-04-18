@@ -2,7 +2,7 @@ import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSetti
 import type { GroupSettingsRole } from '../types'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { resolveBulkRoleActionPlan } from '@/features/groups/lib/groupRoleBulkActions'
 import { bulkManageGroupRoles } from '@/features/groups/server/groups/bulkManageGroupRoles'
@@ -13,6 +13,7 @@ import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { applyBulkRoleAction } from '../optimisticGroupSettings'
+import { getNextOptimisticRoleId } from './optimisticRoleIds'
 
 interface BulkRoleActionDialogProps {
   action: 'merge' | 'remove'
@@ -39,7 +40,7 @@ export default function BulkRoleActionDialog({
   const [existingRoleId, setExistingRoleId] = useState('')
   const [newRoleTitle, setNewRoleTitle] = useState('')
   const [isPending, startTransition] = useTransition()
-  const [optimisticRoleCounter, setOptimisticRoleCounter] = useState(0)
+  const nextOptimisticRoleIdRef = useRef(0)
   const selectedRoleIds = useMemo(() => selectedRoles.map(role => role.id), [selectedRoles])
   const existingTargets = useMemo(
     () => action === 'merge'
@@ -82,7 +83,7 @@ export default function BulkRoleActionDialog({
     }
 
     const nextOptimisticRoleId = resolvedDestinationMode === 'new'
-      ? `optimistic-bulk-role-${optimisticRoleCounter + 1}`
+      ? getNextOptimisticRoleId(nextOptimisticRoleIdRef, 'optimistic-bulk-role')
       : undefined
     const rollback = applyOptimisticUpdate((draft) => {
       applyBulkRoleAction(draft, {
@@ -94,9 +95,6 @@ export default function BulkRoleActionDialog({
       })
     })
 
-    if (nextOptimisticRoleId !== undefined) {
-      setOptimisticRoleCounter(current => current + 1)
-    }
     handleOpenChange(false)
 
     startTransition(async () => {

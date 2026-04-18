@@ -119,4 +119,29 @@ describe('groupCard', () => {
       expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
   })
+
+  it('shows an error toast when a provided accept handler rejects', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <GroupCard
+        group={{
+          id: 'group-1',
+          groupName: 'Research Collective',
+          groupDescription: 'Weekly paper reviews',
+          role: 'Member',
+          isAdmin: false,
+          isPending: true,
+          joinedAt: '2026-04-10T10:00:00.000Z',
+        }}
+        onAcceptInvitation={vi.fn().mockRejectedValue(new Error('Network down'))}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /accept/i }))
+
+    await waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith('Network down')
+    })
+  })
 })
