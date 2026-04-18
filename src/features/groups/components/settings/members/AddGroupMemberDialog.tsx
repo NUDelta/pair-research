@@ -1,3 +1,4 @@
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import { ShieldPlusIcon, UserPlusIcon } from 'lucide-react'
 import { MAX_GROUP_MEMBER_INVITES } from '@/features/groups/lib/groupMemberInviteBatch'
@@ -8,6 +9,7 @@ import MemberInviteBatchEditor from './MemberInviteBatchEditor'
 import { useGroupMemberInviteDialog } from './useGroupMemberInviteDialog'
 
 interface AddGroupMemberDialogProps {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   existingMemberEmails?: string[]
   groupId: string
   roles: GroupSettingsRole[]
@@ -15,6 +17,7 @@ interface AddGroupMemberDialogProps {
 }
 
 export default function AddGroupMemberDialog({
+  applyOptimisticUpdate,
   existingMemberEmails = [],
   groupId,
   roles,
@@ -46,7 +49,7 @@ export default function AddGroupMemberDialog({
     setDraftSource,
     setSelectedRowIds,
     toggleRowSelection,
-  } = useGroupMemberInviteDialog({ existingMemberEmails, groupId, roles })
+  } = useGroupMemberInviteDialog({ applyOptimisticUpdate, existingMemberEmails, groupId, roles })
 
   return (
     <Dialog open={open} onOpenChange={handleDialogToggle}>

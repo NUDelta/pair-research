@@ -1,6 +1,12 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import GroupCard from '@/features/groups/components/GroupCard'
 import GroupsPagePending from '@/features/groups/components/pending/GroupsPagePending'
+import { runGroupInvitationAcceptance } from '@/features/groups/lib/groupInvitationAcceptance'
+import { applyInvitationAcceptance, createGroupListOptimisticUpdate } from '@/features/groups/lib/optimisticGroups'
+import { acceptGroupInvitation } from '@/features/groups/server/groups/acceptGroupInvitation'
 import { getUserGroups } from '@/features/groups/server/groups/getUserGroups'
 import { Button } from '@/shared/ui/button'
 
@@ -22,9 +28,61 @@ export const Route = createFileRoute('/_authed/groups/')({
 
 function GroupsPage() {
   const groups = Route.useLoaderData()
+  const router = useRouter()
+  const acceptGroupInvitationFn = useServerFn(acceptGroupInvitation)
+  const [optimisticGroups, setOptimisticGroups] = useState(groups)
+  const [acceptingGroupIds, setAcceptingGroupIds] = useState<Record<string, boolean>>({})
 
-  const pending = groups.filter(group => group.isPending).sort(compareJoinedAtDesc)
-  const joined = groups.filter(group => !group.isPending).sort(compareJoinedAtDesc)
+  useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
+    setOptimisticGroups(groups)
+  }, [groups])
+
+  const applyOptimisticUpdate = (recipe: import('@/features/groups/lib/optimisticGroups').GroupListOptimisticRecipe) => {
+    let rollback = (currentState: typeof groups) => currentState
+
+    setOptimisticGroups((currentGroups) => {
+      const update = createGroupListOptimisticUpdate(currentGroups, recipe)
+      rollback = update.rollback
+      return update.nextState
+    })
+
+    return () => {
+      setOptimisticGroups(currentGroups => rollback(currentGroups))
+    }
+  }
+
+  const handleAcceptInvitation = async (groupId: string) => {
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyInvitationAcceptance(draft, groupId)
+    })
+
+    setAcceptingGroupIds(current => ({
+      ...current,
+      [groupId]: true,
+    }))
+
+    await runGroupInvitationAcceptance({
+      acceptInvitation: async () => acceptGroupInvitationFn({ data: { groupId } }),
+      onFailed: (message) => {
+        rollback()
+        toast.error(message)
+      },
+      onSettled: () => {
+        setAcceptingGroupIds((current) => {
+          const { [groupId]: _removed, ...rest } = current
+          return rest
+        })
+      },
+      onSucceeded: (message) => {
+        toast.success(message)
+        void router.invalidate()
+      },
+    })
+  }
+
+  const pending = optimisticGroups.filter(group => group.isPending).sort(compareJoinedAtDesc)
+  const joined = optimisticGroups.filter(group => !group.isPending).sort(compareJoinedAtDesc)
 
   return (
     <div className="container mx-auto max-w-5xl space-y-6 p-6">
@@ -40,7 +98,12 @@ function GroupsPage() {
           <h2 className="mb-4 text-xl font-semibold">Pending Invitations</h2>
           <div className="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2">
             {pending.map(g => (
-              <GroupCard key={g.id} group={g} />
+              <GroupCard
+                key={g.id}
+                group={g}
+                isAccepting={acceptingGroupIds[g.id] === true}
+                onAcceptInvitation={handleAcceptInvitation}
+              />
             ))}
           </div>
         </section>

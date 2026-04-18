@@ -1,4 +1,5 @@
 import type { ChangeEvent } from 'react'
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import type { InviteRow, InviteRowErrors } from './memberInviteRowState'
 import type { GroupMemberInviteDraft } from '@/features/groups/lib/groupMemberInviteBatch'
@@ -13,6 +14,7 @@ import {
 } from '@/features/groups/lib/groupMemberInviteBatch'
 import { addGroupMembersSchema } from '@/features/groups/schemas/groupManagement'
 import { addGroupMembers } from '@/features/groups/server/groups/addGroupMembers'
+import { applyGroupMemberInvites } from '../optimisticGroupSettings'
 import {
   applySharedAssignmentToInviteRows,
   buildImportSummaryMessage,
@@ -24,10 +26,12 @@ import {
 const addGroupMembersFormSchema = addGroupMembersSchema.omit({ groupId: true })
 
 export function useGroupMemberInviteDialog({
+  applyOptimisticUpdate,
   existingMemberEmails = [],
   groupId,
   roles,
 }: {
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   existingMemberEmails?: string[]
   groupId: string
   roles: GroupSettingsRole[]
@@ -43,6 +47,7 @@ export function useGroupMemberInviteDialog({
   const [defaultRoleId, setDefaultRoleId] = useState(roles[0]?.id ?? '')
   const [isPending, startTransition] = useTransition()
   const nextRowIdRef = useRef(0)
+  const nextOptimisticMemberIdRef = useRef(0)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const roleIds = useMemo(() => new Set(roles.map(role => role.id)), [roles])
   const resolvedDefaultRoleId = roleIds.has(defaultRoleId) ? defaultRoleId : (roles[0]?.id ?? '')
@@ -65,6 +70,20 @@ export function useGroupMemberInviteDialog({
   function createInviteRow(draft: GroupMemberInviteDraft): InviteRow {
     nextRowIdRef.current += 1
     return { id: `invite-${nextRowIdRef.current}`, ...draft }
+  }
+
+  function createOptimisticMembers(invites: GroupMemberInviteDraft[]) {
+    return invites.map((invite) => {
+      nextOptimisticMemberIdRef.current += 1
+
+      return {
+        userId: `optimistic-member-${nextOptimisticMemberIdRef.current}`,
+        email: invite.email,
+        roleId: invite.roleId,
+        isAdmin: invite.isAdmin,
+        joinedAt: new Date().toISOString(),
+      }
+    })
   }
 
   function handleImportSource(source: string) {
@@ -187,6 +206,22 @@ export function useGroupMemberInviteDialog({
       return
     }
 
+    const optimisticInvites = validationResult.data.invites.map(invite => ({
+      email: invite.email,
+      roleId: invite.roleId,
+      isAdmin: invite.isAdmin,
+    }))
+    const optimisticMembers = createOptimisticMembers(optimisticInvites)
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyGroupMemberInvites(draft, {
+        invites: optimisticInvites,
+        tempMembers: optimisticMembers,
+      })
+    })
+
+    resetDialogState()
+    setOpen(false)
+
     startTransition(async () => {
       const response = await addGroupMembersFn({
         data: {
@@ -196,13 +231,12 @@ export function useGroupMemberInviteDialog({
       })
 
       if (!response.success) {
+        rollback()
         toast.error(response.message)
         return
       }
       toast.success(response.message)
-      resetDialogState()
-      setOpen(false)
-      await router.invalidate()
+      void router.invalidate()
     })
   }
 

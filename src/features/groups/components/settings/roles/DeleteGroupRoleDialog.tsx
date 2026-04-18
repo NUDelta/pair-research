@@ -1,3 +1,4 @@
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
@@ -10,9 +11,11 @@ import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { applyRoleDelete } from '../optimisticGroupSettings'
 
 interface DeleteGroupRoleDialogProps {
   assignedMemberCount: number
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   groupId: string
   role: GroupSettingsRole
   roles: GroupSettingsRole[]
@@ -20,20 +23,30 @@ interface DeleteGroupRoleDialogProps {
 
 export default function DeleteGroupRoleDialog({
   assignedMemberCount,
+  applyOptimisticUpdate,
   groupId,
   role,
   roles,
 }: DeleteGroupRoleDialogProps) {
   const router = useRouter()
   const deleteGroupRoleFn = useServerFn(deleteGroupRole)
-  const alternativeRoles = roles.filter(candidateRole => candidateRole.id !== role.id)
+  const alternativeRoles = roles.filter(candidateRole => candidateRole.id !== role.id && candidateRole.isOptimistic !== true)
   const [open, setOpen] = useState(false)
   const [replacementRoleId, setReplacementRoleId] = useState(alternativeRoles[0]?.id ?? '')
   const [isPending, startTransition] = useTransition()
   const requiresReplacement = assignedMemberCount > 0
-  const cannotDeleteLastRole = roles.length <= 1
+  const cannotDeleteLastRole = roles.filter(candidateRole => candidateRole.isOptimistic !== true).length <= 1
 
   const handleDelete = () => {
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyRoleDelete(draft, {
+        roleId: role.id,
+        replacementRoleId: requiresReplacement ? replacementRoleId : undefined,
+      })
+    })
+
+    setOpen(false)
+
     startTransition(async () => {
       const response = await deleteGroupRoleFn({
         data: {
@@ -44,13 +57,13 @@ export default function DeleteGroupRoleDialog({
       })
 
       if (!response.success) {
+        rollback()
         toast.error(response.message)
         return
       }
 
       toast.success(response.message)
-      setOpen(false)
-      await router.invalidate()
+      void router.invalidate()
     })
   }
 
@@ -60,7 +73,7 @@ export default function DeleteGroupRoleDialog({
         <Button
           variant="outline"
           size="sm"
-          disabled={cannotDeleteLastRole}
+          disabled={cannotDeleteLastRole || role.isOptimistic === true}
           title={cannotDeleteLastRole ? 'Create another role before deleting the last remaining role.' : undefined}
         >
           <Trash2Icon data-icon="inline-start" />

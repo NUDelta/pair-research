@@ -33,6 +33,8 @@ const { mockUseGroupMemberInviteDialog } = vi.hoisted(() => ({
   })),
 }))
 
+const applyOptimisticUpdate = vi.fn(() => vi.fn())
+
 function MockMemberInviteBatchEditor() {
   return <div data-testid="member-invite-batch-editor">Batch editor</div>
 }
@@ -87,6 +89,7 @@ describe('addGroupMemberDialog', () => {
   it('keeps the add-members dialog content inside a scrollable region', () => {
     render(
       <AddGroupMemberDialog
+        applyOptimisticUpdate={applyOptimisticUpdate}
         groupId="group-1"
         roles={[{ id: 'role-1', title: 'Researcher' }]}
       />,
@@ -99,6 +102,7 @@ describe('addGroupMemberDialog', () => {
     expect(scrollRegion).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto', 'overscroll-contain')
     expect(screen.getByTestId('member-invite-batch-editor')).toBeInTheDocument()
     expect(mockUseGroupMemberInviteDialog).toHaveBeenCalledWith({
+      applyOptimisticUpdate,
       existingMemberEmails: [],
       groupId: 'group-1',
       roles: [{ id: 'role-1', title: 'Researcher' }],

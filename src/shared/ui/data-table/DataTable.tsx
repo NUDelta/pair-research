@@ -26,6 +26,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   emptyMessage: string
+  enableRowSelection?: boolean | ((row: Row<TData>) => boolean)
   filterColumnId?: string
   filterPlaceholder?: string
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
@@ -36,6 +37,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   emptyMessage,
+  enableRowSelection = true,
   filterColumnId,
   filterPlaceholder = 'Filter rows...',
   getRowId,
@@ -53,6 +55,7 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns,
+    enableRowSelection,
     getRowId,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,

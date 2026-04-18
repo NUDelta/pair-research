@@ -15,15 +15,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
+import { applyGroupBasicsUpdate } from './optimisticGroupSettings'
 
 interface GroupBasicsFormCardProps {
+  applyOptimisticUpdate: import('./optimisticGroupSettings').ApplyGroupSettingsOptimisticUpdate
   group: GroupSettingsData['group']
 }
 
 const groupBasicsFormSchema = updateGroupBasicsSchema.omit({ groupId: true })
 type GroupBasicsFormValues = Infer<typeof groupBasicsFormSchema>
 
-export default function GroupBasicsFormCard({ group }: GroupBasicsFormCardProps) {
+export default function GroupBasicsFormCard({ applyOptimisticUpdate, group }: GroupBasicsFormCardProps) {
   const router = useRouter()
   const updateGroupBasicsFn = useServerFn(updateGroupBasics)
   const [isPending, startTransition] = useTransition()
@@ -51,6 +53,13 @@ export default function GroupBasicsFormCard({ group }: GroupBasicsFormCardProps)
   }, [group.description, group.name, reset])
 
   const onSubmit = handleSubmit((values) => {
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyGroupBasicsUpdate(draft, {
+        name: values.groupName,
+        description: values.groupDescription,
+      })
+    })
+
     startTransition(async () => {
       const response = await updateGroupBasicsFn({
         data: {
@@ -61,12 +70,13 @@ export default function GroupBasicsFormCard({ group }: GroupBasicsFormCardProps)
       })
 
       if (!response.success) {
+        rollback()
         toast.error(response.message)
         return
       }
 
       toast.success(response.message)
-      await router.invalidate()
+      void router.invalidate()
     })
   })
 

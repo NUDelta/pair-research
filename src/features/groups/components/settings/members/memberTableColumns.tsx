@@ -56,6 +56,8 @@ export function createGroupMemberColumns({
         <Checkbox
           aria-label={`Select ${row.original.displayName}`}
           checked={row.getIsSelected()}
+          disabled={!row.original.canSelect}
+          title={row.original.managementDisabledReason ?? undefined}
           onCheckedChange={value => row.toggleSelected(value === true)}
         />
       ),
@@ -91,6 +93,7 @@ export function createGroupMemberColumns({
 
         return (
           <MemberRoleSelect
+            disabled={row.original.managementDisabledReason !== null}
             value={state.roleId}
             roles={roles}
             memberName={row.original.displayName}
@@ -115,7 +118,7 @@ export function createGroupMemberColumns({
         return (
           <MemberAccessSelect
             isAdmin={state.isAdmin}
-            disabled={row.original.userId === creatorId}
+            disabled={row.original.userId === creatorId || row.original.managementDisabledReason !== null}
             memberName={row.original.displayName}
             isBusy={isBusy}
             isPending={pendingState.access === true}
@@ -133,7 +136,11 @@ export function createGroupMemberColumns({
             ? <Badge variant="outline">Creator</Badge>
             : (
                 <Badge variant={row.original.isPending ? 'secondary' : 'outline'}>
-                  {row.original.isPending ? 'Pending' : 'Active'}
+                  {row.original.isOptimistic === true
+                    ? 'Syncing'
+                    : row.original.isPending
+                      ? 'Pending'
+                      : 'Active'}
                 </Badge>
               )}
         </div>
@@ -169,7 +176,7 @@ export function createGroupMemberColumns({
                   size="icon"
                   aria-label={`Remove ${row.original.displayName}`}
                   disabled={!row.original.canRemove || isBusy}
-                  title={row.original.removeDisabledReason === null ? undefined : row.original.removeDisabledReason}
+                  title={row.original.removeDisabledReason ?? undefined}
                 >
                   <Trash2Icon />
                 </Button>

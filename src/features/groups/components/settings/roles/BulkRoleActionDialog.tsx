@@ -1,8 +1,10 @@
+import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
+import { resolveBulkRoleActionPlan } from '@/features/groups/lib/groupRoleBulkActions'
 import { bulkManageGroupRoles } from '@/features/groups/server/groups/bulkManageGroupRoles'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
@@ -10,9 +12,12 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { applyBulkRoleAction } from '../optimisticGroupSettings'
+import { getNextOptimisticRoleId } from './optimisticRoleIds'
 
 interface BulkRoleActionDialogProps {
   action: 'merge' | 'remove'
+  applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
   groupId: string
   onOpenChange: (open: boolean) => void
   open: boolean
@@ -22,6 +27,7 @@ interface BulkRoleActionDialogProps {
 
 export default function BulkRoleActionDialog({
   action,
+  applyOptimisticUpdate,
   groupId,
   onOpenChange,
   open,
@@ -34,11 +40,12 @@ export default function BulkRoleActionDialog({
   const [existingRoleId, setExistingRoleId] = useState('')
   const [newRoleTitle, setNewRoleTitle] = useState('')
   const [isPending, startTransition] = useTransition()
+  const nextOptimisticRoleIdRef = useRef(0)
   const selectedRoleIds = useMemo(() => selectedRoles.map(role => role.id), [selectedRoles])
   const existingTargets = useMemo(
     () => action === 'merge'
-      ? roles
-      : roles.filter(role => !selectedRoleIds.includes(role.id)),
+      ? roles.filter(role => !role.isOptimistic)
+      : roles.filter(role => !selectedRoleIds.includes(role.id) && !role.isOptimistic),
     [action, roles, selectedRoleIds],
   )
   const resolvedDestinationMode = destinationMode === 'existing' && existingTargets.length === 0
@@ -59,6 +66,37 @@ export default function BulkRoleActionDialog({
   }
 
   const handleSubmit = () => {
+    const plan = resolveBulkRoleActionPlan({
+      action,
+      roles: roles.filter(role => !role.isOptimistic).map(role => ({
+        id: role.id,
+        title: role.title,
+      })),
+      selectedRoleIds,
+      targetRoleId: resolvedDestinationMode === 'existing' ? resolvedExistingRoleId : undefined,
+      targetRoleTitle: resolvedDestinationMode === 'new' ? newRoleTitle : undefined,
+    })
+
+    if (!plan.success) {
+      toast.error(plan.message)
+      return
+    }
+
+    const nextOptimisticRoleId = resolvedDestinationMode === 'new'
+      ? getNextOptimisticRoleId(nextOptimisticRoleIdRef, 'optimistic-bulk-role')
+      : undefined
+    const rollback = applyOptimisticUpdate((draft) => {
+      applyBulkRoleAction(draft, {
+        action,
+        selectedRoleIds,
+        targetRoleId: resolvedDestinationMode === 'existing' ? resolvedExistingRoleId : undefined,
+        targetRoleTitle: resolvedDestinationMode === 'new' ? newRoleTitle : undefined,
+        tempRoleId: nextOptimisticRoleId,
+      })
+    })
+
+    handleOpenChange(false)
+
     startTransition(async () => {
       const response = await bulkManageGroupRolesFn({
         data: {
@@ -71,13 +109,13 @@ export default function BulkRoleActionDialog({
       })
 
       if (!response.success) {
+        rollback()
         toast.error(response.message)
         return
       }
 
       toast.success(response.message)
-      handleOpenChange(false)
-      await router.invalidate()
+      void router.invalidate()
     })
   }
 

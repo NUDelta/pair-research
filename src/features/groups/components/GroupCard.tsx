@@ -4,6 +4,10 @@ import { useServerFn } from '@tanstack/react-start'
 import { Check, Settings } from 'lucide-react'
 import { useTransition } from 'react'
 import { toast } from 'sonner'
+import {
+  getGroupInvitationAcceptanceErrorMessage,
+  runGroupInvitationAcceptance,
+} from '@/features/groups/lib/groupInvitationAcceptance'
 import { acceptGroupInvitation } from '@/features/groups/server/groups/acceptGroupInvitation'
 import { cn } from '@/shared/lib/utils'
 import { Spinner } from '@/shared/ui'
@@ -19,11 +23,15 @@ function formatJoinedAt(joinedAt: string) {
 interface GroupCardProps {
   group: Group
   href?: string
+  isAccepting?: boolean
+  onAcceptInvitation?: (groupId: string) => Promise<void>
 }
 
 const GroupCard = ({
   group,
   href,
+  isAccepting: controlledIsAccepting,
+  onAcceptInvitation,
 }: GroupCardProps) => {
   const {
     groupName,
@@ -40,17 +48,28 @@ const GroupCard = ({
   const router = useRouter()
   const acceptGroupInvitationFn = useServerFn(acceptGroupInvitation)
   const isNavigable = href !== undefined
+  const acceptPending = controlledIsAccepting ?? isAccepting
 
   const onAccept = async () => {
+    if (onAcceptInvitation !== undefined) {
+      try {
+        await onAcceptInvitation(group.id)
+      }
+      catch (error) {
+        toast.error(getGroupInvitationAcceptanceErrorMessage(error))
+      }
+      return
+    }
+
     startTransition(async () => {
-      const { success, message } = await acceptGroupInvitationFn({ data: { groupId: group.id } })
-      if (success) {
-        toast.success(message)
-        await router.invalidate()
-      }
-      else {
-        toast.error(message)
-      }
+      await runGroupInvitationAcceptance({
+        acceptInvitation: async () => acceptGroupInvitationFn({ data: { groupId: group.id } }),
+        onFailed: message => toast.error(message),
+        onSucceeded: (message) => {
+          toast.success(message)
+          void router.invalidate()
+        },
+      })
     })
   }
 
@@ -111,16 +130,16 @@ const GroupCard = ({
                   variant="secondary"
                   size="sm"
                   type="button"
-                  disabled={isAccepting}
-                  aria-busy={isAccepting}
+                  disabled={acceptPending}
+                  aria-busy={acceptPending}
                   onClick={(event_) => {
                     event_.preventDefault()
                     event_.stopPropagation()
-                    onAccept()
+                    void onAccept()
                   }}
                   className="hover-lift-sm hover:shadow-lg hover:bg-green-400 hover:text-accent-foreground"
                 >
-                  {isAccepting
+                  {acceptPending
                     ? (
                         <Spinner text="Accepting..." className="h-4 w-4" />
                       )

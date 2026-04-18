@@ -51,7 +51,8 @@ Use this file as the working contract for future Codex runs in this repository. 
   - `src/shared/supabase/client.ts` is browser-only and uses `VITE_*` publishable env
   - `src/shared/supabase/server.ts` is for request-scoped server auth/session work
   - `src/shared/supabase/serviceRole.ts` is server-only and only for admin flows such as user creation/invites
-- Never leak `SUPABASE_SECRET_KEY`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, or raw `process.env` access into client code.
+- Never leak `SUPABASE_SECRET_KEY`, `DATABASE_URL`, or raw `process.env` access into client code.
+- Favor optimistic, local-first interaction design by default; do not block user-visible updates on server or database round trips unless correctness strictly requires it.
 - `src/shared/lib/prismaClient.ts` is server-only. Do not import Prisma directly into client-rendered modules.
 - Auth redirect behavior is intentional. Preserve the sanitized `next` redirect flow when touching auth or protected routes.
 

@@ -38,6 +38,19 @@ const members = [
     joinedAt: '2026-03-01T00:00:00.000Z',
     isCreator: false,
   },
+  {
+    userId: 'optimistic-id',
+    fullName: null,
+    avatarUrl: null,
+    email: 'optimistic@example.com',
+    roleId: '2',
+    roleTitle: 'Researcher',
+    isAdmin: false,
+    isPending: true,
+    joinedAt: '2026-03-02T00:00:00.000Z',
+    isCreator: false,
+    isOptimistic: true,
+  },
 ]
 
 describe('buildGroupMemberTableRows', () => {
@@ -75,5 +88,20 @@ describe('buildGroupMemberTableRows', () => {
     expect(rows[1]?.removeDisabledReason).toBe('Reset the active pairing before removing this confirmed member.')
     expect(rows[2]?.canRemove).toBe(true)
     expect(rows[2]?.removeDisabledReason).toBeNull()
+  })
+
+  it('disables selection and management for optimistic invite rows until reconciliation', () => {
+    const rows = buildGroupMemberTableRows({
+      currentUserId: 'someone-else',
+      hasActivePairing: false,
+      members,
+    })
+
+    expect(rows[3]).toMatchObject({
+      canSelect: false,
+      canRemove: false,
+      managementDisabledReason: 'Please wait for the invited member to finish syncing before managing them.',
+      removeDisabledReason: 'Please wait for the invited member to finish syncing before managing them.',
+    })
   })
 })

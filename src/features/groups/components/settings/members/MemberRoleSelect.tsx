@@ -30,7 +30,7 @@ export default function MemberRoleSelect({
         <SelectContent>
           <SelectGroup>
             {roles.map(role => (
-              <SelectItem key={role.id} value={role.id}>
+              <SelectItem key={role.id} value={role.id} disabled={role.isOptimistic === true}>
                 {role.title}
               </SelectItem>
             ))}
