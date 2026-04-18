@@ -24,12 +24,15 @@ const groups: Group[] = [
 ]
 
 describe('optimisticGroups', () => {
-  it('marks invitations accepted immediately and can roll the list back', () => {
+  it('marks invitations accepted immediately with an optimistic joined timestamp and can roll the list back', () => {
     const update = createGroupListOptimisticUpdate(groups, (draft) => {
-      applyInvitationAcceptance(draft, 'group-1')
+      applyInvitationAcceptance(draft, 'group-1', '2026-04-19T09:30:00.000Z')
     })
 
-    expect(update.nextState[0]?.isPending).toBe(false)
+    expect(update.nextState[0]).toMatchObject({
+      isPending: false,
+      joinedAt: '2026-04-19T09:30:00.000Z',
+    })
     expect(update.nextState[1]?.isPending).toBe(false)
     expect(update.rollback(update.nextState)).toEqual(groups)
   })

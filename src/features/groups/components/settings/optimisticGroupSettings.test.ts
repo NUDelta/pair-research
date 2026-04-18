@@ -225,6 +225,7 @@ describe('optimisticGroupSettings', () => {
       isPending: true,
       joinedAt: '2026-04-20T12:00:00.000Z',
       isCreator: false,
+      isOptimistic: true,
     })
   })
 })

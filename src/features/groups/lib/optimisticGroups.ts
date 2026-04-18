@@ -27,6 +27,7 @@ export function createGroupListOptimisticUpdate(
 export function applyInvitationAcceptance(
   draft: Draft<Group[]>,
   groupId: string,
+  acceptedAt: string = new Date().toISOString(),
 ) {
   const group = draft.find(candidateGroup => candidateGroup.id === groupId)
   if (group === undefined) {
@@ -34,5 +35,6 @@ export function applyInvitationAcceptance(
   }
 
   group.isPending = false
+  group.joinedAt = acceptedAt
   return true
 }

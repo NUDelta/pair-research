@@ -15,6 +15,7 @@ export interface GroupSettingsMember {
   isPending: boolean
   joinedAt: string
   isCreator: boolean
+  isOptimistic?: boolean
 }
 
 export interface GroupSettingsData {

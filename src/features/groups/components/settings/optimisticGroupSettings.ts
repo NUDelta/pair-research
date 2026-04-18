@@ -287,6 +287,7 @@ export function applyGroupMemberInvites(
       isPending: true,
       joinedAt: tempMember.joinedAt,
       isCreator: false,
+      isOptimistic: true,
     })
   }
 }

@@ -219,6 +219,7 @@ export default function GroupMembersTable({
             columns={columns}
             data={data}
             emptyMessage="No members found for this group."
+            enableRowSelection={row => row.original.canSelect}
             filterColumnId="displayName"
             filterPlaceholder="Filter members..."
             getRowId={row => row.userId}
