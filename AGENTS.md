@@ -84,14 +84,13 @@ Use this file as the working contract for future Codex runs in this repository. 
 ## Validation Commands
 
 - Relevant day-to-day commands:
-  - `pnpm run typecheck`
   - `pnpm run lint`
   - `pnpm run test:unit`
   - `pnpm run test:e2e`
   - `pnpm run build`
 - Husky already enforces:
-  - pre-commit: `npx nano-staged` and `pnpm run typecheck`
-  - pre-push: `pnpm run lint:fix`, `pnpm run typecheck`, `pnpm run test`, `pnpm build`
+  - pre-commit: `npx nano-staged`
+  - pre-push: `pnpm run lint:fix`, `pnpm run test`, `pnpm build`
 - Repository-level expectation: after modifying JS/TS files, run `pnpm test` when tests are available. If e2e is blocked by the known smoke issue below, still run the relevant unit tests and note the e2e result explicitly.
 
 ## Testing Expectations
