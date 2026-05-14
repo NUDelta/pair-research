@@ -60,6 +60,7 @@ describe('horseRace', () => {
     expect(screen.getByText('Horse race')).toBeInTheDocument()
     expect(screen.getByText('1 of 4 members finished rating')).toBeInTheDocument()
     expect(screen.getByLabelText('Horse race track')).toBeInTheDocument()
+    expect(screen.getByTestId('finish-line')).toHaveClass('right-8')
     expect(screen.getByLabelText('Ada')).toBeInTheDocument()
     expect(screen.getByLabelText('Ben')).toBeInTheDocument()
     expect(screen.getByLabelText('Cam')).toBeInTheDocument()
