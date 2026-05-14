@@ -2,7 +2,7 @@ import type { FormEvent } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { SquarePen } from 'lucide-react'
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useCurrentUserTaskDescription } from '@/features/groups/hooks/useCurrentUserTaskDescription'
 import { upsertTask } from '@/features/groups/server/tasks'
@@ -19,46 +19,98 @@ interface TaskEditorProps {
 
 const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorProps) => {
   const [editing, setEditing] = useState(false)
-  const { currentDescription } = useCurrentUserTaskDescription(groupId, currentUserId, initialDescription)
-  const isJoined = currentDescription !== null && currentDescription.trim() !== ''
+  const { currentDescription, setCurrentDescription } = useCurrentUserTaskDescription(groupId, currentUserId, initialDescription)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [draftDescription, setDraftDescription] = useState(currentDescription ?? '')
-  const [isPending, startTransition] = useTransition()
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'error'>('idle')
+  const inFlightRef = useRef(false)
+  const queuedDescriptionRef = useRef<string | undefined>(undefined)
+  const savedDescriptionRef = useRef<string | null>(currentDescription ?? null)
   const upsertTaskFn = useServerFn(upsertTask)
   const router = useRouter()
+  const isSaving = saveStatus === 'saving'
+  const isJoined = currentDescription !== null && currentDescription.trim() !== ''
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setErrorMessage(null)
+  useEffect(() => {
+    if (!inFlightRef.current && queuedDescriptionRef.current === undefined) {
+      savedDescriptionRef.current = currentDescription ?? null
 
-    startTransition(async () => {
-      try {
+      if (!editing) {
+        setDraftDescription(currentDescription ?? '')
+      }
+    }
+  }, [currentDescription, editing])
+
+  const flushQueuedDescription = async () => {
+    if (inFlightRef.current) {
+      return
+    }
+
+    inFlightRef.current = true
+
+    try {
+      while (queuedDescriptionRef.current !== undefined) {
+        const nextDescription = queuedDescriptionRef.current
+        queuedDescriptionRef.current = undefined
+        setSaveStatus('saving')
+
         const state = await upsertTaskFn({
           data: {
             groupId,
-            description: draftDescription,
+            description: nextDescription,
           },
         })
 
         if (state?.success) {
+          savedDescriptionRef.current = nextDescription
           toast.success(state.message)
-          setEditing(false)
-          await router.invalidate()
+          void router.invalidate()
         }
-        else if (state?.message !== undefined) {
-          toast.error(state.message)
-          setErrorMessage(state.message)
+        else {
+          const message = state?.message ?? 'Failed to update task'
+          setCurrentDescription(savedDescriptionRef.current)
+          setDraftDescription(savedDescriptionRef.current ?? '')
+          setErrorMessage(message)
+          setSaveStatus('error')
+          toast.error(message)
+          return
+        }
+
+        if (queuedDescriptionRef.current === undefined) {
+          setSaveStatus('idle')
         }
       }
-      catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to update task'
-        toast.error(message)
-        setErrorMessage(message)
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update task'
+      setCurrentDescription(savedDescriptionRef.current)
+      setDraftDescription(savedDescriptionRef.current ?? '')
+      setErrorMessage(message)
+      setSaveStatus('error')
+      toast.error(message)
+    }
+    finally {
+      inFlightRef.current = false
+      if (queuedDescriptionRef.current !== undefined) {
+        void flushQueuedDescription()
       }
-    })
+    }
   }
 
-  return editing || isPending
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setErrorMessage(null)
+    const nextDescription = draftDescription.trim()
+
+    queuedDescriptionRef.current = nextDescription
+    setDraftDescription(nextDescription)
+    setCurrentDescription(nextDescription)
+    setSaveStatus('saving')
+    setEditing(false)
+    void flushQueuedDescription()
+  }
+
+  return editing
     ? (
         <form onSubmit={handleSubmit} className="space-y-3 sm:px-2" aria-label="Task Editor">
           <Textarea
@@ -74,7 +126,6 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
             <Button
               type="button"
               variant="ghost"
-              disabled={isPending}
               onClick={() => {
                 setDraftDescription(currentDescription ?? '')
                 setErrorMessage(null)
@@ -86,14 +137,8 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
             <p aria-live="polite" className="sr-only" role="status">
               {errorMessage ?? ''}
             </p>
-            <Button type="submit" disabled={isPending}>
-              {
-                isPending
-                  ? <Spinner text="Submitting..." />
-                  : isJoined
-                    ? 'Update'
-                    : 'Join the Pool'
-              }
+            <Button type="submit">
+              {isJoined ? 'Update' : 'Join the Pool'}
             </Button>
           </div>
         </form>
@@ -104,6 +149,14 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
             description={currentDescription
               ?? 'No task submitted yet. Submit a task to join the pool!'}
           />
+          {isSaving && (
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              <Spinner text="Saving..." />
+            </p>
+          )}
+          {saveStatus === 'error' && errorMessage !== null && (
+            <p className="text-sm text-red-500" aria-live="polite">{errorMessage}</p>
+          )}
           <Button
             variant="ghost"
             size="sm"
