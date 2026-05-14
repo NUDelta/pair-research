@@ -125,7 +125,7 @@ describe('groups realtime hooks', () => {
         useCurrentUserTaskDescription('group-1', 'user-1', description),
       {
         initialProps: {
-          description: 'Working draft' as string | null,
+          description: 'Working draft',
         },
       },
     )

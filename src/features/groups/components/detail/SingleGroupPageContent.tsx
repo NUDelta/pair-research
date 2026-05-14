@@ -78,7 +78,6 @@ export default function SingleGroupPageContent({
     const nextActivePairingId = groupInfo.activePairingId ?? null
 
     if (shouldCelebratePairingActivation(previousActivePairingId, nextActivePairingId)) {
-      // eslint-disable-next-line react/set-state-in-effect
       setShowPairingConfetti(true)
     }
 

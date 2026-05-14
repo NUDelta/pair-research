@@ -1,0 +1,12 @@
+shellEmulator: true
+
+trustPolicy: no-downgrade
+
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  sharp: true
+  workerd: true
+overrides:
+  zod: ^3.25.76

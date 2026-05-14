@@ -32,7 +32,7 @@ class ResizeObserverMock {
 }
 
 if (globalThis.ResizeObserver === undefined) {
-  globalThis.ResizeObserver = ResizeObserverMock as typeof ResizeObserver
+  globalThis.ResizeObserver = ResizeObserverMock
 }
 
 vi.mock('@tanstack/react-start', async (importOriginal) => {

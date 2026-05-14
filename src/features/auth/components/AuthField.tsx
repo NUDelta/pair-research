@@ -1,9 +1,15 @@
+import type { LucideIcon } from 'lucide-react'
 import type { FieldError, UseFormRegister } from 'react-hook-form'
 import { Eye, EyeOff, Mail, User } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+
+const FIELD_ICONS: Record<string, LucideIcon | undefined> = {
+  email: Mail,
+  name: User,
+}
 
 interface AuthFieldProps {
   id: string
@@ -26,17 +32,7 @@ const AuthField = ({
 }: AuthFieldProps) => {
   const [showPassword, setShowPassword] = useState(false)
 
-  const getIcon = () => {
-    if (id === 'email') {
-      return Mail
-    }
-    if (id === 'name') {
-      return User
-    }
-    return null
-  }
-
-  const Icon = getIcon()
+  const Icon = FIELD_ICONS[id]
   const isPassword = type === 'password'
   const inputType = isPassword && showPassword ? 'text' : type
 

@@ -19,7 +19,7 @@ function buildUser(overrides: Partial<User>): User {
     updated_at: '2026-04-16T00:00:00.000Z',
     user_metadata: {},
     ...overrides,
-  } as User
+  }
 }
 
 describe('googleAvatar', () => {

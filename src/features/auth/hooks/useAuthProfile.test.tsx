@@ -91,7 +91,7 @@ function buildUser(): User {
       avatar_url: 'https://lh3.googleusercontent.com/a/abc=s96-c',
       full_name: 'Ada Lovelace',
     },
-  } as User
+  }
 }
 
 describe('useAuthProfile', () => {

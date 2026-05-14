@@ -18,7 +18,7 @@ function buildUser(userMetadata: Record<string, unknown>): User {
     role: 'authenticated',
     updated_at: '2026-04-14T00:00:00.000Z',
     user_metadata: userMetadata,
-  } as unknown as User
+  }
 }
 
 describe('getAuthProfileSnapshot', () => {

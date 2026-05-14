@@ -1,4 +1,3 @@
-import type { EmailOtpType } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
 import { createRedirectResponse, getRequestOrigin, sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
 import { buildAuthPageHref } from '@/features/auth/schemas/authSearch'
@@ -10,11 +9,11 @@ export const Route = createFileRoute('/auth/confirm')({
       GET: async ({ request }) => {
         const { searchParams } = new URL(request.url)
         const token_hash = searchParams.get('token_hash')
-        const type = searchParams.get('type') as EmailOtpType | null
+        const type = searchParams.get('type')
         const next = sanitizeRedirectPath(searchParams.get('next'), '/groups')
         const targetOrigin = getRequestOrigin(request)
 
-        if (token_hash !== null && type) {
+        if (token_hash !== null && type !== null) {
           const supabase = await createClient()
           const { data, error } = await supabase.auth.verifyOtp({
             type,
