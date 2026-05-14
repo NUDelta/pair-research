@@ -51,7 +51,6 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('@/shared/ui', () => ({
   DoubleConfirmDialog: mockedDoubleConfirmDialog,
-  Spinner: ({ text }: { text?: string }) => <span>{text}</span>,
 }))
 
 vi.mock('sonner', () => ({
@@ -107,19 +106,14 @@ describe('groups detail controls', () => {
     expect(screen.getByRole('button', { name: 'Reset Pool' })).toBeEnabled()
   })
 
-  it('autosaves rating changes immediately and queues rapid updates for the same task', async () => {
+  it('autosaves rating changes immediately and locks rating buttons while saving', async () => {
     const user = userEvent.setup()
     let resolveFirst: ((value: ActionResponse) => void) | undefined
-    let resolveSecond: ((value: ActionResponse) => void) | undefined
 
     serverFnMock
       .mockImplementationOnce(async () =>
         new Promise<ActionResponse>((resolve) => {
           resolveFirst = resolve
-        }))
-      .mockImplementationOnce(async () =>
-        new Promise<ActionResponse>((resolve) => {
-          resolveSecond = resolve
         }))
 
     render(
@@ -174,7 +168,9 @@ describe('groups detail controls', () => {
         updates: [{ taskId: 'task-1', capacity: 3 }],
       },
     })
-    expect(screen.getByText('Saving rating...')).toBeInTheDocument()
+    expect(screen.queryByText('Saving rating...')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Rate 3' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Rate 5' })).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Rate 5' }))
 
@@ -185,41 +181,23 @@ describe('groups detail controls', () => {
     })
 
     await waitFor(() => {
-      expect(serverFnMock).toHaveBeenCalledTimes(2)
+      expect(screen.getByRole('button', { name: 'Rate 5' })).toBeEnabled()
     })
-    expect(serverFnMock).toHaveBeenNthCalledWith(2, {
-      data: {
-        groupId: 'group-1',
-        updates: [{ taskId: 'task-1', capacity: 5 }],
-      },
-    })
-
-    await act(async () => {
-      resolveSecond?.({ success: true, message: 'saved' })
-    })
-
-    await waitFor(() => {
-      expect(screen.queryByText('Saving rating...')).not.toBeInTheDocument()
-    })
-    expect(screen.getByRole('button', { name: 'Rate 5' })).toHaveAttribute('aria-pressed', 'true')
+    expect(serverFnMock).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Rate 3' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.queryByText('Needs your rating')).not.toBeInTheDocument()
     expect(screen.getByText('How much can you help with each of these tasks?')).toBeInTheDocument()
     expect(screen.getByText('(1: not at all, 5: totally)')).toBeInTheDocument()
   })
 
-  it('optimistically updates task text and queues rapid edits', async () => {
+  it('optimistically updates task text and locks editing while saving', async () => {
     const user = userEvent.setup()
     let resolveFirst: ((value: ActionResponse) => void) | undefined
-    let resolveSecond: ((value: ActionResponse) => void) | undefined
 
     serverFnMock
       .mockImplementationOnce(async () =>
         new Promise<ActionResponse>((resolve) => {
           resolveFirst = resolve
-        }))
-      .mockImplementationOnce(async () =>
-        new Promise<ActionResponse>((resolve) => {
-          resolveSecond = resolve
         }))
 
     render(
@@ -236,8 +214,8 @@ describe('groups detail controls', () => {
     await user.click(screen.getByRole('button', { name: 'Update' }))
 
     expect(screen.getByText('Updated task')).toBeInTheDocument()
-    expect(screen.getByText('Saving...')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Edit Task' })).toBeEnabled()
+    expect(screen.queryByText('Saving...')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit Task' })).toBeDisabled()
     expect(serverFnMock).toHaveBeenCalledTimes(1)
     expect(serverFnMock).toHaveBeenNthCalledWith(1, {
       data: {
@@ -246,36 +224,48 @@ describe('groups detail controls', () => {
       },
     })
 
-    await user.click(screen.getByRole('button', { name: 'Edit Task' }))
-    await user.clear(screen.getByRole('textbox', { name: 'Edit your task' }))
-    await user.type(screen.getByRole('textbox', { name: 'Edit your task' }), 'Queued task')
-    await user.click(screen.getByRole('button', { name: 'Update' }))
+    await act(async () => {
+      resolveFirst?.({ success: true, message: 'saved' })
+    })
 
-    expect(screen.getByText('Queued task')).toBeInTheDocument()
-    expect(serverFnMock).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Edit Task' })).toBeEnabled()
+    })
+    expect(screen.getByText('Updated task')).toBeInTheDocument()
+  })
+
+  it('optimistically shows a new pool task without a saving indicator', async () => {
+    const user = userEvent.setup()
+    let resolveFirst: ((value: ActionResponse) => void) | undefined
+
+    serverFnMock.mockImplementationOnce(async () =>
+      new Promise<ActionResponse>((resolve) => {
+        resolveFirst = resolve
+      }))
+
+    render(
+      <TaskEditor
+        currentUserId="user-1"
+        groupId="group-1"
+        initialDescription={null}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Edit Task' }))
+    await user.type(screen.getByRole('textbox', { name: 'Edit your task' }), 'Join pool task')
+    await user.click(screen.getByRole('button', { name: 'Join the Pool' }))
+
+    expect(screen.getByText('Join pool task')).toBeInTheDocument()
+    expect(screen.queryByText('Saving...')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit Task' })).toBeDisabled()
 
     await act(async () => {
       resolveFirst?.({ success: true, message: 'saved' })
     })
 
     await waitFor(() => {
-      expect(serverFnMock).toHaveBeenCalledTimes(2)
+      expect(screen.getByRole('button', { name: 'Edit Task' })).toBeEnabled()
     })
-    expect(serverFnMock).toHaveBeenNthCalledWith(2, {
-      data: {
-        groupId: 'group-1',
-        description: 'Queued task',
-      },
-    })
-
-    await act(async () => {
-      resolveSecond?.({ success: true, message: 'saved' })
-    })
-
-    await waitFor(() => {
-      expect(screen.queryByText('Saving...')).not.toBeInTheDocument()
-    })
-    expect(screen.getByText('Queued task')).toBeInTheDocument()
   })
 
   it('hides rating controls for users who are not currently in the pool', () => {

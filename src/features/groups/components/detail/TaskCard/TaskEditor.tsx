@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useCurrentUserTaskDescription } from '@/features/groups/hooks/useCurrentUserTaskDescription'
 import { upsertTask } from '@/features/groups/server/tasks'
-import { Spinner } from '@/shared/ui'
 import { Button } from '@/shared/ui/button'
 import { Textarea } from '@/shared/ui/textarea'
 import TaskDescription from './TaskDescription'
@@ -24,7 +23,6 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
   const [draftDescription, setDraftDescription] = useState(currentDescription ?? '')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'error'>('idle')
   const inFlightRef = useRef(false)
-  const queuedDescriptionRef = useRef<string | undefined>(undefined)
   const savedDescriptionRef = useRef<string | null>(currentDescription ?? null)
   const upsertTaskFn = useServerFn(upsertTask)
   const router = useRouter()
@@ -32,7 +30,7 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
   const isJoined = currentDescription !== null && currentDescription.trim() !== ''
 
   useEffect(() => {
-    if (!inFlightRef.current && queuedDescriptionRef.current === undefined) {
+    if (!inFlightRef.current) {
       savedDescriptionRef.current = currentDescription ?? null
 
       if (!editing) {
@@ -41,7 +39,7 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
     }
   }, [currentDescription, editing])
 
-  const flushQueuedDescription = async () => {
+  const saveDescription = async (nextDescription: string) => {
     if (inFlightRef.current) {
       return
     }
@@ -49,36 +47,28 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
     inFlightRef.current = true
 
     try {
-      while (queuedDescriptionRef.current !== undefined) {
-        const nextDescription = queuedDescriptionRef.current
-        queuedDescriptionRef.current = undefined
-        setSaveStatus('saving')
+      setSaveStatus('saving')
 
-        const state = await upsertTaskFn({
-          data: {
-            groupId,
-            description: nextDescription,
-          },
-        })
+      const state = await upsertTaskFn({
+        data: {
+          groupId,
+          description: nextDescription,
+        },
+      })
 
-        if (state?.success) {
-          savedDescriptionRef.current = nextDescription
-          toast.success(state.message)
-          void router.invalidate()
-        }
-        else {
-          const message = state?.message ?? 'Failed to update task'
-          setCurrentDescription(savedDescriptionRef.current)
-          setDraftDescription(savedDescriptionRef.current ?? '')
-          setErrorMessage(message)
-          setSaveStatus('error')
-          toast.error(message)
-          return
-        }
-
-        if (queuedDescriptionRef.current === undefined) {
-          setSaveStatus('idle')
-        }
+      if (state?.success) {
+        savedDescriptionRef.current = nextDescription
+        setSaveStatus('idle')
+        toast.success(state.message)
+        void router.invalidate()
+      }
+      else {
+        const message = state?.message ?? 'Failed to update task'
+        setCurrentDescription(savedDescriptionRef.current)
+        setDraftDescription(savedDescriptionRef.current ?? '')
+        setErrorMessage(message)
+        setSaveStatus('error')
+        toast.error(message)
       }
     }
     catch (error) {
@@ -91,23 +81,23 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
     }
     finally {
       inFlightRef.current = false
-      if (queuedDescriptionRef.current !== undefined) {
-        void flushQueuedDescription()
-      }
     }
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (inFlightRef.current) {
+      return
+    }
+
     setErrorMessage(null)
     const nextDescription = draftDescription.trim()
 
-    queuedDescriptionRef.current = nextDescription
     setDraftDescription(nextDescription)
     setCurrentDescription(nextDescription)
     setSaveStatus('saving')
     setEditing(false)
-    void flushQueuedDescription()
+    void saveDescription(nextDescription)
   }
 
   return editing
@@ -149,11 +139,6 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
             description={currentDescription
               ?? 'No task submitted yet. Submit a task to join the pool!'}
           />
-          {isSaving && (
-            <p className="text-sm text-muted-foreground" aria-live="polite">
-              <Spinner text="Saving..." />
-            </p>
-          )}
           {saveStatus === 'error' && errorMessage !== null && (
             <p className="text-sm text-red-500" aria-live="polite">{errorMessage}</p>
           )}
@@ -166,6 +151,7 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
               setEditing(true)
             }}
             aria-label="Edit Task"
+            disabled={isSaving}
           >
             <SquarePen className="h-4 w-4" />
             {isJoined ? 'Edit' : 'Add Task'}

@@ -146,7 +146,7 @@ const OthersTasksForm = ({
   }
 
   const handleRateChange = (taskId: string, capacity: number) => {
-    if (!canRate) {
+    if (!canRate || inFlightTaskIdsRef.current.has(taskId)) {
       return
     }
 
