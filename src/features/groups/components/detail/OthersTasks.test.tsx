@@ -210,7 +210,9 @@ describe('others tasks empty states', () => {
 
     expect(screen.getByText('No pair this round')).toBeInTheDocument()
     expect(screen.getByText('You were not paired this round. Wait for an admin to reset the pool from the header before the next round begins.')).toBeInTheDocument()
-    expect(screen.queryByText('Pairs this round')).not.toBeInTheDocument()
+    expect(screen.getByText('Pairs this round')).toBeInTheDocument()
+    expect(screen.getByText('Grace Hopper')).toBeInTheDocument()
+    expect(screen.getByText('Barbara Liskov')).toBeInTheDocument()
   })
 
   it('does not show leftover unpaired tasks under others during an active round', () => {
