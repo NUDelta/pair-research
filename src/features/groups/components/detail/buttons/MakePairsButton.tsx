@@ -41,6 +41,10 @@ const MakePairsButton = ({ groupId, eligibleTaskCount, onPairingCreated }: Props
         toast.error(response.message)
       }
     }
+    catch (error) {
+      console.error(error)
+      toast.error('Failed to make pairs. Please try again.')
+    }
     finally {
       setIsPending(false)
     }

@@ -147,6 +147,23 @@ describe('groups detail controls', () => {
     expect(mockedToast.success).toHaveBeenCalledWith('Pairs created successfully')
   })
 
+  it('shows an error toast when pair creation throws', async () => {
+    const user = userEvent.setup()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    serverFnMock.mockRejectedValue(new Error('Network down'))
+
+    render(<MakePairsButton groupId="group-1" eligibleTaskCount={3} />)
+
+    await user.click(screen.getByRole('button', { name: 'Confirm Dialog' }))
+
+    await waitFor(() => {
+      expect(mockedToast.error).toHaveBeenCalledWith('Failed to make pairs. Please try again.')
+    })
+    expect(invalidate).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
   it('keeps reset pool available for admins via confirmation dialog', () => {
     render(<ResetPoolButton groupId="group-1" />)
 

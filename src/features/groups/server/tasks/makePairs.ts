@@ -21,6 +21,7 @@ const makePairsInputSchema = z.object({
   groupId: z.string(),
 })
 const ACTIVE_PAIRING_EXISTS_MESSAGE = 'This group already has an active pairing. Reset the pool before making new pairs.'
+const POOL_CHANGED_MESSAGE = 'The pool changed before pairs could be created. Please review the current pool and try again.'
 
 export const makePairs = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(makePairsInputSchema, data))
@@ -167,6 +168,38 @@ export const makePairs = createServerFn({ method: 'POST' })
           },
         })
 
+        const activatedGroup = await tx.group.updateMany({
+          where: {
+            id: groupId,
+            active_pairing_id: null,
+          },
+          data: { active_pairing_id: nextPairing.id },
+        })
+
+        if (activatedGroup.count === 0) {
+          throw new Error(ACTIVE_PAIRING_EXISTS_MESSAGE)
+        }
+
+        const pairedTasks = await tx.task.updateMany({
+          where: {
+            group_id: groupId,
+            id: {
+              in: pairedTaskIds,
+            },
+            pairing_id: null,
+            delete_pending: {
+              not: true,
+            },
+          },
+          data: {
+            pairing_id: nextPairing.id,
+          },
+        })
+
+        if (pairedTasks.count !== pairedTaskIds.length) {
+          throw new Error(POOL_CHANGED_MESSAGE)
+        }
+
         await tx.pair.createMany({
           data: pairs.map(pair => ({
             pairing_id: nextPairing.id,
@@ -192,29 +225,6 @@ export const makePairs = createServerFn({ method: 'POST' })
           ]),
         })
 
-        await tx.task.updateMany({
-          where: {
-            id: {
-              in: pairedTaskIds,
-            },
-          },
-          data: {
-            pairing_id: nextPairing.id,
-          },
-        })
-
-        const activatedGroup = await tx.group.updateMany({
-          where: {
-            id: groupId,
-            active_pairing_id: null,
-          },
-          data: { active_pairing_id: nextPairing.id },
-        })
-
-        if (activatedGroup.count === 0) {
-          throw new Error(ACTIVE_PAIRING_EXISTS_MESSAGE)
-        }
-
         return nextPairing
       })
 
@@ -234,6 +244,10 @@ export const makePairs = createServerFn({ method: 'POST' })
     catch (error) {
       if (error instanceof Error && error.message === ACTIVE_PAIRING_EXISTS_MESSAGE) {
         return { success: false, message: ACTIVE_PAIRING_EXISTS_MESSAGE }
+      }
+
+      if (error instanceof Error && error.message === POOL_CHANGED_MESSAGE) {
+        return { success: false, message: POOL_CHANGED_MESSAGE }
       }
 
       console.error(error)
