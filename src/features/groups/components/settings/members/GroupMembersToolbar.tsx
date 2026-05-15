@@ -91,17 +91,17 @@ export default function GroupMembersToolbar({
                 pendingText="Removing selected..."
                 onConfirm={onBulkRemove}
                 trigger={(
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start px-2"
+                  <DropdownMenuItem
                     disabled={selectedRemovableMembers.length === 0 || isBulkRemoving}
+                    onSelect={event => event.preventDefault()}
                     title={selectedRemovableMembers.length === 0
                       ? 'Select at least one removable member.'
                       : undefined}
+                    className="text-destructive focus:text-destructive"
                   >
                     <Trash2Icon data-icon="inline-start" />
                     Remove selected
-                  </Button>
+                  </DropdownMenuItem>
                 )}
               />
             </DropdownMenuGroup>

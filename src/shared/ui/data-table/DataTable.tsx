@@ -83,6 +83,7 @@ export function DataTable<TData, TValue>({
           ? <div />
           : (
               <Input
+                aria-label={filterPlaceholder}
                 value={(table.getColumn(filterColumnId)?.getFilterValue() as string | undefined) ?? ''}
                 onChange={event => table.getColumn(filterColumnId)?.setFilterValue(event.target.value)}
                 placeholder={filterPlaceholder}

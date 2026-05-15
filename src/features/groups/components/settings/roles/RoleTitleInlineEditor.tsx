@@ -78,6 +78,7 @@ export default function RoleTitleInlineEditor({
         type="button"
         className="inline-flex items-center gap-2 text-left font-medium hover:text-foreground"
         disabled={role.isOptimistic === true}
+        aria-label={`Edit role ${role.title}`}
         onClick={() => {
           setDraftTitle(role.title)
           setIsEditing(true)
@@ -93,6 +94,7 @@ export default function RoleTitleInlineEditor({
     <div className="flex min-w-55 items-center gap-2">
       <Input
         value={draftTitle}
+        aria-label={`Role title for ${role.title}`}
         aria-invalid={!validation.success}
         onChange={event => setDraftTitle(event.target.value)}
         onKeyDown={(event) => {
