@@ -144,4 +144,36 @@ describe('groupCard', () => {
       expect(mockToastError).toHaveBeenCalledWith('Network down')
     })
   })
+
+  it('keeps joined group navigation and settings as separate keyboard targets', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <GroupCard
+        href="group-1"
+        group={{
+          id: 'group-1',
+          groupName: 'Research Collective',
+          groupDescription: 'Weekly paper reviews',
+          role: 'Member',
+          isAdmin: true,
+          isPending: false,
+          joinedAt: '2026-04-10T10:00:00.000Z',
+        }}
+      />,
+    )
+
+    const groupLink = screen.getByRole('link', { name: /Research Collective/i })
+    const settingsButton = screen.getByRole('button', { name: 'Open settings for Research Collective' })
+
+    expect(groupLink).toHaveAttribute('href', '/groups/group-1')
+    expect(settingsButton.closest('a')).toBeNull()
+
+    await user.click(settingsButton)
+
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/groups/$slug/settings',
+      params: { slug: 'group-1' },
+    })
+  })
 })
