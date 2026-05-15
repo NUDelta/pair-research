@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -28,7 +28,6 @@ export const Route = createFileRoute('/_authed/groups/')({
 
 function GroupsPage() {
   const groups = Route.useLoaderData()
-  const router = useRouter()
   const acceptGroupInvitationFn = useServerFn(acceptGroupInvitation)
   const [optimisticGroups, setOptimisticGroups] = useState(groups)
   const [acceptingGroupIds, setAcceptingGroupIds] = useState<Record<string, boolean>>({})
@@ -76,7 +75,6 @@ function GroupsPage() {
       },
       onSucceeded: (message) => {
         toast.success(message)
-        void router.invalidate()
       },
     })
   }
