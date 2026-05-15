@@ -350,6 +350,27 @@ describe('groups detail controls', () => {
     })
   })
 
+  it('keeps the task editor open and skips saving when the description is empty', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <TaskEditor
+        currentUserId="user-1"
+        groupId="group-1"
+        initialDescription={null}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Edit Task' }))
+    await user.type(screen.getByRole('textbox', { name: 'Edit your task' }), '   ')
+    await user.click(screen.getByRole('button', { name: 'Join the Pool' }))
+
+    expect(serverFnMock).not.toHaveBeenCalled()
+    expect(screen.getByRole('form', { name: 'Task Editor' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Edit your task' })).toHaveValue('')
+    expect(screen.getAllByText('Task description is required')).toHaveLength(2)
+  })
+
   it('hides rating controls for users who are not currently in the pool', () => {
     render(
       <OthersTasksForm

@@ -88,8 +88,12 @@ const OthersTasksForm = ({
       return
     }
 
-    const batch = Object.entries(queuedRatingsRef.current)
-      .flatMap(([taskId, capacity]) => capacity === undefined ? [] : [{ taskId, capacity }])
+    const batch: Array<{ taskId: string, capacity: number }> = []
+    for (const [taskId, capacity] of Object.entries(queuedRatingsRef.current)) {
+      if (capacity !== undefined) {
+        batch.push({ taskId, capacity })
+      }
+    }
 
     if (batch.length === 0) {
       return
@@ -108,25 +112,31 @@ const OthersTasksForm = ({
       })
 
       if (!success) {
-        setRatings(current => batch.reduce<TaskRatings>((nextRatings, { taskId }) => ({
-          ...nextRatings,
-          [taskId]: savedRatingsRef.current[taskId],
-        }), { ...current }))
-        setSaveStates(current => batch.reduce<Record<string, SaveState>>((nextStates, { taskId }) => ({
-          ...nextStates,
-          [taskId]: {
-            status: 'error',
-            message,
-          },
-        }), { ...current }))
+        setRatings((current) => {
+          const nextRatings = { ...current }
+          for (const { taskId } of batch) {
+            nextRatings[taskId] = savedRatingsRef.current[taskId]
+          }
+          return nextRatings
+        })
+        setSaveStates((current) => {
+          const nextStates = { ...current }
+          for (const { taskId } of batch) {
+            nextStates[taskId] = {
+              status: 'error',
+              message,
+            }
+          }
+          return nextStates
+        })
         toast.error(message)
         return
       }
 
-      const savedBatchRatings = batch.reduce<TaskRatings>((nextRatings, { taskId, capacity }) => ({
-        ...nextRatings,
-        [taskId]: capacity,
-      }), {})
+      const savedBatchRatings: TaskRatings = {}
+      for (const { taskId, capacity } of batch) {
+        savedBatchRatings[taskId] = capacity
+      }
 
       savedRatingsRef.current = {
         ...savedRatingsRef.current,

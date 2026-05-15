@@ -19,25 +19,26 @@ interface TaskEditorProps {
 const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorProps) => {
   const [editing, setEditing] = useState(false)
   const { currentDescription, setCurrentDescription } = useCurrentUserTaskDescription(groupId, currentUserId, initialDescription)
+  const displayDescription = currentDescription?.trim() === '' ? null : currentDescription
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [draftDescription, setDraftDescription] = useState(currentDescription ?? '')
+  const [draftDescription, setDraftDescription] = useState(displayDescription ?? '')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'error'>('idle')
   const inFlightRef = useRef(false)
-  const savedDescriptionRef = useRef<string | null>(currentDescription ?? null)
+  const savedDescriptionRef = useRef<string | null>(displayDescription)
   const upsertTaskFn = useServerFn(upsertTask)
   const router = useRouter()
   const isSaving = saveStatus === 'saving'
-  const isJoined = currentDescription !== null && currentDescription.trim() !== ''
+  const isJoined = displayDescription !== null
 
   useEffect(() => {
     if (!inFlightRef.current) {
-      savedDescriptionRef.current = currentDescription ?? null
+      savedDescriptionRef.current = displayDescription
 
       if (!editing) {
-        setDraftDescription(currentDescription ?? '')
+        setDraftDescription(displayDescription ?? '')
       }
     }
-  }, [currentDescription, editing])
+  }, [displayDescription, editing])
 
   const saveDescription = async (nextDescription: string) => {
     if (inFlightRef.current) {
@@ -93,6 +94,13 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
     setErrorMessage(null)
     const nextDescription = draftDescription.trim()
 
+    if (nextDescription === '') {
+      setDraftDescription('')
+      setErrorMessage('Task description is required')
+      setSaveStatus('error')
+      return
+    }
+
     setDraftDescription(nextDescription)
     setCurrentDescription(nextDescription)
     setSaveStatus('saving')
@@ -106,7 +114,7 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
           <Textarea
             value={draftDescription}
             onChange={event => setDraftDescription(event.target.value)}
-            placeholder={currentDescription ?? 'Describe what you need help with...'}
+            placeholder={displayDescription ?? 'Describe what you need help with...'}
             aria-label="Edit your task"
           />
           {errorMessage !== null && (
@@ -117,7 +125,7 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
               type="button"
               variant="ghost"
               onClick={() => {
-                setDraftDescription(currentDescription ?? '')
+                setDraftDescription(displayDescription ?? '')
                 setErrorMessage(null)
                 setEditing(false)
               }}
@@ -136,7 +144,7 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
     : (
         <div className="flex justify-between items-center">
           <TaskDescription
-            description={currentDescription
+            description={displayDescription
               ?? 'No task submitted yet. Submit a task to join the pool!'}
           />
           {saveStatus === 'error' && errorMessage !== null && (
@@ -146,7 +154,7 @@ const TaskEditor = ({ groupId, currentUserId, initialDescription }: TaskEditorPr
             variant="ghost"
             size="sm"
             onClick={() => {
-              setDraftDescription(currentDescription ?? '')
+              setDraftDescription(displayDescription ?? '')
               setErrorMessage(null)
               setEditing(true)
             }}
