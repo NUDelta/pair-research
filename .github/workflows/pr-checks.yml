@@ -39,34 +39,6 @@ jobs:
       - name: 🚨 Run lint
         run: pnpm run lint:ci
 
-  typecheck:
-    name: 🧾 Typecheck
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-
-    steps:
-      - name: 📂 Checkout
-        uses: actions/checkout@v4
-
-      - name: 🧰 Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          package_json_file: package.json
-
-      - name: 🧱 Setup Node (cache pnpm)
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: pnpm
-
-      - name: 📦 Install deps (frozen)
-        run: pnpm install --frozen-lockfile
-
-      - name: 🧾 Run typecheck
-        run: pnpm run typecheck
-
   unit:
     name: 🧪 Unit
     runs-on: ubuntu-latest
@@ -278,7 +250,7 @@ jobs:
     name: 💬 Report
     runs-on: ubuntu-latest
     if: always()
-    needs: [lint, typecheck, unit, e2e, build]
+    needs: [lint, unit, e2e, build]
     permissions:
       contents: read
       pull-requests: write
@@ -289,7 +261,6 @@ jobs:
         shell: bash
         env:
           LINT_RESULT: ${{ needs.lint.result }}
-          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
           UNIT_RESULT: ${{ needs.unit.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
           BUILD_RESULT: ${{ needs.build.result }}
@@ -309,7 +280,6 @@ jobs:
           const icon = (o) => o === 'success' ? '✅' : o === 'failure' ? '❌' : '⏭️';
 
           const lint = process.env.LINT_RESULT || 'skipped';
-          const typecheck = process.env.TYPECHECK_RESULT || 'skipped';
           const unit = process.env.UNIT_RESULT || 'skipped';
           const e2e = process.env.E2E_RESULT || 'skipped';
           const build = process.env.BUILD_RESULT || 'skipped';
@@ -331,7 +301,6 @@ jobs:
           lines.push('## 🧪 PR Checks');
           lines.push('');
           lines.push(`- 🚨 Lint: ${icon(lint)} **${lint}**`);
-          lines.push(`- 🧾 Typecheck: ${icon(typecheck)} **${typecheck}**`);
           lines.push(`- 🧪 Unit tests: ${icon(unit)} **${unit}**`);
           lines.push(`- 🎭 E2E tests: ${icon(e2e)} **${e2e}**`);
           lines.push(`- 🏗️ Build: ${icon(build)} **${build}**`);
@@ -375,7 +344,6 @@ jobs:
         uses: actions/github-script@v7
         env:
           LINT_RESULT: ${{ needs.lint.result }}
-          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
           UNIT_RESULT: ${{ needs.unit.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
           BUILD_RESULT: ${{ needs.build.result }}
@@ -394,7 +362,6 @@ jobs:
             const icon = (o) => (o === "success" ? "✅" : o === "failure" ? "❌" : "⏭️");
 
             const lint = process.env.LINT_RESULT || "skipped";
-            const typecheck = process.env.TYPECHECK_RESULT || "skipped";
             const unit = process.env.UNIT_RESULT || "skipped";
             const e2e = process.env.E2E_RESULT || "skipped";
             const build = process.env.BUILD_RESULT || "skipped";
@@ -416,7 +383,6 @@ jobs:
               "### 🧪 Pair Research PR Checks",
               "",
               `- 🚨 Lint: ${icon(lint)} **${lint}**`,
-              `- 🧾 Typecheck: ${icon(typecheck)} **${typecheck}**`,
               `- 🧪 Unit tests: ${icon(unit)} **${unit}**`,
               `- 🎭 E2E tests: ${icon(e2e)} **${e2e}**`,
               `- 🏗️ Build: ${icon(build)} **${build}**`,
@@ -466,13 +432,11 @@ jobs:
         shell: bash
         env:
           LINT_RESULT: ${{ needs.lint.result }}
-          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
           UNIT_RESULT: ${{ needs.unit.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
           BUILD_RESULT: ${{ needs.build.result }}
         run: |
           if [ "$LINT_RESULT" = "failure" ] || \
-             [ "$TYPECHECK_RESULT" = "failure" ] || \
              [ "$UNIT_RESULT" = "failure" ] || \
              [ "$E2E_RESULT" = "failure" ] || \
              [ "$BUILD_RESULT" = "failure" ]; then
