@@ -106,7 +106,7 @@ describe('groups detail controls', () => {
     expect(screen.getByRole('button', { name: 'Reset Pool' })).toBeEnabled()
   })
 
-  it('autosaves rating changes immediately and locks rating buttons while saving', async () => {
+  it('autosaves rating changes and locks rating buttons while saving', async () => {
     const user = userEvent.setup()
     let resolveFirst: ((value: ActionResponse) => void) | undefined
 
@@ -161,16 +161,19 @@ describe('groups detail controls', () => {
 
     await user.click(screen.getByRole('button', { name: 'Rate 3' }))
 
-    expect(serverFnMock).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText('Saving rating...')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Rate 3' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Rate 5' })).toBeDisabled()
+
+    await waitFor(() => {
+      expect(serverFnMock).toHaveBeenCalledTimes(1)
+    })
     expect(serverFnMock).toHaveBeenNthCalledWith(1, {
       data: {
         groupId: 'group-1',
         updates: [{ taskId: 'task-1', capacity: 3 }],
       },
     })
-    expect(screen.queryByText('Saving rating...')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Rate 3' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Rate 5' })).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Rate 5' }))
 
@@ -188,6 +191,85 @@ describe('groups detail controls', () => {
     expect(screen.queryByText('Needs your rating')).not.toBeInTheDocument()
     expect(screen.getByText('How much can you help with each of these tasks?')).toBeInTheDocument()
     expect(screen.getByText('(1: not at all, 5: totally)')).toBeInTheDocument()
+  })
+
+  it('batches quick rating changes into one server function call', async () => {
+    const user = userEvent.setup()
+
+    serverFnMock.mockResolvedValue({ success: true, message: 'saved' })
+
+    render(
+      <OthersTasksForm
+        currentUserId="user-1"
+        groupId="group-1"
+        raceTasks={[
+          {
+            id: 'task-self',
+            description: 'My draft',
+            userId: 'user-1',
+            fullName: 'Me',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate One',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+          {
+            id: 'task-2',
+            description: 'Check appendix',
+            userId: 'user-3',
+            fullName: 'Teammate Two',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+        ]}
+        canRate
+        tasks={[
+          {
+            id: 'task-1',
+            description: 'Review draft intro',
+            userId: 'user-2',
+            fullName: 'Teammate One',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+          {
+            id: 'task-2',
+            description: 'Check appendix',
+            userId: 'user-3',
+            fullName: 'Teammate Two',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+          },
+        ]}
+      />,
+    )
+
+    await user.click(screen.getAllByRole('button', { name: 'Rate 3' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'Rate 4' })[1])
+
+    await waitFor(() => {
+      expect(serverFnMock).toHaveBeenCalledTimes(1)
+    })
+    expect(serverFnMock).toHaveBeenCalledWith({
+      data: {
+        groupId: 'group-1',
+        updates: [
+          { taskId: 'task-1', capacity: 3 },
+          { taskId: 'task-2', capacity: 4 },
+        ],
+      },
+    })
   })
 
   it('optimistically updates task text and locks editing while saving', async () => {
