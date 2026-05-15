@@ -20,52 +20,66 @@ export async function loadUserGroups() {
       },
     })
 
-    const result = await Promise.all(
-      memberships.map(async (membership) => {
-        const { group, group_role, is_admin, is_pending, joined_at } = membership
+    const adminGroupIds = memberships
+      .filter(membership => membership.is_admin)
+      .map(membership => membership.group.id)
 
-        const baseGroup = {
-          id: group.id,
-          groupName: group.name,
-          groupDescription: group.description,
-          role: group_role.title,
-          isAdmin: is_admin,
-          isPending: is_pending,
-          joinedAt: joined_at.toISOString(),
-        }
-
-        if (!is_admin) {
-          return baseGroup
-        }
-
-        const members = await prisma.group_member.findMany({
+    const adminGroupMembers = adminGroupIds.length > 0
+      ? await prisma.group_member.findMany({
           where: {
-            group_id: group.id,
+            group_id: {
+              in: adminGroupIds,
+            },
           },
           include: {
             profile: true,
             group_role: true,
           },
         })
+      : []
 
-        const groupMembers = members.map(m => ({
-          id: m.profile.id,
-          fullName: m.profile.full_name,
-          avatarUrl: m.profile.avatar_url,
-          email: m.profile.email,
-          role: m.group_role.title,
-          isAdmin: m.is_admin,
-          isPending: m.is_pending,
-          joinedAt: m.joined_at.toISOString(),
-        }))
+    const adminMembersByGroupId = new Map<string, typeof adminGroupMembers>()
+    for (const member of adminGroupMembers) {
+      const groupMembers = adminMembersByGroupId.get(member.group_id) ?? []
+      groupMembers.push(member)
+      adminMembersByGroupId.set(member.group_id, groupMembers)
+    }
 
-        return {
-          ...baseGroup,
-          createdAt: group.created_at.toISOString(),
-          groupMembers,
-        }
-      }),
-    )
+    const result = memberships.map((membership) => {
+      const { group, group_role, is_admin, is_pending, joined_at } = membership
+
+      const baseGroup = {
+        id: group.id,
+        groupName: group.name,
+        groupDescription: group.description,
+        role: group_role.title,
+        isAdmin: is_admin,
+        isPending: is_pending,
+        joinedAt: joined_at.toISOString(),
+      }
+
+      if (!is_admin) {
+        return baseGroup
+      }
+
+      const members = adminMembersByGroupId.get(group.id) ?? []
+      const groupMembers = members.map(m => ({
+        id: m.profile.id,
+        fullName: m.profile.full_name,
+        avatarUrl: m.profile.avatar_url,
+        email: m.profile.email,
+        role: m.group_role.title,
+        isAdmin: m.is_admin,
+        isPending: m.is_pending,
+        joinedAt: m.joined_at.toISOString(),
+      }))
+
+      return {
+        ...baseGroup,
+        createdAt: group.created_at.toISOString(),
+        groupMembers,
+      }
+    })
 
     return groupsResponseSchema.parse(result)
   }

@@ -146,7 +146,7 @@ export default function ActiveRoundPanel({
   pairSummaries = [],
 }: ActiveRoundPanelProps) {
   const orderedPairSummaries = orderPairSummaries(pairSummaries, currentUserId)
-  const canViewPairSummaries = isAdmin || currentUserHasActivePairing
+  const canViewPairSummaries = isAdmin || currentUserHasActivePairing || currentUserLeftOut
   const icon = isAdmin
     ? <RotateCcwIcon className="size-5 text-amber-600" />
     : currentUserLeftOut

@@ -22,7 +22,6 @@ const RatingControl = ({
       className={cn(
         'flex flex-col items-start rounded-md transition-colors',
         'gap-1 px-2 py-1',
-        status === 'saving' && 'bg-amber-50',
         status === 'error' && 'bg-rose-50',
       )}
     >
@@ -45,13 +44,14 @@ const RatingControl = ({
                 'h-7 w-7 text-sm',
                 isSelected ? 'bg-primary text-white hover:bg-primary' : 'bg-gray-100 hover:bg-gray-200',
                 isSaved ? 'border-primary/50' : 'border-transparent',
-                status === 'saving' && isSelected && 'bg-amber-300 text-amber-950 hover:bg-amber-300',
                 status === 'error' && isSelected && 'bg-rose-200 text-rose-950 hover:bg-rose-200',
+                status === 'saving' && 'cursor-default',
               )}
               onClick={() => onChange(n)}
               aria-label={`Rate ${n}`}
               aria-pressed={isSelected}
               data-task-id={taskId}
+              disabled={status === 'saving'}
             >
               {n}
             </button>
@@ -61,17 +61,14 @@ const RatingControl = ({
       <p
         className={cn(
           'min-h-3 text-xs',
-          status === 'saving' && 'text-amber-800',
           status === 'error' && 'text-rose-700',
-          status === 'idle' && 'text-transparent',
+          status !== 'error' && 'text-transparent',
         )}
         aria-live="polite"
       >
-        {status === 'saving'
-          ? 'Saving rating...'
-          : status === 'error'
-            ? (message ?? 'Failed to save rating.')
-            : '\u00A0'}
+        {status === 'error'
+          ? (message ?? 'Failed to save rating.')
+          : '\u00A0'}
       </p>
     </div>
   )

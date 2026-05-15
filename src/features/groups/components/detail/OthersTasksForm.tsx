@@ -12,6 +12,8 @@ interface SaveState {
   message?: string | null
 }
 
+const RATING_SAVE_BATCH_DELAY_MS = 150
+
 interface OthersTasksFormProps {
   currentUserId: string
   groupId: string
@@ -32,8 +34,18 @@ const OthersTasksForm = ({
   const [savedRatings, setSavedRatings] = useState<TaskRatings>(() => buildRatingsMap(tasks))
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({})
   const inFlightTaskIdsRef = useRef(new Set<string>())
+  const batchInFlightRef = useRef(false)
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>()
   const queuedRatingsRef = useRef<TaskRatings>({})
   const savedRatingsRef = useRef<TaskRatings>(buildRatingsMap(tasks))
+
+  useEffect(() => {
+    return () => {
+      if (flushTimerRef.current !== undefined) {
+        clearTimeout(flushTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const nextSavedRatings = buildRatingsMap(tasks)
@@ -71,82 +83,104 @@ const OthersTasksForm = ({
     })
   }, [tasks])
 
-  const flushQueuedRating = async (taskId: string) => {
-    if (inFlightTaskIdsRef.current.has(taskId)) {
+  const flushQueuedRatings = async () => {
+    if (batchInFlightRef.current) {
       return
     }
 
-    inFlightTaskIdsRef.current.add(taskId)
+    const batch: Array<{ taskId: string, capacity: number }> = []
+    for (const [taskId, capacity] of Object.entries(queuedRatingsRef.current)) {
+      if (capacity !== undefined) {
+        batch.push({ taskId, capacity })
+      }
+    }
+
+    if (batch.length === 0) {
+      return
+    }
+
+    queuedRatingsRef.current = {}
+    batchInFlightRef.current = true
+    batch.forEach(({ taskId }) => inFlightTaskIdsRef.current.add(taskId))
 
     try {
-      while (queuedRatingsRef.current[taskId] !== undefined) {
-        const nextCapacity = queuedRatingsRef.current[taskId]
-        delete queuedRatingsRef.current[taskId]
+      const { success, message } = await upsertHelpCapacitiesFn({
+        data: {
+          groupId,
+          updates: batch,
+        },
+      })
 
-        if (nextCapacity === undefined) {
-          break
-        }
-
-        setSaveStates(current => ({
-          ...current,
-          [taskId]: {
-            status: 'saving',
-          },
-        }))
-
-        const { success, message } = await upsertHelpCapacitiesFn({
-          data: {
-            groupId,
-            updates: [{ taskId, capacity: nextCapacity }],
-          },
+      if (!success) {
+        setRatings((current) => {
+          const nextRatings = { ...current }
+          for (const { taskId } of batch) {
+            nextRatings[taskId] = savedRatingsRef.current[taskId]
+          }
+          return nextRatings
         })
-
-        if (!success) {
-          setRatings(current => ({
-            ...current,
-            [taskId]: savedRatingsRef.current[taskId],
-          }))
-          setSaveStates(current => ({
-            ...current,
-            [taskId]: {
-              status: 'error',
-              message,
-            },
-          }))
-          toast.error(message)
-          return
-        }
-
-        savedRatingsRef.current = {
-          ...savedRatingsRef.current,
-          [taskId]: nextCapacity,
-        }
-        setSavedRatings(current => ({
-          ...current,
-          [taskId]: nextCapacity,
-        }))
         setSaveStates((current) => {
           const nextStates = { ...current }
+          for (const { taskId } of batch) {
+            nextStates[taskId] = {
+              status: 'error',
+              message,
+            }
+          }
+          return nextStates
+        })
+        toast.error(message)
+        return
+      }
+
+      const savedBatchRatings: TaskRatings = {}
+      for (const { taskId, capacity } of batch) {
+        savedBatchRatings[taskId] = capacity
+      }
+
+      savedRatingsRef.current = {
+        ...savedRatingsRef.current,
+        ...savedBatchRatings,
+      }
+      setSavedRatings(current => ({
+        ...current,
+        ...savedBatchRatings,
+      }))
+      setSaveStates((current) => {
+        const nextStates = { ...current }
+        for (const { taskId } of batch) {
           if (queuedRatingsRef.current[taskId] === undefined) {
             delete nextStates[taskId]
           }
           else {
             nextStates[taskId] = { status: 'saving' }
           }
-          return nextStates
-        })
-      }
+        }
+        return nextStates
+      })
     }
     finally {
-      inFlightTaskIdsRef.current.delete(taskId)
-      if (queuedRatingsRef.current[taskId] !== undefined) {
-        void flushQueuedRating(taskId)
+      batch.forEach(({ taskId }) => inFlightTaskIdsRef.current.delete(taskId))
+      batchInFlightRef.current = false
+      if (Object.keys(queuedRatingsRef.current).length > 0) {
+        void flushQueuedRatings()
       }
     }
   }
 
+  const scheduleRatingFlush = () => {
+    if (flushTimerRef.current !== undefined) {
+      clearTimeout(flushTimerRef.current)
+    }
+
+    flushTimerRef.current = setTimeout(() => {
+      flushTimerRef.current = undefined
+      void flushQueuedRatings()
+    }, RATING_SAVE_BATCH_DELAY_MS)
+  }
+
   const handleRateChange = (taskId: string, capacity: number) => {
-    if (!canRate) {
+    if (!canRate || inFlightTaskIdsRef.current.has(taskId)) {
       return
     }
 
@@ -179,7 +213,7 @@ const OthersTasksForm = ({
         status: 'saving',
       },
     }))
-    void flushQueuedRating(taskId)
+    scheduleRatingFlush()
   }
 
   return (

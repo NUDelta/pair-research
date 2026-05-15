@@ -60,7 +60,7 @@ export default function HorseRace({ currentUserId, ratings, tasks }: HorseRacePr
             )
           })}
 
-          <div className="absolute inset-y-4 right-4 flex items-center">
+          <div className="absolute inset-y-4 right-8 flex items-center" data-testid="finish-line">
             <div className="h-full w-1 rounded-full bg-foreground/80" />
           </div>
 
