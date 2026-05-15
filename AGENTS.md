@@ -2,74 +2,70 @@
 
 Use this file as the working contract for future Codex runs in this repository. Inspect first, then change. Prefer small, coherent edits that match the existing TanStack Start structure instead of broad cleanup passes.
 
+## Related Docs
+
+- [`README.md`](./README.md): project overview, product behavior, tech stack, routes, and quick development entry point.
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md): stable app structure, routing and feature organization, runtime boundaries, and data flow.
+- [`DEVELOPMENT.md`](./DEVELOPMENT.md): local setup, VS Code extensions, environment variables, Wrangler login, testing commands, preview, and deployment.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md): code organization, UI/hooks/logic/server separation, file size guidelines, comments, TSDoc, and testing expectations.
+
+Agents should follow `CONTRIBUTING.md` unless the user explicitly asks for a different structure.
+
 ## Repo Overview
 
-- This is a TanStack Start + Vite application, not a Next.js app. Some older docs and GitHub templates still mention `src/app` or Next.js; treat those as stale.
-- Runtime and tooling:
-  - React 19 + TypeScript
-  - Vite + `@tanstack/react-start`
-  - Tailwind CSS v4 with shadcn/ui-based components in `src/shared/ui`
-  - Prisma with generated client output in `prisma/generated/client`
-  - Supabase for auth, realtime, and storage
-  - Vitest + Testing Library for unit/component tests
-  - Playwright for smoke e2e
-- Package manager: `pnpm`
+- This is a TanStack Start + Vite application, not a Next.js app. Treat older references to `src/app` or Next.js as stale unless the task specifically asks about legacy docs.
+- The app uses React 19, TypeScript, Tailwind CSS v4, shadcn/ui-style components, Prisma, Supabase, Cloudflare Workers, Cloudflare R2, Vitest, Testing Library, and Playwright.
+- Package manager: `pnpm`.
 
 ## Source Layout
 
-- `src/routes`: file-based TanStack Router routes. `/_authed` gates authenticated pages. Keep route files focused on routing, loaders, and page composition.
+- `src/routes`: file-based TanStack Router routes. `/_authed` gates authenticated pages. Keep route files focused on routing, loaders, redirects, and page composition.
 - `src/features`: domain code by feature.
-  - `auth`: login/signup flows, redirect helpers, current-user lookups
-  - `account`: profile editing and avatar upload flow
-  - `groups`: the main product surface; includes create/detail UI, pairing logic, realtime hooks, schemas, and server mutations
-  - `home`: marketing/homepage UI
+  - `auth`: login/signup flows, redirect helpers, and current-user lookups.
+  - `account`: profile editing and avatar upload flow.
+  - `groups`: main product surface, including create/detail UI, pairing logic, realtime hooks, schemas, and server mutations.
+  - `home`: public homepage UI.
 - `src/shared`: cross-feature code only.
-  - `config`: env/constants
-  - `supabase`: browser/server/service-role clients
-  - `lib`: generic helpers and Prisma client
-  - `ui`: shadcn/ui-based components
-  - `components`: layout/branding components
-- `tests/setup`: Vitest test setup
-- `e2e`: Playwright smoke coverage
-- `prisma/schema.prisma`: canonical Prisma schema
-- `src/routeTree.gen.ts` and `prisma/generated/client/**`: generated files; do not hand-edit unless the task is explicitly about generated output
+  - `config`: environment constants and app configuration.
+  - `supabase`: browser, server, and service-role Supabase clients.
+  - `lib`: generic helpers and Prisma client.
+  - `ui`: shadcn/ui-style primitives.
+  - `components`: layout and branding components.
+- `tests/setup`: Vitest test setup.
+- `e2e`: Playwright coverage.
+- `prisma/schema.prisma`: canonical Prisma schema.
+- `src/routeTree.gen.ts`, `cloudflare-env.d.ts`, and `prisma/generated/client/**`: generated files. Do not hand-edit them unless the task is explicitly about generated output.
 
 ## Architecture Expectations
 
-- Prefer feature-local code over expanding `src/shared`. If logic is only used by `groups`, keep it under `src/features/groups`.
-- Keep UI and domain logic separated:
-  - route files compose pages and loaders
-  - `createServerFn` modules own server-side reads/writes
-  - client components call server functions through `useServerFn`
-  - schemas and parsing helpers stay close to the feature that owns them
+- Keep UI, hooks, pure logic, schemas, and server code separated according to `CONTRIBUTING.md`.
+- Prefer feature-local code over expanding `src/shared`. If logic is only used by one feature, keep it in that feature.
+- Keep route files focused on routing, loaders, redirects, and page composition.
+- Keep client components focused on UI and interaction. Move complex state coordination into hooks and pure logic into `lib` files.
+- Keep server functions responsible for database access, privileged operations, and validation before writes.
 - Preserve existing alias usage (`@/...`) and current naming style.
 - Remove dead imports or clearly obsolete code when already in scope, but do not turn a focused fix into a repo-wide cleanup.
 
 ## Server, Client, and Secrets
 
 - Be strict about Supabase boundaries:
-  - `src/shared/supabase/client.ts` is browser-only and uses `VITE_*` publishable env
-  - `src/shared/supabase/server.ts` is for request-scoped server auth/session work
-  - `src/shared/supabase/serviceRole.ts` is server-only and only for admin flows such as user creation/invites
-- Never leak `SUPABASE_SECRET_KEY`, `DATABASE_URL`, or raw `process.env` access into client code.
-- Favor optimistic, local-first interaction design by default; do not block user-visible updates on server or database round trips unless correctness strictly requires it.
+  - `src/shared/supabase/client.ts` is browser-only and uses `VITE_*` publishable environment variables.
+  - `src/shared/supabase/server.ts` is for request-scoped server auth/session work.
+  - `src/shared/supabase/serviceRole.ts` is server-only and only for admin flows such as user creation or invites.
+- Never leak `SUPABASE_SECRET_KEY`, `DATABASE_URL`, Prisma clients, service-role Supabase clients, or raw server environment access into client-rendered code.
 - `src/shared/lib/prismaClient.ts` is server-only. Do not import Prisma directly into client-rendered modules.
 - Auth redirect behavior is intentional. Preserve the sanitized `next` redirect flow when touching auth or protected routes.
 
 ## Groups Feature Guidance
 
 - `src/features/groups` is the highest-risk area in this repo.
-- The detail page combines:
-  - route loader data from server functions
-  - local optimistic-ish UI state
-  - Supabase realtime subscriptions
-  - router invalidation to reconcile back to server truth
+- The group detail page combines route loader data, local optimistic UI state, Supabase realtime subscriptions, and router invalidation back to server truth.
 - When changing group detail behavior, preserve the current pattern:
-  - loader provides authoritative initial data
+  - loaders provide authoritative initial data
   - realtime hooks patch local state for responsiveness
-  - router invalidation refreshes on pairing or other server-truth transitions
-- Be careful with task lifecycle fields such as `pairing_id` and `delete_pending`; they drive both UI state and realtime behavior.
-- Pairing logic in `src/features/groups/lib/pairing.ts` and related server mutations should be changed with tests. Small algorithm tweaks can have large product effects.
+  - router invalidation reconciles pairing and other server-truth transitions
+- Be careful with task lifecycle fields such as `pairing_id` and `delete_pending`; they affect both UI state and realtime behavior.
+- Pairing logic in `src/features/groups/lib/pairing` and related server mutations should be changed with tests. Small algorithm tweaks can have large product effects.
 
 ## Database and Schema Safety
 
@@ -78,31 +74,16 @@ Use this file as the working contract for future Codex runs in this repository. 
 - If you change `prisma/schema.prisma`, regenerate the client with `pnpm run prisma:generate`.
 - Treat schema changes as high-risk:
   - keep them tightly scoped
-  - avoid casual reshaping of Supabase-managed/auth-backed tables
+  - avoid casual reshaping of Supabase-managed or auth-backed tables
   - check related server functions and selectors for drift
 
-## Validation Commands
+## Validation and Testing
 
-- Relevant day-to-day commands:
-  - `pnpm run lint`
-  - `pnpm run test:unit`
-  - `pnpm run test:e2e`
-  - `pnpm run build`
-- Husky already enforces:
-  - pre-commit: `npx nano-staged`
-  - pre-push: `pnpm run lint:fix`, `pnpm run test`, `pnpm build`
-- Repository-level expectation: after modifying JS/TS files, run `pnpm test` when tests are available. If e2e is blocked by the known smoke issue below, still run the relevant unit tests and note the e2e result explicitly.
-
-## Testing Expectations
-
-- Prefer focused Vitest coverage near the code you touched. This repo already keeps many tests adjacent to feature files.
-- Add or update tests when you change:
-  - pairing logic
-  - realtime hooks
-  - input validation/parsing
-  - route-level behavior with auth or redirects
-- For UI-only copy/layout tweaks, tests are optional unless behavior or accessibility changes.
-- Known caveat: `pnpm run test:e2e` currently has at least one unrelated smoke-test failure in `e2e/anonymous/smoke.spec.ts` around the homepage `Sign in` assertion. Do not assume unrelated feature work caused that failure unless you changed the landing page or auth surface.
+- Follow the command guidance in `DEVELOPMENT.md`.
+- Run the most relevant validation for the files changed. For JS/TS behavior changes, run tests when available.
+- Add or update tests when changing pairing logic, realtime hooks, auth/redirect behavior, server mutations, validation schemas, or reusable logic.
+- For UI-only copy/layout tweaks, tests are optional unless behavior, accessibility, or user flow changes.
+- If a validation command fails, report the command, the failure, and whether it appears related to the current change. Do not hide unrelated failures.
 
 ## Change Scope Rules
 
@@ -110,7 +91,9 @@ Use this file as the working contract for future Codex runs in this repository. 
 - Keep changes tightly scoped to the feature or bug being addressed.
 - Avoid broad refactors unless explicitly requested.
 - Preserve current behavior unless the task is a bug fix or behavior change.
+- Update related documentation when a change affects stable architecture, setup, workflow, or user-facing behavior.
 - If a helper is only useful in one feature, keep it there instead of promoting it to `shared`.
+- Avoid mixing unrelated UI cleanup, schema changes, and feature logic changes in one change unless they are inseparable.
 
 ## Commits and Branches
 
@@ -121,20 +104,14 @@ Use this file as the working contract for future Codex runs in this repository. 
   - `refactor(groups): ...`
   - `test(groups): ...`
   - `chore(groups): ...`
-- Do not mix unrelated UI cleanup, schema changes, and feature logic changes in a single commit unless they are inseparable.
-
 - When work naturally separates, use multiple commits instead of one large catch-all commit.
-- Each commit message should make sense on its own, and commit bodies should use short bullet points for the important changes.
-
-- Do not assume `main` is always the correct base branch.
-- Use the branch requested in the task or the current active integration branch.
-- This repo may use long-lived refactor branches such as `refactor/react` as the active base for ongoing work.
-
+- Do not assume `main` is always the correct base branch. Use the branch requested in the task or the current active integration branch.
 - For local integration work, prefer a normal merge over rebasing or rewriting history unless there is a concrete reason not to.
-- When renaming or merging branches, report exactly what was renamed, what was merged, and the resulting local branch state.
 
-- Before presenting work as ready, state clearly:
-  - what commits were created
-  - what branch the work is on
-  - what validation passed
-  - whether any known unrelated failures remain
+Before presenting work as ready, state clearly:
+
+- what branch the work is on
+- what commits were created, if any
+- what validation passed
+- what validation was not run and why
+- whether any known or unrelated failures remain

@@ -8,7 +8,7 @@
     "dev": "vite dev",
     "dev:e2e": "PAIR_RESEARCH_DISABLE_REMOTE_BINDINGS=1 vite dev --host 127.0.0.1 --strictPort",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --port 4000",
     "deploy": "pnpm run build && wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings ./cloudflare-env.d.ts",
     "lint": "eslint .",

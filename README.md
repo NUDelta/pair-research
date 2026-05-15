@@ -16,7 +16,7 @@
 - TanStack Start + Vite
 - React 19 + TypeScript
 - Tailwind CSS v4 + shadcn/ui
-- Prisma for app data (orm)
+- Prisma for app data
 - Supabase for auth and realtime
 - Cloudflare Workers for deployment
 - Cloudflare R2 for avatar storage
@@ -59,26 +59,15 @@ Each member adds a task for the current round and rates how much they can help o
 
 The pairing code lives under `src/features/groups/lib/pairing`. It tries a stable-roommates pass first, then fills any remaining unmatched people with maximum-weight matching. This keeps pairings stable when possible and still gives good results for hard or odd-sized pools.
 
-## Environment variables
+## Development
 
-Copy `.env.example` to `.env` and fill in the values.
+For local setup, environment variables, Cloudflare Wrangler login, testing, preview, and deployment notes, see [DEVELOPMENT.md](./DEVELOPMENT.md).
 
-### Required
+For code organization, contribution rules, file size guidelines, comments, TSDoc, and testing expectations, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-- `VITE_SUPABASE_URL` public Supabase project URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` public Supabase browser key
-- `DATABASE_URL` Postgres connection string for Prisma
-- `SUPABASE_SECRET_KEY` server-only Supabase secret for admin actions
-- `VITE_SITE_BASE_URL` public site URL used for links and auth redirects
-- `R2_PUBLIC_DOMAIN` public base URL for avatar files in R2
-- `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY` public Turnstile site key
-- `CLOUDFLARE_TURNSTILE_SECRET_KEY` server-only Turnstile secret
+For the stable app structure, runtime boundaries, and data flow, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
-### Runtime binding
-
-- `R2_BUCKET` Cloudflare R2 bucket binding configured in `wrangler.jsonc`
-
-## Local development
+Quick start:
 
 ```bash
 pnpm install
@@ -86,58 +75,12 @@ cp .env.example .env
 pnpm dev
 ```
 
-The local dev server runs on `http://127.0.0.1:3000`.
+The local development server runs on `http://localhost:3000/`.
 
-If you change the Prisma schema, regenerate the client:
-
-```bash
-pnpm run prisma:generate
-```
-
-## Scripts
-
-- `pnpm dev` start the app locally
-- `pnpm dev:e2e` start a local server for Playwright
-- `pnpm build` typecheck and build
-- `pnpm preview` preview the production build
-- `pnpm lint` run ESLint
-- `pnpm typecheck` run TypeScript checks
-- `pnpm test:unit` run Vitest
-- `pnpm test:e2e` run Playwright smoke tests
-- `pnpm test:e2e:auth` run authenticated Playwright tests
-- `pnpm test` run unit tests and e2e tests
-- `pnpm deploy` build and deploy with Wrangler
-
-## Testing
-
-For TypeScript changes, run:
+Before opening a pull request, run:
 
 ```bash
+pnpm run lint:fix
 pnpm test
+pnpm preview
 ```
-
-Useful focused commands:
-
-- `pnpm test:unit` for fast local feedback
-- `pnpm test:e2e` for public route smoke tests
-- `pnpm test:e2e:auth` for authenticated flows
-
-Playwright uses a local server by default. Authenticated e2e tests require `PLAYWRIGHT_AUTH_EMAIL` and `PLAYWRIGHT_AUTH_PASSWORD`.
-
-## Deployment
-
-The app deploys to Cloudflare Workers with Wrangler.
-
-```bash
-pnpm deploy
-```
-
-Before deploying, make sure:
-
-- the required environment variables are set
-- the `R2_BUCKET` binding exists
-- Wrangler is authenticated for the target Cloudflare account
-
-## Notes
-
-- Generated files such as `src/routeTree.gen.ts`, `cloudflare-env.d.ts`, and `prisma/generated/client/**` should not be edited by hand.
