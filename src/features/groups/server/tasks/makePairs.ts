@@ -20,6 +20,7 @@ interface MakePairsResponse {
 const makePairsInputSchema = z.object({
   groupId: z.string(),
 })
+const ACTIVE_PAIRING_EXISTS_MESSAGE = 'This group already has an active pairing. Reset the pool before making new pairs.'
 
 export const makePairs = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(makePairsInputSchema, data))
@@ -77,7 +78,7 @@ export const makePairs = createServerFn({ method: 'POST' })
       if (group.pairing_group_active_pairing_idTopairing !== null) {
         return {
           success: false,
-          message: 'This group already has an active pairing. Reset the pool before making new pairs.',
+          message: ACTIVE_PAIRING_EXISTS_MESSAGE,
         }
       }
 
@@ -157,56 +158,64 @@ export const makePairs = createServerFn({ method: 'POST' })
         }
       }
 
-      const pairing = await prisma.pairing.create({
-        data: {
-          group_id: groupId,
-        },
-      })
-
-      for (const pair of pairs) {
-        await prisma.pair.create({
-          data: {
-            pairing_id: pairing.id,
-            first_user: pair.firstUser,
-            second_user: pair.secondUser,
-          },
-        })
-
-        await prisma.affinity.create({
-          data: {
-            pairing_id: pairing.id,
-            helpee_id: pair.firstUser,
-            helper_id: pair.secondUser,
-            value: pair.affinity,
-          },
-        })
-
-        await prisma.affinity.create({
-          data: {
-            pairing_id: pairing.id,
-            helpee_id: pair.secondUser,
-            helper_id: pair.firstUser,
-            value: pair.affinity,
-          },
-        })
-      }
-
       const pairedTaskIds = pairs.flatMap(pair => pair.taskIds).map(taskId => BigInt(taskId))
 
-      await prisma.task.updateMany({
-        where: {
-          id: {
-            in: pairedTaskIds,
+      const pairing = await prisma.$transaction(async (tx) => {
+        const nextPairing = await tx.pairing.create({
+          data: {
+            group_id: groupId,
           },
-        },
-        data: {
-          pairing_id: pairing.id,
-        },
-      })
+        })
 
-      await prisma.group.update({
-        where: { id: groupId },
-        data: { active_pairing_id: pairing.id },
+        await tx.pair.createMany({
+          data: pairs.map(pair => ({
+            pairing_id: nextPairing.id,
+            first_user: pair.firstUser,
+            second_user: pair.secondUser,
+          })),
+        })
+
+        await tx.affinity.createMany({
+          data: pairs.flatMap(pair => [
+            {
+              pairing_id: nextPairing.id,
+              helpee_id: pair.firstUser,
+              helper_id: pair.secondUser,
+              value: pair.affinity,
+            },
+            {
+              pairing_id: nextPairing.id,
+              helpee_id: pair.secondUser,
+              helper_id: pair.firstUser,
+              value: pair.affinity,
+            },
+          ]),
+        })
+
+        await tx.task.updateMany({
+          where: {
+            id: {
+              in: pairedTaskIds,
+            },
+          },
+          data: {
+            pairing_id: nextPairing.id,
+          },
+        })
+
+        const activatedGroup = await tx.group.updateMany({
+          where: {
+            id: groupId,
+            active_pairing_id: null,
+          },
+          data: { active_pairing_id: nextPairing.id },
+        })
+
+        if (activatedGroup.count === 0) {
+          throw new Error(ACTIVE_PAIRING_EXISTS_MESSAGE)
+        }
+
+        return nextPairing
       })
 
       return {
@@ -223,6 +232,10 @@ export const makePairs = createServerFn({ method: 'POST' })
       }
     }
     catch (error) {
+      if (error instanceof Error && error.message === ACTIVE_PAIRING_EXISTS_MESSAGE) {
+        return { success: false, message: ACTIVE_PAIRING_EXISTS_MESSAGE }
+      }
+
       console.error(error)
       return { success: false, message: 'Failed to make pairs' }
     }

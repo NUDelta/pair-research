@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SingleGroupPageContent from './SingleGroupPageContent'
 
@@ -60,8 +61,12 @@ function MockLeavePoolButton() {
   return <button type="button">Leave Pool</button>
 }
 
-function MockMakePairsButton() {
-  return <button type="button">Make Pairs</button>
+function MockMakePairsButton({
+  onPairingCreated,
+}: {
+  onPairingCreated?: (pairingId?: string) => void
+}) {
+  return <button type="button" onClick={() => onPairingCreated?.('pairing-1')}>Make Pairs</button>
 }
 
 function MockResetPoolButton() {
@@ -105,7 +110,7 @@ vi.mock('@/features/groups/components/detail/OthersTasks', () => ({
 }))
 
 vi.mock('@/features/groups/components/detail/PairingSuccessConfetti', () => ({
-  default: () => null,
+  default: () => <div data-testid="pairing-confetti" />,
 }))
 
 vi.mock('@/features/groups/components/detail/buttons', () => ({
@@ -407,6 +412,23 @@ describe('singleGroupPageContent', () => {
         ],
       }),
     )
+  })
+
+  it('shows pairing feedback immediately after the admin makes pairs', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <SingleGroupPageContent
+        {...baseProps}
+        initialTasks={[baseTask, teammateTask]}
+      />,
+    )
+
+    expect(screen.queryByTestId('pairing-confetti')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Make Pairs' }))
+
+    expect(screen.getByTestId('pairing-confetti')).toBeInTheDocument()
   })
 
   it('passes active round pair summaries to the admin round panel', () => {

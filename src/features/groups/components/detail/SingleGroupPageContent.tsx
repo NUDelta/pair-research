@@ -84,6 +84,14 @@ export default function SingleGroupPageContent({
     previousActivePairingIdRef.current = nextActivePairingId
   }, [groupInfo.activePairingId])
 
+  const handlePairingCreated = (pairingId?: string) => {
+    setShowPairingConfetti(true)
+
+    if (pairingId !== undefined) {
+      previousActivePairingIdRef.current = pairingId
+    }
+  }
+
   return (
     <div className="container mx-auto flex max-w-5xl flex-col gap-6 p-6">
       {showPairingConfetti && (
@@ -117,6 +125,7 @@ export default function SingleGroupPageContent({
                     <MakePairsButton
                       groupId={groupInfo.id}
                       eligibleTaskCount={tasks.length}
+                      onPairingCreated={handlePairingCreated}
                     />
                   )}
                 </>

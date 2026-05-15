@@ -21,7 +21,18 @@ const {
   const mockedUseRouter = vi.fn(() => ({
     invalidate,
   }))
-  const mockedDoubleConfirmDialog = ({ trigger }: { trigger: ReactNode }) => <>{trigger}</>
+  const mockedDoubleConfirmDialog = ({
+    trigger,
+    onConfirm,
+  }: {
+    trigger: ReactNode
+    onConfirm: () => Promise<void>
+  }) => (
+    <>
+      {trigger}
+      <button type="button" onClick={() => { void onConfirm() }}>Confirm Dialog</button>
+    </>
+  )
 
   return {
     serverFnMock,
@@ -98,6 +109,42 @@ describe('groups detail controls', () => {
 
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Make Pairs' })).not.toHaveAttribute('title')
+  })
+
+  it('reports pairing creation before refreshing the route', async () => {
+    const user = userEvent.setup()
+    const events: string[] = []
+    const onPairingCreated = vi.fn(() => {
+      events.push('created')
+    })
+
+    serverFnMock.mockResolvedValue({
+      success: true,
+      message: 'Pairs created successfully',
+      data: {
+        pairingId: 'pairing-1',
+      },
+    })
+    invalidate.mockImplementation(async () => {
+      events.push('invalidate')
+    })
+
+    render(
+      <MakePairsButton
+        groupId="group-1"
+        eligibleTaskCount={3}
+        onPairingCreated={onPairingCreated}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Confirm Dialog' }))
+
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledTimes(1)
+    })
+    expect(onPairingCreated).toHaveBeenCalledWith('pairing-1')
+    expect(events).toEqual(['created', 'invalidate'])
+    expect(mockedToast.success).toHaveBeenCalledWith('Pairs created successfully')
   })
 
   it('keeps reset pool available for admins via confirmation dialog', () => {
@@ -269,6 +316,73 @@ describe('groups detail controls', () => {
           { taskId: 'task-2', capacity: 4 },
         ],
       },
+    })
+  })
+
+  it('keeps saved ratings selected when realtime pool tasks refresh without rating payload', async () => {
+    const user = userEvent.setup()
+    const selfTask: Task = {
+      id: 'task-self',
+      description: 'My draft',
+      userId: 'user-1',
+      fullName: 'Me',
+      avatarUrl: null,
+      helpCapacity: null,
+      ratingsCompletedCount: 0,
+    }
+    const teammateTask: Task = {
+      id: 'task-1',
+      description: 'Review draft intro',
+      userId: 'user-2',
+      fullName: 'Teammate One',
+      avatarUrl: null,
+      helpCapacity: null,
+      ratingsCompletedCount: 0,
+    }
+    const newTeammateTask: Task = {
+      id: 'task-2',
+      description: 'Check appendix',
+      userId: 'user-3',
+      fullName: 'Teammate Two',
+      avatarUrl: null,
+      helpCapacity: null,
+      ratingsCompletedCount: 0,
+    }
+
+    serverFnMock.mockResolvedValue({ success: true, message: 'saved' })
+
+    const { rerender } = render(
+      <OthersTasksForm
+        currentUserId="user-1"
+        groupId="group-1"
+        raceTasks={[selfTask, teammateTask]}
+        canRate
+        tasks={[teammateTask]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Rate 3' }))
+
+    await waitFor(() => {
+      expect(serverFnMock).toHaveBeenCalledTimes(1)
+    })
+
+    rerender(
+      <OthersTasksForm
+        currentUserId="user-1"
+        groupId="group-1"
+        raceTasks={[selfTask, teammateTask, newTeammateTask]}
+        canRate
+        tasks={[teammateTask, newTeammateTask]}
+      />,
+    )
+
+    await waitFor(() => {
+      const taskRatingButton = screen
+        .getAllByRole('button', { name: 'Rate 3' })
+        .find(button => button.getAttribute('data-task-id') === 'task-1')
+
+      expect(taskRatingButton).toHaveAttribute('aria-pressed', 'true')
     })
   })
 
