@@ -7,6 +7,9 @@ describe('useRatingProgressRealtimeRefresh helpers', () => {
     const event: GroupSessionEvent = {
       type: 'ratings:updated',
       taskIds: ['task-1'],
+      userId: 'user-1',
+      ratingsCompletedCount: 1,
+      ratingsCompletionOrder: 10,
     }
 
     expect(isRelevantRatingProgressPayload(event, ['task-1', 'task-2'])).toBe(true)

@@ -219,6 +219,77 @@ describe('groups realtime hooks', () => {
     })
   })
 
+  it('applies current-user task upserts from the group session', async () => {
+    const initialTasks: Task[] = []
+    const { result } = renderHook(() =>
+      useTaskRealtimeListener('group-1', 'user-1', initialTasks),
+    )
+
+    await groupSessionHandlers[0]({
+      type: 'task:upserted',
+      task: {
+        id: 'user-1',
+        description: 'My active task',
+        userId: 'user-1',
+        fullName: 'Current User',
+        avatarUrl: null,
+        helpCapacity: null,
+        ratingsCompletedCount: 0,
+        ratingsCompletionOrder: null,
+      },
+    })
+
+    await waitFor(() => {
+      expect(result.current.tasks).toEqual([
+        {
+          id: 'user-1',
+          description: 'My active task',
+          userId: 'user-1',
+          fullName: 'Current User',
+          avatarUrl: null,
+          helpCapacity: null,
+          ratingsCompletedCount: 0,
+          ratingsCompletionOrder: null,
+        },
+      ])
+    })
+  })
+
+  it('patches rating progress without a route invalidation', async () => {
+    const initialTasks: Task[] = [
+      {
+        id: 'user-2',
+        description: 'Draft review',
+        userId: 'user-2',
+        fullName: 'Teammate',
+        avatarUrl: null,
+        helpCapacity: 3,
+        ratingsCompletedCount: 0,
+        ratingsCompletionOrder: null,
+      },
+    ]
+
+    const { result } = renderHook(() =>
+      useTaskRealtimeListener('group-1', 'user-1', initialTasks),
+    )
+
+    await groupSessionHandlers[0]({
+      type: 'ratings:updated',
+      taskIds: ['task-1'],
+      userId: 'user-2',
+      ratingsCompletedCount: 2,
+      ratingsCompletionOrder: 20,
+    })
+
+    await waitFor(() => {
+      expect(result.current.tasks[0]).toMatchObject({
+        ratingsCompletedCount: 2,
+        ratingsCompletionOrder: 20,
+      })
+      expect(invalidate).not.toHaveBeenCalled()
+    })
+  })
+
   it('invalidates the group route once for a created pairing', async () => {
     const initialTasks: Task[] = []
     renderHook(() =>

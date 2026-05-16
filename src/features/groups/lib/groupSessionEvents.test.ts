@@ -6,9 +6,15 @@ describe('groupSessionEvents', () => {
     expect(parseGroupSessionEvent(JSON.stringify({
       type: 'ratings:updated',
       taskIds: ['task-1'],
+      userId: 'user-1',
+      ratingsCompletedCount: 2,
+      ratingsCompletionOrder: 10,
     }))).toEqual({
       type: 'ratings:updated',
       taskIds: ['task-1'],
+      userId: 'user-1',
+      ratingsCompletedCount: 2,
+      ratingsCompletionOrder: 10,
     })
   })
 
