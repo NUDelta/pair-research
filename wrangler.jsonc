@@ -30,6 +30,20 @@
       "remote": true
     }
   ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "GROUP_SESSIONS",
+        "class_name": "GroupSessionDO"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "group-session-v1",
+      "new_sqlite_classes": ["GroupSessionDO"]
+    }
+  ],
   "routes": [
     {
       "pattern": "pairresearch.io",
