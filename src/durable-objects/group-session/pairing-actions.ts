@@ -135,9 +135,10 @@ export async function handleMakePairs(
         throw new Error(ACTIVE_PAIRING_EXISTS_MESSAGE)
       }
 
-      const persistedTasks = await Promise.all(
-        tasks.map(async task =>
-          tx.task.upsert({
+      const persistedTasks: Array<{ id: bigint, user_id: string }> = []
+      for (const task of tasks) {
+        persistedTasks.push(
+          await tx.task.upsert({
             where: {
               user_id_group_id: {
                 user_id: task.user_id,
@@ -164,8 +165,8 @@ export async function handleMakePairs(
               user_id: true,
             },
           }),
-        ),
-      )
+        )
+      }
       const persistedTaskIdByUserId = new Map(
         persistedTasks.map(task => [task.user_id, task.id]),
       )
