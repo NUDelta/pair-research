@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import HorseRace from './HorseRace'
 
@@ -90,5 +91,48 @@ describe('horseRace', () => {
     )
 
     expect(screen.queryByLabelText('Horse race track')).not.toBeInTheDocument()
+  })
+
+  it('shows the member user id in a raised tooltip when hovering an avatar', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <HorseRace
+        tasks={[
+          {
+            id: 'task-1',
+            description: 'A',
+            userId: 'user-1',
+            fullName: 'Ada',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 1,
+            ratingsCompletionOrder: 1,
+          },
+          {
+            id: 'task-2',
+            description: 'B',
+            userId: 'user-2',
+            fullName: 'Ben',
+            avatarUrl: null,
+            helpCapacity: null,
+            ratingsCompletedCount: 0,
+            ratingsCompletionOrder: null,
+          },
+        ]}
+      />,
+    )
+
+    const adaAvatar = screen.getByLabelText('Ada')
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    expect(adaAvatar.parentElement).toHaveClass('hover:z-50', 'focus-within:z-50')
+
+    await user.hover(adaAvatar)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip')).toHaveTextContent('user-1')
+    })
+    expect(document.querySelector('[data-slot="tooltip-content"]')).toHaveClass('z-50')
   })
 })

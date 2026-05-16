@@ -4,6 +4,7 @@ import { getInitials } from '@/shared/lib/avatar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 import { getHorseRaceEntries } from './ratingSummary'
 
 interface HorseRaceProps {
@@ -64,45 +65,54 @@ export default function HorseRace({ currentUserId, ratings, tasks }: HorseRacePr
             <div className="h-full w-1 rounded-full bg-foreground/80" />
           </div>
 
-          {entries.map((entry, index) => {
-            const laneTop = `${((index + 0.5) / entries.length) * 100}%`
+          <TooltipProvider>
+            {entries.map((entry, index) => {
+              const laneTop = `${((index + 0.5) / entries.length) * 100}%`
 
-            return (
-              <div
-                key={entry.taskId}
-                className="absolute -translate-y-1/2 transition-[left,top] duration-300 ease-out"
-                style={{
-                  top: laneTop,
-                  left: `calc((100% - 4.25rem) * ${entry.progressPercent / 100} + 0.75rem)`,
-                }}
-              >
+              return (
                 <div
-                  className="relative"
-                  title={entry.fullName ?? 'Group member'}
-                  aria-label={entry.fullName ?? 'Group member'}
+                  key={entry.taskId}
+                  className="absolute z-10 -translate-y-1/2 transition-[left,top] duration-300 ease-out hover:z-50 focus-within:z-50"
+                  style={{
+                    top: laneTop,
+                    left: `calc((100% - 4.25rem) * ${entry.progressPercent / 100} + 0.75rem)`,
+                  }}
                 >
-                  <Avatar className="size-10 border-2 border-background bg-background shadow-sm">
-                    <AvatarImage
-                      src={entry.userAvatar ?? undefined}
-                      alt={`${entry.fullName ?? 'Group member'} avatar`}
-                      loading="lazy"
-                    />
-                    <AvatarFallback>
-                      {getInitials(entry.fullName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  {entry.hasBadge && (
-                    <Badge
-                      className={`absolute -top-1 -right-1 size-5 rounded-full border-0 px-0 text-[10px] font-semibold ${badgeStyles[entry.rank as 1 | 2 | 3]}`}
-                      aria-label={`Rank ${entry.rank}`}
-                    >
-                      {entry.rank}
-                    </Badge>
-                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        tabIndex={0}
+                        aria-label={entry.fullName ?? 'Group member'}
+                      >
+                        <Avatar className="size-10 border-2 border-background bg-background shadow-sm">
+                          <AvatarImage
+                            src={entry.userAvatar ?? undefined}
+                            alt={`${entry.fullName ?? 'Group member'} avatar`}
+                            loading="lazy"
+                          />
+                          <AvatarFallback>
+                            {getInitials(entry.fullName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {entry.hasBadge && (
+                          <Badge
+                            className={`absolute -top-1 -right-1 size-5 rounded-full border-0 px-0 text-[10px] font-semibold ${badgeStyles[entry.rank as 1 | 2 | 3]}`}
+                            aria-label={`Rank ${entry.rank}`}
+                          >
+                            {entry.rank}
+                          </Badge>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={8} className="whitespace-nowrap">
+                      {entry.userId}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </TooltipProvider>
         </div>
       </CardContent>
     </Card>

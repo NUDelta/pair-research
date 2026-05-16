@@ -5,6 +5,7 @@ import { Footer, Header } from '@/shared/components/layout'
 import { SITE_BASE_URL } from '@/shared/config/constants'
 import GlobalErrorPage from '@/shared/errors/GlobalErrorPage'
 import NotFoundPage from '@/shared/errors/NotFoundPage'
+import { TooltipProvider } from '@/shared/ui/tooltip'
 import appleIcon from './apple-icon.png?url'
 import favicon from './favicon.ico?url'
 import icon0 from './icon0.svg?url'
@@ -42,12 +43,14 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <RootDocument>
-      <Toaster position="top-center" richColors />
-      <Header />
-      <main className="mt-10 grow motion-safe:animate-fade-in-down">
-        <Outlet />
-      </main>
-      <Footer />
+      <TooltipProvider>
+        <Toaster position="top-center" richColors />
+        <Header />
+        <main className="mt-10 grow motion-safe:animate-fade-in-down">
+          <Outlet />
+        </main>
+        <Footer />
+      </TooltipProvider>
     </RootDocument>
   )
 }

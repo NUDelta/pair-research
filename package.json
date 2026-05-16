@@ -52,6 +52,7 @@
     "lucide-react": "^1.14.0",
     "nanoid": "^5.1.11",
     "pg": "^8.20.0",
+    "radix-ui": "^1.4.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.75.0",
