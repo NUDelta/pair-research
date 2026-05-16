@@ -255,6 +255,42 @@ describe('groups realtime hooks', () => {
     })
   })
 
+  it('keeps rating progress when inserting a task from the group session', async () => {
+    const initialTasks: Task[] = []
+    const { result } = renderHook(() =>
+      useTaskRealtimeListener('group-1', 'user-1', initialTasks),
+    )
+
+    await groupSessionHandlers[0]({
+      type: 'task:upserted',
+      task: {
+        id: 'task-2',
+        description: 'Teammate task',
+        userId: 'user-2',
+        fullName: 'Teammate',
+        avatarUrl: null,
+        helpCapacity: null,
+        ratingsCompletedCount: 2,
+        ratingsCompletionOrder: 20,
+      },
+    })
+
+    await waitFor(() => {
+      expect(result.current.tasks).toEqual([
+        {
+          id: 'task-2',
+          description: 'Teammate task',
+          userId: 'user-2',
+          fullName: 'Teammate',
+          avatarUrl: null,
+          helpCapacity: null,
+          ratingsCompletedCount: 2,
+          ratingsCompletionOrder: 20,
+        },
+      ])
+    })
+  })
+
   it('patches rating progress without a route invalidation', async () => {
     const initialTasks: Task[] = [
       {

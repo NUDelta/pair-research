@@ -74,8 +74,12 @@ export const useTaskRealtimeListener = (
         const nextTask = {
           ...task,
           helpCapacity: existingIndex === -1 ? null : draft[existingIndex]?.helpCapacity ?? null,
-          ratingsCompletedCount: existingIndex === -1 ? 0 : draft[existingIndex]?.ratingsCompletedCount ?? 0,
-          ratingsCompletionOrder: existingIndex === -1 ? null : draft[existingIndex]?.ratingsCompletionOrder ?? null,
+          ratingsCompletedCount: existingIndex === -1
+            ? task.ratingsCompletedCount
+            : draft[existingIndex]?.ratingsCompletedCount ?? task.ratingsCompletedCount,
+          ratingsCompletionOrder: existingIndex === -1
+            ? task.ratingsCompletionOrder
+            : draft[existingIndex]?.ratingsCompletionOrder ?? task.ratingsCompletionOrder,
         } satisfies Task
 
         if (existingIndex !== -1) {
