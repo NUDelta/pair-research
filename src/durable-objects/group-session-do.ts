@@ -1,6 +1,5 @@
 import type { GroupSessionEvent, GroupSessionTask } from '@/features/groups/lib/groupSessionEvents'
 import type { PairingHistory } from '@/features/groups/lib/pairing'
-import { DurableObject } from 'cloudflare:workers'
 import { buildPairs } from '@/features/groups/lib/pairing'
 
 type PrismaClient = Awaited<ReturnType<typeof import('@/shared/server/prisma').getPrismaClient>>
@@ -107,12 +106,13 @@ function buildPairingHistory(
   }
 }
 
-export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
+export class GroupSessionDO {
+  private readonly ctx: DurableObjectState
   private hydrated = false
   private operationQueue: Promise<unknown> = Promise.resolve()
 
-  constructor(ctx: DurableObjectState, env: Cloudflare.Env) {
-    super(ctx, env)
+  constructor(ctx: DurableObjectState, _env: Cloudflare.Env) {
+    this.ctx = ctx
 
     ctx.blockConcurrencyWhile(async () => {
       this.ctx.storage.sql.exec(`
