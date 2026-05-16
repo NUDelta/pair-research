@@ -17,8 +17,9 @@
 - React 19 + TypeScript
 - Tailwind CSS v4 + shadcn/ui
 - Prisma for app data
-- Supabase for auth and realtime
+- Supabase for auth and Postgres-backed app storage
 - Cloudflare Workers for deployment
+- Cloudflare Durable Objects for group pairing realtime coordination
 - Cloudflare R2 for avatar storage
 - Cloudflare Turnstile for bot protection
 - Vitest + Testing Library for unit and component tests

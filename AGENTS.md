@@ -14,7 +14,7 @@ Agents should follow `CONTRIBUTING.md` unless the user explicitly asks for a dif
 ## Repo Overview
 
 - This is a TanStack Start + Vite application, not a Next.js app. Treat older references to `src/app` or Next.js as stale unless the task specifically asks about legacy docs.
-- The app uses React 19, TypeScript, Tailwind CSS v4, shadcn/ui-style components, Prisma, Supabase, Cloudflare Workers, Cloudflare R2, Vitest, Testing Library, and Playwright.
+- The app uses React 19, TypeScript, Tailwind CSS v4, shadcn/ui-style components, Prisma, Supabase, Cloudflare Workers, Cloudflare Durable Objects, Cloudflare R2, Vitest, Testing Library, and Playwright.
 - Package manager: `pnpm`.
 
 ## Source Layout
@@ -59,12 +59,12 @@ Agents should follow `CONTRIBUTING.md` unless the user explicitly asks for a dif
 ## Groups Feature Guidance
 
 - `src/features/groups` is the highest-risk area in this repo.
-- The group detail page combines route loader data, local optimistic UI state, Supabase realtime subscriptions, and router invalidation back to server truth.
+- The group detail page combines route loader data, local optimistic UI state, Durable Object realtime sessions, and router invalidation back to server truth.
 - When changing group detail behavior, preserve the current pattern:
   - loaders provide authoritative initial data
-  - realtime hooks patch local state for responsiveness
+  - realtime hooks subscribe to the per-group Durable Object WebSocket for responsiveness
   - router invalidation reconciles pairing and other server-truth transitions
-- Be careful with task lifecycle fields such as `pairing_id` and `delete_pending`; they affect both UI state and realtime behavior.
+- Be careful with task lifecycle fields such as `pairing_id` and `delete_pending`; persisted rows still use them, but realtime task removal is coordinated by the group Durable Object rather than Supabase Realtime.
 - Pairing logic in `src/features/groups/lib/pairing` and related server mutations should be changed with tests. Small algorithm tweaks can have large product effects.
 
 ## Database and Schema Safety
