@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { taskSchema } from '@/features/groups/schemas/taskForm'
-import { checkMembership } from '@/features/groups/server/checkMembership'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 export const upsertTask = createServerFn({ method: 'POST' })
@@ -8,73 +7,15 @@ export const upsertTask = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     try {
       const { groupId, description } = data
-      const { getPrismaClient } = await import('@/shared/server/prisma')
-      const prisma = await getPrismaClient()
       const { getUser } = await import('@/shared/supabase/server')
-
       const user = await getUser()
+      const { getGroupSession } = await import('@/shared/server/cloudflare/bindings.server')
 
-      const membership = await checkMembership(user.id, groupId)
-
-      if (!membership) {
-        return {
-          success: false,
-          message: 'You are not a member in this group',
-        }
-      }
-
-      const existingTask = await prisma.task.findUnique({
-        where: {
-          user_id_group_id: {
-            user_id: user.id,
-            group_id: groupId,
-          },
-        },
-        select: {
-          pairing_id: true,
-        },
+      return await getGroupSession(groupId).upsertTask({
+        groupId,
+        userId: user.id,
+        description,
       })
-
-      if (existingTask?.pairing_id !== null && existingTask?.pairing_id !== undefined) {
-        return {
-          success: false,
-          message: 'You already have a task in the current active pairing',
-        }
-      }
-
-      const task = await prisma.task.upsert({
-        where: {
-          user_id_group_id: {
-            user_id: user.id,
-            group_id: groupId,
-          },
-        },
-        update: {
-          description,
-          delete_pending: false,
-          updated_at: new Date(),
-        },
-        create: {
-          description,
-          user_id: user.id,
-          group_id: groupId,
-          created_at: new Date(),
-          updated_at: new Date(),
-          delete_pending: false,
-        },
-      })
-
-      if (task.description !== description) {
-        return {
-          success: false,
-          message: 'Failed to update the task',
-        }
-      }
-
-      return {
-        success: true,
-        message: 'You have update your task successfully',
-      }
     }
     catch (error_) {
       console.error('Error upserting task:', error_)

@@ -11,6 +11,7 @@ The app uses:
 - Node.js >= 22
 - pnpm for package management
 - Cloudflare Workers for deployment
+- Cloudflare Durable Objects for group pairing realtime coordination
 - Cloudflare R2 for storage
 - Wrangler for local Cloudflare development and deployment
 
@@ -118,6 +119,15 @@ pnpm cf-typegen
 ```
 
 This keeps the generated bindings in sync with the environment values expected by the application.
+
+### Cloudflare Bindings
+
+`wrangler.jsonc` defines the runtime bindings used by the Worker:
+
+- `R2_BUCKET` stores uploaded avatar objects.
+- `GROUP_SESSIONS` is a Durable Object namespace. The app uses one `GroupSessionDO` instance per group ID to coordinate active pool tasks, ratings, pair creation, reset events, and realtime WebSocket fan-out. Active pool task and rating edits are staged in Durable Object SQLite storage first; Postgres persistence happens when the pairing is created or the pool is reset.
+
+When adding or renaming a binding, update `wrangler.jsonc`, run `pnpm cf-typegen`, and verify the generated `cloudflare-env.d.ts` change.
 
 ## 5. Start the Development Server
 
@@ -233,6 +243,7 @@ Before deploying, make sure:
 - required variables are defined in `wrangler.jsonc`
 - required secrets are configured in the target Cloudflare environment
 - the `R2_BUCKET` binding exists and points to the correct bucket
+- the `GROUP_SESSIONS` Durable Object binding and its migration are present in `wrangler.jsonc`
 - `pnpm cf-typegen` has been run after any environment changes
 
 ## Recommended Before Opening a PR

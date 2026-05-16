@@ -3,7 +3,7 @@
   "name": "pair-research",
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  "main": "src/server.ts",
   "vars": {
     "VITE_SUPABASE_URL": "https://twnurskjzrelsaptkblt.supabase.co",
     "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_SdAHR6xx66f-XLPo1qrSQA_baDxzVx7",
@@ -28,6 +28,20 @@
       "binding": "R2_BUCKET",
       "bucket_name": "pair-research",
       "remote": true
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "GROUP_SESSIONS",
+        "class_name": "GroupSessionDO"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "group-session-v1",
+      "new_sqlite_classes": ["GroupSessionDO"]
     }
   ],
   "routes": [

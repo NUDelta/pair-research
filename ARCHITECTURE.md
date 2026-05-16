@@ -12,9 +12,10 @@ At a high level:
 
 - TanStack Router owns file-based routing and route loading.
 - Feature folders own domain-specific UI, hooks, schemas, logic, and server functions.
-- Supabase owns authentication sessions and realtime subscriptions.
+- Supabase owns authentication sessions.
 - Prisma owns application database reads and writes against the Supabase-backed Postgres database.
 - Cloudflare Workers host the app.
+- Cloudflare Durable Objects coordinate group pairing realtime sessions.
 - Cloudflare R2 stores uploaded avatar objects.
 
 ## App Structure
@@ -79,10 +80,10 @@ The usual flow is:
 These tools have separate responsibilities:
 
 - Supabase Auth manages users, sessions, auth cookies, password reset, OAuth, and invitations.
-- Supabase Realtime sends database change events that keep group pages responsive while members edit tasks and ratings.
-- Supabase Postgres stores the application data.
+- Supabase Postgres stores the application data that must survive completed group rounds.
 - Prisma provides the typed database client used by server code.
 - Cloudflare Workers run the TanStack Start server output in production.
+- Cloudflare Durable Objects provide one realtime coordination object per group for active pool tasks, ratings, pairing creation, and WebSocket fan-out. The pre-pairing active pool is staged in Durable Object SQLite storage and is persisted to Postgres when a pairing is created.
 - Cloudflare R2 stores avatar image objects.
 
 Prisma connects to the same Postgres database that Supabase backs. Supabase Auth still owns auth-managed user identity, while Prisma owns application tables such as profiles, groups, members, tasks, ratings, pairings, and roles.
@@ -104,7 +105,7 @@ Server code can use:
 - Prisma
 - server-only environment variables
 - service-role Supabase operations
-- Cloudflare bindings such as R2
+- Cloudflare bindings such as R2 and Durable Object namespaces
 - privileged permission checks and database mutations
 
 Do not import server-only modules into client-rendered code. In particular, Prisma, service-role Supabase clients, `DATABASE_URL`, `SUPABASE_SECRET_KEY`, and raw Cloudflare bindings must stay behind server functions or server-only helper modules.
@@ -123,17 +124,17 @@ The account feature owns profile editing and avatar updates. Client-side compone
 
 ### Groups
 
-The groups feature is the main product surface. It combines route loader data, local UI state, server mutations, Supabase realtime subscriptions, and router invalidation.
+The groups feature is the main product surface. It combines route loader data, local UI state, server mutations, Durable Object realtime sessions, and router invalidation.
 
 Group pages follow this pattern:
 
-- loaders provide the initial authoritative state
+- loaders provide group metadata from Postgres and active pool snapshots from the group Durable Object
 - components render the current group, tasks, ratings, members, and active pairing
-- hooks subscribe to realtime task and rating changes for responsiveness
-- server functions own writes, permission checks, and database updates
-- router invalidation reconciles local state with server truth after important transitions
+- hooks subscribe to the group session WebSocket for task, rating, pairing, and reset events
+- server functions validate input and route privileged group pairing writes to the per-group Durable Object
+- router invalidation reconciles local state with server truth after important transitions such as pairing creation and pool reset
 
-Pairing logic lives under `src/features/groups/lib/pairing`. It is pure application logic and should stay separated from database writes. Server functions prepare database data, call the pairing logic, and persist the resulting round.
+Pairing logic lives under `src/features/groups/lib/pairing`. It is pure application logic and should stay separated from database writes. The group Durable Object prepares active pool data from its SQLite snapshot, calls the pairing logic, then persists the resulting round, paired tasks, task ratings, pairs, and affinities to Postgres in one transaction.
 
 ### Shared UI and Layout
 
@@ -147,7 +148,7 @@ The app has several boundaries that need to stay clear:
 - browser-safe code versus server-only code
 - reusable UI primitives versus feature-specific UI
 - pure pairing logic versus database persistence
-- Supabase auth and realtime behavior versus Prisma application data access
+- Supabase auth versus Durable Object realtime coordination and Prisma application data access
 - Cloudflare runtime bindings versus local development helpers
 
 Keeping these responsibilities separated makes the codebase easier to maintain. It reduces accidental secret leaks, keeps route files readable, makes feature behavior easier to test, and lets the pairing algorithm evolve without coupling it to UI or database details.

@@ -49,7 +49,7 @@ export function getRatingSummary(tasks: Task[], ratings: TaskRatings) {
 
 /**
  * Produces a compact progress leaderboard for everyone currently in the pool.
- * The loader provides persisted completion counts, and the optional `ratings`
+ * The loader provides session completion counts, and the optional `ratings`
  * override lets the current viewer see their own in-flight progress instantly.
  */
 export function getHorseRaceEntries(

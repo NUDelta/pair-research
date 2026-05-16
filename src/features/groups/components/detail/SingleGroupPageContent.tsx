@@ -8,7 +8,6 @@ import Pairing from '@/features/groups/components/detail/Pairing'
 import PairingSuccessConfetti from '@/features/groups/components/detail/PairingSuccessConfetti'
 import { formatPairingRelativeTime } from '@/features/groups/components/detail/roundStatus'
 import TaskCard from '@/features/groups/components/detail/TaskCard'
-import { useRatingProgressRealtimeRefresh } from '@/features/groups/hooks/useRatingProgressRealtimeRefresh'
 import { useTaskRealtimeListener } from '@/features/groups/hooks/useTaskRealtimeListener'
 import { shouldCelebratePairingActivation } from '@/features/groups/lib/pairingCelebration'
 import { Button } from '@/shared/ui/button'
@@ -48,9 +47,12 @@ export default function SingleGroupPageContent({
   const { userId: currentUserId } = groupInfo
   const [showPairingConfetti, setShowPairingConfetti] = useState(false)
   const previousActivePairingIdRef = useRef<string | null>(groupInfo.activePairingId ?? null)
-  const { tasks } = useTaskRealtimeListener(groupInfo.id, currentUserId, initialTasks)
-
-  useRatingProgressRealtimeRefresh(groupInfo.id, tasks.map(task => task.id))
+  const { tasks } = useTaskRealtimeListener(
+    groupInfo.id,
+    currentUserId,
+    initialTasks,
+    pairingId => handlePairingCreated(pairingId),
+  )
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
   const othersTasks = tasks.filter(task => task.userId !== currentUserId)
@@ -84,7 +86,7 @@ export default function SingleGroupPageContent({
     previousActivePairingIdRef.current = nextActivePairingId
   }, [groupInfo.activePairingId])
 
-  const handlePairingCreated = (pairingId?: string) => {
+  function handlePairingCreated(pairingId?: string) {
     setShowPairingConfetti(true)
 
     if (pairingId !== undefined) {
@@ -125,7 +127,6 @@ export default function SingleGroupPageContent({
                     <MakePairsButton
                       groupId={groupInfo.id}
                       eligibleTaskCount={tasks.length}
-                      onPairingCreated={handlePairingCreated}
                     />
                   )}
                 </>

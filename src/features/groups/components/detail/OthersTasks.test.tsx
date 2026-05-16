@@ -1,11 +1,21 @@
+import type { ReactElement } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { TooltipProvider } from '@/shared/ui/tooltip'
 import OthersTasks from './OthersTasks'
+
+function renderWithTooltipProvider(element: ReactElement) {
+  return render(
+    <TooltipProvider>
+      {element}
+    </TooltipProvider>,
+  )
+}
 
 describe('others tasks empty states', () => {
   it('shows an admin-specific message when the current round is complete', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         activePairCount={2}
         groupId="group-1"
@@ -27,7 +37,7 @@ describe('others tasks empty states', () => {
   it('shows an admin-specific message when someone was left out of the round', async () => {
     const user = userEvent.setup()
 
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         activePairCount={1}
         groupId="group-1"
@@ -90,7 +100,7 @@ describe('others tasks empty states', () => {
   })
 
   it('shows a member-specific message when waiting for an admin reset', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         activePairCount={1}
         groupId="group-1"
@@ -109,7 +119,7 @@ describe('others tasks empty states', () => {
   })
 
   it('shows all pairs to non-admin members who were matched, with their pair first and their profile first', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         activePairCount={2}
         activeRoundPairs={[
@@ -174,7 +184,7 @@ describe('others tasks empty states', () => {
   })
 
   it('shows a personalized member message when they were left out', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         activePairCount={1}
         activeRoundPairs={[
@@ -216,7 +226,7 @@ describe('others tasks empty states', () => {
   })
 
   it('does not show leftover unpaired tasks under others during an active round', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         activePairCount={1}
         groupId="group-1"
@@ -256,7 +266,7 @@ describe('others tasks empty states', () => {
   })
 
   it('renders the horse race below the active-round panel', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         activePairCount={1}
         groupId="group-1"
@@ -296,7 +306,7 @@ describe('others tasks empty states', () => {
   })
 
   it('points members without a task to the task card above', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         groupId="group-1"
         currentUserId="user-1"
@@ -311,7 +321,7 @@ describe('others tasks empty states', () => {
   })
 
   it('tells a solo pool member to get another task into the round', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         groupId="group-1"
         currentUserId="user-1"
@@ -327,7 +337,7 @@ describe('others tasks empty states', () => {
   })
 
   it('renders the horse race below the empty others state', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         groupId="group-1"
         currentUserId="user-1"
@@ -364,7 +374,7 @@ describe('others tasks empty states', () => {
   })
 
   it('tells members with a saved task but not in the pool how to rejoin', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasks
         groupId="group-1"
         currentUserId="user-1"

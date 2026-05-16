@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { act, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SingleGroupPageContent from './SingleGroupPageContent'
 
@@ -61,12 +60,8 @@ function MockLeavePoolButton() {
   return <button type="button">Leave Pool</button>
 }
 
-function MockMakePairsButton({
-  onPairingCreated,
-}: {
-  onPairingCreated?: (pairingId?: string) => void
-}) {
-  return <button type="button" onClick={() => onPairingCreated?.('pairing-1')}>Make Pairs</button>
+function MockMakePairsButton() {
+  return <button type="button">Make Pairs</button>
 }
 
 function MockResetPoolButton() {
@@ -79,10 +74,6 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('@/features/groups/hooks/useTaskRealtimeListener', () => ({
   useTaskRealtimeListener: mockUseTaskRealtimeListener,
-}))
-
-vi.mock('@/features/groups/hooks/useRatingProgressRealtimeRefresh', () => ({
-  useRatingProgressRealtimeRefresh: vi.fn(),
 }))
 
 vi.mock('@/features/groups/lib/pairingCelebration', () => ({
@@ -161,10 +152,21 @@ const baseProps = {
 } satisfies Parameters<typeof SingleGroupPageContent>[0]
 
 describe('singleGroupPageContent', () => {
+  let latestPairingCreatedCallback: ((pairingId: string) => void) | undefined
+
   beforeEach(() => {
-    mockUseTaskRealtimeListener.mockImplementation((_groupId: string, _userId: string, tasks: Task[]) => ({
-      tasks,
-    }))
+    latestPairingCreatedCallback = undefined
+    mockUseTaskRealtimeListener.mockImplementation((
+      _groupId: string,
+      _userId: string,
+      tasks: Task[],
+      onPairingCreated?: (pairingId: string) => void,
+    ) => {
+      latestPairingCreatedCallback = onPairingCreated
+      return {
+        tasks,
+      }
+    })
     mockShouldCelebratePairingActivation.mockReturnValue(false)
     mockFormatPairingRelativeTime.mockReturnValue('yesterday')
     mockGroupDetailHeaderProps.mockClear()
@@ -414,9 +416,7 @@ describe('singleGroupPageContent', () => {
     )
   })
 
-  it('shows pairing feedback immediately after the admin makes pairs', async () => {
-    const user = userEvent.setup()
-
+  it('shows pairing feedback from the durable object pairing event', () => {
     render(
       <SingleGroupPageContent
         {...baseProps}
@@ -426,7 +426,9 @@ describe('singleGroupPageContent', () => {
 
     expect(screen.queryByTestId('pairing-confetti')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Make Pairs' }))
+    act(() => {
+      latestPairingCreatedCallback?.('pairing-1')
+    })
 
     expect(screen.getByTestId('pairing-confetti')).toBeInTheDocument()
   })

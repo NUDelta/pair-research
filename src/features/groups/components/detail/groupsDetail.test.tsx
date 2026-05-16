@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { TooltipProvider } from '@/shared/ui/tooltip'
 import MakePairsButton from './buttons/MakePairsButton'
 import ResetPoolButton from './buttons/ResetPoolButton'
 import OthersTasksForm from './OthersTasksForm'
@@ -68,6 +69,23 @@ vi.mock('sonner', () => ({
   toast: mockedToast,
 }))
 
+function withTooltipProvider(element: ReactElement) {
+  return (
+    <TooltipProvider>
+      {element}
+    </TooltipProvider>
+  )
+}
+
+function renderWithTooltipProvider(element: ReactElement) {
+  const result = render(withTooltipProvider(element))
+
+  return {
+    ...result,
+    rerender: (nextElement: ReactElement) => result.rerender(withTooltipProvider(nextElement)),
+  }
+}
+
 vi.mock('@/features/groups/hooks/useCurrentUserTaskDescription', async () => {
   const React = await vi.importActual<typeof import('react')>('react')
 
@@ -95,7 +113,7 @@ describe('groups detail controls', () => {
   })
 
   it('disables make pairs when fewer than two pool tasks are available', () => {
-    render(<MakePairsButton groupId="group-1" eligibleTaskCount={0} />)
+    renderWithTooltipProvider(<MakePairsButton groupId="group-1" eligibleTaskCount={0} />)
 
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toHaveAttribute(
@@ -105,18 +123,14 @@ describe('groups detail controls', () => {
   })
 
   it('keeps make pairs available when some ratings are still missing', () => {
-    render(<MakePairsButton groupId="group-1" eligibleTaskCount={3} />)
+    renderWithTooltipProvider(<MakePairsButton groupId="group-1" eligibleTaskCount={3} />)
 
     expect(screen.getByRole('button', { name: 'Make Pairs' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Make Pairs' })).not.toHaveAttribute('title')
   })
 
-  it('reports pairing creation before refreshing the route', async () => {
+  it('leaves successful pair creation feedback to the group session event', async () => {
     const user = userEvent.setup()
-    const events: string[] = []
-    const onPairingCreated = vi.fn(() => {
-      events.push('created')
-    })
 
     serverFnMock.mockResolvedValue({
       success: true,
@@ -125,26 +139,21 @@ describe('groups detail controls', () => {
         pairingId: 'pairing-1',
       },
     })
-    invalidate.mockImplementation(async () => {
-      events.push('invalidate')
-    })
 
-    render(
+    renderWithTooltipProvider(
       <MakePairsButton
         groupId="group-1"
         eligibleTaskCount={3}
-        onPairingCreated={onPairingCreated}
       />,
     )
 
     await user.click(screen.getByRole('button', { name: 'Confirm Dialog' }))
 
     await waitFor(() => {
-      expect(invalidate).toHaveBeenCalledTimes(1)
+      expect(serverFnMock).toHaveBeenCalledWith({ data: { groupId: 'group-1' } })
     })
-    expect(onPairingCreated).toHaveBeenCalledWith('pairing-1')
-    expect(events).toEqual(['created', 'invalidate'])
-    expect(mockedToast.success).toHaveBeenCalledWith('Pairs created successfully')
+    expect(invalidate).not.toHaveBeenCalled()
+    expect(mockedToast.success).not.toHaveBeenCalled()
   })
 
   it('shows an error toast when pair creation throws', async () => {
@@ -153,7 +162,7 @@ describe('groups detail controls', () => {
 
     serverFnMock.mockRejectedValue(new Error('Network down'))
 
-    render(<MakePairsButton groupId="group-1" eligibleTaskCount={3} />)
+    renderWithTooltipProvider(<MakePairsButton groupId="group-1" eligibleTaskCount={3} />)
 
     await user.click(screen.getByRole('button', { name: 'Confirm Dialog' }))
 
@@ -165,7 +174,7 @@ describe('groups detail controls', () => {
   })
 
   it('keeps reset pool available for admins via confirmation dialog', () => {
-    render(<ResetPoolButton groupId="group-1" />)
+    renderWithTooltipProvider(<ResetPoolButton groupId="group-1" />)
 
     expect(screen.getByRole('button', { name: 'Reset Pool' })).toBeEnabled()
   })
@@ -180,7 +189,7 @@ describe('groups detail controls', () => {
           resolveFirst = resolve
         }))
 
-    render(
+    renderWithTooltipProvider(
       <OthersTasksForm
         currentUserId="user-1"
         groupId="group-1"
@@ -262,7 +271,7 @@ describe('groups detail controls', () => {
 
     serverFnMock.mockResolvedValue({ success: true, message: 'saved' })
 
-    render(
+    renderWithTooltipProvider(
       <OthersTasksForm
         currentUserId="user-1"
         groupId="group-1"
@@ -368,7 +377,7 @@ describe('groups detail controls', () => {
 
     serverFnMock.mockResolvedValue({ success: true, message: 'saved' })
 
-    const { rerender } = render(
+    const { rerender } = renderWithTooltipProvider(
       <OthersTasksForm
         currentUserId="user-1"
         groupId="group-1"
@@ -413,7 +422,7 @@ describe('groups detail controls', () => {
           resolveFirst = resolve
         }))
 
-    render(
+    renderWithTooltipProvider(
       <TaskEditor
         currentUserId="user-1"
         groupId="group-1"
@@ -456,7 +465,7 @@ describe('groups detail controls', () => {
         resolveFirst = resolve
       }))
 
-    render(
+    renderWithTooltipProvider(
       <TaskEditor
         currentUserId="user-1"
         groupId="group-1"
@@ -484,7 +493,7 @@ describe('groups detail controls', () => {
   it('keeps the task editor open and skips saving when the description is empty', async () => {
     const user = userEvent.setup()
 
-    render(
+    renderWithTooltipProvider(
       <TaskEditor
         currentUserId="user-1"
         groupId="group-1"
@@ -503,7 +512,7 @@ describe('groups detail controls', () => {
   })
 
   it('hides rating controls for users who are not currently in the pool', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasksForm
         currentUserId="user-1"
         groupId="group-1"
@@ -539,7 +548,7 @@ describe('groups detail controls', () => {
   })
 
   it('renders the horse race below the others task list', () => {
-    render(
+    renderWithTooltipProvider(
       <OthersTasksForm
         currentUserId="user-1"
         groupId="group-1"
