@@ -1,4 +1,3 @@
-import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -9,12 +8,10 @@ import { Button } from '@/shared/ui/button'
 interface Props {
   groupId: string
   eligibleTaskCount: number
-  onPairingCreated?: (pairingId?: string) => void
 }
 
-const MakePairsButton = ({ groupId, eligibleTaskCount, onPairingCreated }: Props) => {
+const MakePairsButton = ({ groupId, eligibleTaskCount }: Props) => {
   const [isPending, setIsPending] = useState(false)
-  const router = useRouter()
   const makePairsFn = useServerFn(makePairs)
   const isDisabled = eligibleTaskCount < 2 || isPending
   const disabledReason = eligibleTaskCount === 0
@@ -32,12 +29,7 @@ const MakePairsButton = ({ groupId, eligibleTaskCount, onPairingCreated }: Props
 
     try {
       const response = await makePairsFn({ data: { groupId } })
-      if (response.success) {
-        onPairingCreated?.(response.data?.pairingId)
-        toast.success(response.message)
-        await router.invalidate()
-      }
-      else {
+      if (!response.success) {
         toast.error(response.message)
       }
     }

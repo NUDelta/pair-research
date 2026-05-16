@@ -111,12 +111,8 @@ describe('groups detail controls', () => {
     expect(screen.getByRole('button', { name: 'Make Pairs' })).not.toHaveAttribute('title')
   })
 
-  it('reports pairing creation before refreshing the route', async () => {
+  it('leaves successful pair creation feedback to the group session event', async () => {
     const user = userEvent.setup()
-    const events: string[] = []
-    const onPairingCreated = vi.fn(() => {
-      events.push('created')
-    })
 
     serverFnMock.mockResolvedValue({
       success: true,
@@ -125,26 +121,21 @@ describe('groups detail controls', () => {
         pairingId: 'pairing-1',
       },
     })
-    invalidate.mockImplementation(async () => {
-      events.push('invalidate')
-    })
 
     render(
       <MakePairsButton
         groupId="group-1"
         eligibleTaskCount={3}
-        onPairingCreated={onPairingCreated}
       />,
     )
 
     await user.click(screen.getByRole('button', { name: 'Confirm Dialog' }))
 
     await waitFor(() => {
-      expect(invalidate).toHaveBeenCalledTimes(1)
+      expect(serverFnMock).toHaveBeenCalledWith({ data: { groupId: 'group-1' } })
     })
-    expect(onPairingCreated).toHaveBeenCalledWith('pairing-1')
-    expect(events).toEqual(['created', 'invalidate'])
-    expect(mockedToast.success).toHaveBeenCalledWith('Pairs created successfully')
+    expect(invalidate).not.toHaveBeenCalled()
+    expect(mockedToast.success).not.toHaveBeenCalled()
   })
 
   it('shows an error toast when pair creation throws', async () => {

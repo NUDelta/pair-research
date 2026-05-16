@@ -127,7 +127,6 @@ export default function SingleGroupPageContent({
                     <MakePairsButton
                       groupId={groupInfo.id}
                       eligibleTaskCount={tasks.length}
-                      onPairingCreated={handlePairingCreated}
                     />
                   )}
                 </>
