@@ -35,7 +35,7 @@ export async function handleUpsertTask(
     if (group?.active_pairing_id !== null && group?.active_pairing_id !== undefined) {
       return {
         success: false,
-        message: 'You already have a task in the current active pairing',
+        message: 'Task edits are disabled while this group has an active pairing',
       }
     }
 
@@ -68,7 +68,7 @@ export async function handleUpsertTask(
 
     return {
       success: true,
-      message: 'You have update your task successfully',
+      message: 'You have updated your task successfully',
     }
   }
   catch (error) {
@@ -134,7 +134,7 @@ export async function handleDeleteTask(
 
     return {
       success: true,
-      message: 'You have delete your task successfully',
+      message: 'You have deleted your task successfully',
     }
   }
   catch (error) {
