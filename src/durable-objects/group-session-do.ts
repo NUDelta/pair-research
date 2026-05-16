@@ -10,6 +10,7 @@ import type {
 } from './group-session/types'
 import type { GroupSessionEvent } from '@/features/groups/lib/groupSessionEvents'
 import { DurableObject } from 'cloudflare:workers'
+import { GROUP_SESSION_WEBSOCKET_PROTOCOL } from '@/features/groups/lib/groupSessionProtocol'
 import { getPrisma } from './group-session/database'
 import { handleMakePairs } from './group-session/pairing-actions'
 import { handleResetPool } from './group-session/pool-actions'
@@ -53,6 +54,9 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
 
     return new Response(null, {
       status: 101,
+      headers: {
+        'Sec-WebSocket-Protocol': GROUP_SESSION_WEBSOCKET_PROTOCOL,
+      },
       webSocket: client,
     })
   }

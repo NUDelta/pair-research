@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { GROUP_SESSION_WEBSOCKET_PROTOCOL } from '@/features/groups/lib/groupSessionProtocol'
 import { subscribeToGroupTaskChanges } from './subscribeToGroupTaskChanges'
 
 class WebSocketMock {
@@ -6,7 +7,10 @@ class WebSocketMock {
 
   close = vi.fn()
 
-  constructor(public readonly url: string) {
+  constructor(
+    public readonly url: string,
+    public readonly protocols?: string | string[],
+  ) {
     WebSocketMock.instances.push(this)
   }
 
@@ -36,7 +40,9 @@ describe('subscribeToGroupTaskChanges', () => {
 
     expect(getToken).toHaveBeenCalledTimes(2)
     expect(WebSocketMock.instances).toHaveLength(1)
-    expect(WebSocketMock.instances[0].url).toContain('/api/group-sessions/group-1/realtime?token=token-1')
+    expect(WebSocketMock.instances[0].url).toContain('/api/group-sessions/group-1/realtime')
+    expect(WebSocketMock.instances[0].url).not.toContain('token-1')
+    expect(WebSocketMock.instances[0].protocols).toEqual([GROUP_SESSION_WEBSOCKET_PROTOCOL, 'token-1'])
 
     unsubscribe()
   })

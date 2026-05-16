@@ -1,5 +1,6 @@
 import type { GroupSessionEvent } from '@/features/groups/lib/groupSessionEvents'
 import { parseGroupSessionEvent } from '@/features/groups/lib/groupSessionEvents'
+import { GROUP_SESSION_WEBSOCKET_PROTOCOL } from '@/features/groups/lib/groupSessionProtocol'
 
 type GroupSessionEventListener = (event: GroupSessionEvent) => void | Promise<void>
 type GroupSessionTokenLoader = () => Promise<string | null>
@@ -14,10 +15,10 @@ interface GroupTaskChannelEntry {
 const groupTaskChannels = new Map<string, GroupTaskChannelEntry>()
 const RECONNECT_DELAY_MS = 750
 
-function getRealtimeUrl(groupId: string, token: string) {
+function getRealtimeUrl(groupId: string) {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 
-  return `${protocol}//${window.location.host}/api/group-sessions/${groupId}/realtime?token=${encodeURIComponent(token)}`
+  return `${protocol}//${window.location.host}/api/group-sessions/${groupId}/realtime`
 }
 
 function fanOut(entry: GroupTaskChannelEntry, event: GroupSessionEvent) {
@@ -63,7 +64,7 @@ async function connectGroupSession(
 
   let socket: WebSocket
   try {
-    socket = new WebSocket(getRealtimeUrl(groupId, token))
+    socket = new WebSocket(getRealtimeUrl(groupId), [GROUP_SESSION_WEBSOCKET_PROTOCOL, token])
   }
   catch {
     scheduleReconnect(groupId, entry, getToken)
