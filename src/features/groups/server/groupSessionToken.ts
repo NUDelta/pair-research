@@ -91,24 +91,29 @@ export async function verifyGroupSessionTokenValue(
   }
 
   const expectedSignature = await sign(encodedPayload, secret)
-  if (!await timingSafeEqual(signature, expectedSignature)) {
+  try {
+    if (!await timingSafeEqual(signature, expectedSignature)) {
+      return null
+    }
+
+    const payloadText = new TextDecoder().decode(base64UrlToBytes(encodedPayload))
+    const payload = JSON.parse(payloadText) as Partial<GroupSessionTokenPayload>
+
+    if (
+      typeof payload.groupId !== 'string'
+      || typeof payload.userId !== 'string'
+      || typeof payload.exp !== 'number'
+      || payload.groupId !== expectedGroupId
+      || payload.exp < Math.floor(Date.now() / 1000)
+    ) {
+      return null
+    }
+
+    return payload as GroupSessionTokenPayload
+  }
+  catch {
     return null
   }
-
-  const payloadText = new TextDecoder().decode(base64UrlToBytes(encodedPayload))
-  const payload = JSON.parse(payloadText) as Partial<GroupSessionTokenPayload>
-
-  if (
-    typeof payload.groupId !== 'string'
-    || typeof payload.userId !== 'string'
-    || typeof payload.exp !== 'number'
-    || payload.groupId !== expectedGroupId
-    || payload.exp < Math.floor(Date.now() / 1000)
-  ) {
-    return null
-  }
-
-  return payload as GroupSessionTokenPayload
 }
 
 export const createGroupSessionToken = createServerFn({ method: 'POST' })

@@ -30,7 +30,7 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
   }
 
   async fetch(request: Request): Promise<Response> {
-    if (request.headers.get('Upgrade') !== 'websocket') {
+    if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
       return new Response('Expected WebSocket upgrade', { status: 426 })
     }
 

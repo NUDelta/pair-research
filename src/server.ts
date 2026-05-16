@@ -5,6 +5,10 @@ export { GroupSessionDO } from './durable-objects/group-session-do'
 
 const GROUP_SESSION_REALTIME_ROUTE = /^\/api\/group-sessions\/([^/]+)\/realtime$/
 
+function isWebSocketUpgrade(request: Request): boolean {
+  return request.headers.get('Upgrade')?.toLowerCase() === 'websocket'
+}
+
 const startEntry = createServerEntry({
   async fetch(request, opts) {
     return startHandler.fetch(request, opts)
@@ -20,7 +24,7 @@ export default {
       const groupId = routeMatch[1]
       const token = url.searchParams.get('token')
 
-      if (token === null || request.headers.get('Upgrade') !== 'websocket') {
+      if (token === null || !isWebSocketUpgrade(request)) {
         return new Response('Unauthorized group session', { status: 401 })
       }
 
