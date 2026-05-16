@@ -76,10 +76,6 @@ vi.mock('@/features/groups/hooks/useTaskRealtimeListener', () => ({
   useTaskRealtimeListener: mockUseTaskRealtimeListener,
 }))
 
-vi.mock('@/features/groups/hooks/useRatingProgressRealtimeRefresh', () => ({
-  useRatingProgressRealtimeRefresh: vi.fn(),
-}))
-
 vi.mock('@/features/groups/lib/pairingCelebration', () => ({
   shouldCelebratePairingActivation: mockShouldCelebratePairingActivation,
 }))
