@@ -50,6 +50,26 @@ const GroupCard = ({
   const isNavigable = href !== undefined
   const acceptPending = controlledIsAccepting ?? isAccepting
 
+  const settingsAction = isAdmin && !isPending
+    ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          onClick={() => {
+            void router.navigate({
+              to: '/groups/$slug/settings',
+              params: { slug: group.id },
+            })
+          }}
+          aria-label={`Open settings for ${groupName}`}
+          className="absolute right-4 top-4 z-10 hover-lift-sm hover:rotate-2"
+        >
+          <Settings aria-hidden="true" />
+        </Button>
+      )
+    : null
+
   const onAccept = async () => {
     if (onAcceptInvitation !== undefined) {
       try {
@@ -81,29 +101,10 @@ const GroupCard = ({
       )}
     >
       <div className="space-y-2">
-        <CardHeader className="flex justify-between items-center">
+        <CardHeader className={cn('flex justify-between items-center', settingsAction !== null && 'pr-14')}>
           <CardTitle className="transition-colors duration-300 ease-out group-hover:text-foreground/80">
             {groupName}
           </CardTitle>
-          {isAdmin && !isPending && (
-            <Button
-              variant="ghost"
-              size="icon"
-              type="button"
-              onClick={(event_) => {
-                event_.preventDefault()
-                event_.stopPropagation()
-                void router.navigate({
-                  to: '/groups/$slug/settings',
-                  params: { slug: group.id },
-                })
-              }}
-              aria-label="Settings"
-              className="hover-lift-sm hover:rotate-2"
-            >
-              <Settings aria-hidden="true" />
-            </Button>
-          )}
         </CardHeader>
         <CardContent>
           {descriptionParagraphs.length > 0
@@ -163,13 +164,21 @@ const GroupCard = ({
 
   return href !== undefined
     ? (
-        <Link to="/groups/$slug" params={{ slug: href }}>
-          {CardContentComponent}
-        </Link>
+        <div className="relative h-full w-full">
+          <Link
+            to="/groups/$slug"
+            params={{ slug: href }}
+            className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {CardContentComponent}
+          </Link>
+          {settingsAction}
+        </div>
       )
     : (
-        <div className="h-full w-full">
+        <div className="relative h-full w-full">
           {CardContentComponent}
+          {settingsAction}
         </div>
       )
 }

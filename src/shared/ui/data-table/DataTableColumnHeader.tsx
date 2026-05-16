@@ -32,7 +32,12 @@ export function DataTableColumnHeader<TData, TValue>({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="-ml-3 h-8">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-3 h-8"
+          aria-label={`Column options for ${title}`}
+        >
           <span>{title}</span>
           <Icon data-icon="inline-end" />
         </Button>
@@ -41,18 +46,18 @@ export function DataTableColumnHeader<TData, TValue>({
         <DropdownMenuGroup>
           {column.getCanSort() && (
             <>
-              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+              <DropdownMenuItem onSelect={() => column.toggleSorting(false)}>
                 <ArrowUpIcon data-icon="inline-start" />
                 Asc
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+              <DropdownMenuItem onSelect={() => column.toggleSorting(true)}>
                 <ArrowDownIcon data-icon="inline-start" />
                 Desc
               </DropdownMenuItem>
             </>
           )}
           {column.getCanHide() && (
-            <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+            <DropdownMenuItem onSelect={() => column.toggleVisibility(false)}>
               <EyeOffIcon data-icon="inline-start" />
               Hide column
             </DropdownMenuItem>

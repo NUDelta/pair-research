@@ -1,6 +1,6 @@
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { useTransition } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { makePairs } from '@/features/groups/server/tasks'
 import { DoubleConfirmDialog } from '@/shared/ui'
@@ -9,10 +9,11 @@ import { Button } from '@/shared/ui/button'
 interface Props {
   groupId: string
   eligibleTaskCount: number
+  onPairingCreated?: (pairingId?: string) => void
 }
 
-const MakePairsButton = ({ groupId, eligibleTaskCount }: Props) => {
-  const [isPending, startTransition] = useTransition()
+const MakePairsButton = ({ groupId, eligibleTaskCount, onPairingCreated }: Props) => {
+  const [isPending, setIsPending] = useState(false)
   const router = useRouter()
   const makePairsFn = useServerFn(makePairs)
   const isDisabled = eligibleTaskCount < 2 || isPending
@@ -23,16 +24,30 @@ const MakePairsButton = ({ groupId, eligibleTaskCount }: Props) => {
       : undefined
 
   const handleMakePairs = async () => {
-    startTransition(async () => {
+    if (isPending) {
+      return
+    }
+
+    setIsPending(true)
+
+    try {
       const response = await makePairsFn({ data: { groupId } })
       if (response.success) {
+        onPairingCreated?.(response.data?.pairingId)
         toast.success(response.message)
         await router.invalidate()
       }
       else {
         toast.error(response.message)
       }
-    })
+    }
+    catch (error) {
+      console.error(error)
+      toast.error('Failed to make pairs. Please try again.')
+    }
+    finally {
+      setIsPending(false)
+    }
   }
 
   return (
@@ -52,6 +67,7 @@ const MakePairsButton = ({ groupId, eligibleTaskCount }: Props) => {
       confirmText="Make Pairs"
       cancelText="Cancel"
       onConfirm={handleMakePairs}
+      pendingText="Making pairs..."
     />
   )
 }

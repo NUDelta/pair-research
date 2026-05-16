@@ -76,7 +76,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
         </Button>
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <FolderCogIcon className="size-5 text-muted-foreground" />
+            <FolderCogIcon className="size-5 text-muted-foreground" aria-hidden="true" />
             <h1 className="text-3xl font-semibold tracking-tight">Group settings</h1>
           </div>
           <p className="max-w-3xl text-muted-foreground">
@@ -90,7 +90,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
 
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1">
-          <UsersIcon className="size-4" />
+          <UsersIcon className="size-4" aria-hidden="true" />
           <span>
             {confirmedMembers.length}
             {' '}
@@ -98,7 +98,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
           </span>
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1">
-          <ShieldCheckIcon className="size-4" />
+          <ShieldCheckIcon className="size-4" aria-hidden="true" />
           <span>
             {adminMembers.length}
             {' '}
@@ -106,7 +106,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
           </span>
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1">
-          <KeyRoundIcon className="size-4" />
+          <KeyRoundIcon className="size-4" aria-hidden="true" />
           <span>
             {optimisticSettings.roles.length}
             {' '}
@@ -131,7 +131,10 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
               <CardTitle className="-mb-4">Settings</CardTitle>
             </CardHeader>
             <CardContent>
-              <TabsList className="flex h-auto w-full flex-col items-stretch gap-1 bg-transparent p-0">
+              <TabsList
+                aria-label="Group settings sections"
+                className="flex h-auto w-full flex-col items-stretch gap-1 bg-transparent p-0"
+              >
                 {sections.map((section) => {
                   const SectionIcon = section.icon
 
@@ -141,7 +144,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
                       value={section.value}
                       className="h-auto w-full justify-start gap-3 rounded-lg border px-4 py-3 text-left hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
-                      <SectionIcon />
+                      <SectionIcon aria-hidden="true" />
                       <span className="flex flex-col items-start">
                         <span>{section.title}</span>
                       </span>

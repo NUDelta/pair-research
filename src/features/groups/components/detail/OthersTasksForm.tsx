@@ -35,7 +35,7 @@ const OthersTasksForm = ({
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({})
   const inFlightTaskIdsRef = useRef(new Set<string>())
   const batchInFlightRef = useRef(false)
-  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>()
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const queuedRatingsRef = useRef<TaskRatings>({})
   const savedRatingsRef = useRef<TaskRatings>(buildRatingsMap(tasks))
 
@@ -48,7 +48,14 @@ const OthersTasksForm = ({
   }, [])
 
   useEffect(() => {
-    const nextSavedRatings = buildRatingsMap(tasks)
+    const incomingRatings = buildRatingsMap(tasks)
+    const nextSavedRatings: TaskRatings = {}
+
+    for (const task of tasks) {
+      const incomingRating = incomingRatings[task.id]
+      nextSavedRatings[task.id] = incomingRating ?? savedRatingsRef.current[task.id]
+    }
+
     savedRatingsRef.current = nextSavedRatings
     // eslint-disable-next-line react/set-state-in-effect
     setSavedRatings(nextSavedRatings)
