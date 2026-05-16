@@ -106,7 +106,7 @@ export default function HorseRace({ currentUserId, ratings, tasks }: HorseRacePr
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={8} className="whitespace-nowrap">
-                      {entry.userId}
+                      {entry.fullName ?? 'Group member'}
                     </TooltipContent>
                   </Tooltip>
                 </div>

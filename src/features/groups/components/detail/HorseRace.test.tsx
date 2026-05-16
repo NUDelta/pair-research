@@ -93,7 +93,7 @@ describe('horseRace', () => {
     expect(screen.queryByLabelText('Horse race track')).not.toBeInTheDocument()
   })
 
-  it('shows the member user id in a raised tooltip when hovering an avatar', async () => {
+  it('shows the member display name in a raised tooltip when hovering an avatar', async () => {
     const user = userEvent.setup()
 
     render(
@@ -131,7 +131,7 @@ describe('horseRace', () => {
     await user.hover(adaAvatar)
 
     await waitFor(() => {
-      expect(screen.getByRole('tooltip')).toHaveTextContent('user-1')
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Ada')
     })
     expect(document.querySelector('[data-slot="tooltip-content"]')).toHaveClass('z-50')
   })
