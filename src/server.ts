@@ -1,12 +1,18 @@
-import handler, { createServerEntry } from '@tanstack/react-start/server-entry'
+import startHandler, { createServerEntry } from '@tanstack/react-start/server-entry'
 import { verifyGroupSessionTokenValue } from '@/features/groups/server/groupSessionToken'
 
 export { GroupSessionDO } from './durable-objects/group-session-do'
 
 const GROUP_SESSION_REALTIME_ROUTE = /^\/api\/group-sessions\/([^/]+)\/realtime$/
 
-export default createServerEntry({
-  async fetch(request, env: Cloudflare.Env) {
+const startEntry = createServerEntry({
+  async fetch(request, opts) {
+    return startHandler.fetch(request, opts)
+  },
+})
+
+export default {
+  async fetch(request, env) {
     const url = new URL(request.url)
     const routeMatch = GROUP_SESSION_REALTIME_ROUTE.exec(url.pathname)
 
@@ -30,6 +36,6 @@ export default createServerEntry({
       return env.GROUP_SESSIONS.getByName(groupId).fetch(new Request(request, { headers }))
     }
 
-    return handler.fetch(request)
+    return startEntry.fetch(request)
   },
-})
+} satisfies ExportedHandler<Cloudflare.Env>

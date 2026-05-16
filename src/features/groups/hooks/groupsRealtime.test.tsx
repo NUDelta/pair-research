@@ -109,7 +109,10 @@ describe('groups realtime hooks', () => {
   })
 
   it('syncs the current task description when the loader data changes', async () => {
-    const { result, rerender } = renderHook(
+    const { result, rerender } = renderHook<
+      ReturnType<typeof useCurrentUserTaskDescription>,
+      { description: string | null }
+    >(
       ({ description }: { description: string | null }) =>
         useCurrentUserTaskDescription('group-1', 'user-1', description),
       {

@@ -41,7 +41,7 @@ interface MakePairsResponse {
 const ACTIVE_PAIRING_EXISTS_MESSAGE = 'This group already has an active pairing. Reset the pool before making new pairs.'
 const POOL_CHANGED_MESSAGE = 'The pool changed before pairs could be created. Please review the current pool and try again.'
 
-interface StoredTaskRow {
+interface StoredTaskRow extends Record<string, SqlStorageValue> {
   id: string
   user_id: string
   description: string
@@ -51,7 +51,7 @@ interface StoredTaskRow {
   updated_at: string
 }
 
-interface StoredRatingRow {
+interface StoredRatingRow extends Record<string, SqlStorageValue> {
   task_id: string
   user_id: string
   help_capacity: number
