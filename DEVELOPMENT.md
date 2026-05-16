@@ -125,7 +125,7 @@ This keeps the generated bindings in sync with the environment values expected b
 `wrangler.jsonc` defines the runtime bindings used by the Worker:
 
 - `R2_BUCKET` stores uploaded avatar objects.
-- `GROUP_SESSIONS` is a Durable Object namespace. The app uses one `GroupSessionDO` instance per group ID to coordinate active pool tasks, ratings, pair creation, reset events, and realtime WebSocket fan-out.
+- `GROUP_SESSIONS` is a Durable Object namespace. The app uses one `GroupSessionDO` instance per group ID to coordinate active pool tasks, ratings, pair creation, reset events, and realtime WebSocket fan-out. Active pool task and rating edits are staged in Durable Object SQLite storage first; Postgres persistence happens when the pairing is created or the pool is reset.
 
 When adding or renaming a binding, update `wrangler.jsonc`, run `pnpm cf-typegen`, and verify the generated `cloudflare-env.d.ts` change.
 

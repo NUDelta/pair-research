@@ -80,10 +80,10 @@ The usual flow is:
 These tools have separate responsibilities:
 
 - Supabase Auth manages users, sessions, auth cookies, password reset, OAuth, and invitations.
-- Supabase Postgres stores the application data.
+- Supabase Postgres stores the application data that must survive completed group rounds.
 - Prisma provides the typed database client used by server code.
 - Cloudflare Workers run the TanStack Start server output in production.
-- Cloudflare Durable Objects provide one realtime coordination object per group for active pool tasks, ratings, pairing creation, and WebSocket fan-out.
+- Cloudflare Durable Objects provide one realtime coordination object per group for active pool tasks, ratings, pairing creation, and WebSocket fan-out. The pre-pairing active pool is staged in Durable Object SQLite storage and is persisted to Postgres when a pairing is created.
 - Cloudflare R2 stores avatar image objects.
 
 Prisma connects to the same Postgres database that Supabase backs. Supabase Auth still owns auth-managed user identity, while Prisma owns application tables such as profiles, groups, members, tasks, ratings, pairings, and roles.
@@ -128,13 +128,13 @@ The groups feature is the main product surface. It combines route loader data, l
 
 Group pages follow this pattern:
 
-- loaders provide the initial authoritative state
+- loaders provide group metadata from Postgres and active pool snapshots from the group Durable Object
 - components render the current group, tasks, ratings, members, and active pairing
 - hooks subscribe to the group session WebSocket for task, rating, pairing, and reset events
 - server functions validate input and route privileged group pairing writes to the per-group Durable Object
-- router invalidation reconciles local state with server truth after important transitions
+- router invalidation reconciles local state with server truth after important transitions such as pairing creation and pool reset
 
-Pairing logic lives under `src/features/groups/lib/pairing`. It is pure application logic and should stay separated from database writes. The group Durable Object prepares active pool data, calls the pairing logic, and persists the resulting round.
+Pairing logic lives under `src/features/groups/lib/pairing`. It is pure application logic and should stay separated from database writes. The group Durable Object prepares active pool data from its SQLite snapshot, calls the pairing logic, then persists the resulting round, paired tasks, task ratings, pairs, and affinities to Postgres in one transaction.
 
 ### Shared UI and Layout
 
