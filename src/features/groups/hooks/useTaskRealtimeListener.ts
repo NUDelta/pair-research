@@ -19,17 +19,23 @@ export const useTaskRealtimeListener = (
   groupId: string,
   _currentUserId: string,
   initialTasks?: Task[],
+  onPairingCreated?: (pairingId: string) => void,
 ) => {
   const router = useRouter()
   const createGroupSessionTokenFn = useServerFn(createGroupSessionToken)
   const [tasks, setTasks] = useState<Task[]>(initialTasks || [])
   const tasksRef = useRef<Task[]>(initialTasks || [])
+  const onPairingCreatedRef = useRef(onPairingCreated)
   const handledPairingRefreshIdsRef = useRef(new Set<string>())
   const getToken = useCallback(async () => {
     const response = await createGroupSessionTokenFn({ data: { groupId } })
 
     return response.success ? response.token : null
   }, [createGroupSessionTokenFn, groupId])
+
+  useEffect(() => {
+    onPairingCreatedRef.current = onPairingCreated
+  }, [onPairingCreated])
 
   useEffect(() => {
     tasksRef.current = tasks
@@ -129,6 +135,7 @@ export const useTaskRealtimeListener = (
       case 'pairing:created':
         if (!handledPairingRefreshIdsRef.current.has(event.pairingId)) {
           handledPairingRefreshIdsRef.current.add(event.pairingId)
+          onPairingCreatedRef.current?.(event.pairingId)
           toast.success('Pairs were created. Refreshing...')
           await router.invalidate()
         }

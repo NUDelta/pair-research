@@ -47,7 +47,12 @@ export default function SingleGroupPageContent({
   const { userId: currentUserId } = groupInfo
   const [showPairingConfetti, setShowPairingConfetti] = useState(false)
   const previousActivePairingIdRef = useRef<string | null>(groupInfo.activePairingId ?? null)
-  const { tasks } = useTaskRealtimeListener(groupInfo.id, currentUserId, initialTasks)
+  const { tasks } = useTaskRealtimeListener(
+    groupInfo.id,
+    currentUserId,
+    initialTasks,
+    pairingId => handlePairingCreated(pairingId),
+  )
 
   const currentUserTask = tasks.find(task => task.userId === currentUserId)
   const othersTasks = tasks.filter(task => task.userId !== currentUserId)
@@ -81,7 +86,7 @@ export default function SingleGroupPageContent({
     previousActivePairingIdRef.current = nextActivePairingId
   }, [groupInfo.activePairingId])
 
-  const handlePairingCreated = (pairingId?: string) => {
+  function handlePairingCreated(pairingId?: string) {
     setShowPairingConfetti(true)
 
     if (pairingId !== undefined) {

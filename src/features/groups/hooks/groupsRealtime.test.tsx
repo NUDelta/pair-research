@@ -290,10 +290,22 @@ describe('groups realtime hooks', () => {
     })
   })
 
-  it('invalidates the group route once for a created pairing', async () => {
+  it('reports a created pairing before refreshing the group route', async () => {
     const initialTasks: Task[] = []
+    const events: string[] = []
+    const onPairingCreated = vi.fn(() => {
+      events.push('pairing-created')
+    })
+    vi.mocked(toast.success).mockImplementation(() => {
+      events.push('toast')
+      return 'toast-id'
+    })
+    invalidate.mockImplementation(async () => {
+      events.push('invalidate')
+    })
+
     renderHook(() =>
-      useTaskRealtimeListener('group-1', 'user-1', initialTasks),
+      useTaskRealtimeListener('group-1', 'user-1', initialTasks, onPairingCreated),
     )
 
     await groupSessionHandlers[0]({
@@ -310,5 +322,8 @@ describe('groups realtime hooks', () => {
       expect(toast.success).toHaveBeenCalledWith('Pairs were created. Refreshing...')
       expect(invalidate).toHaveBeenCalledTimes(1)
     })
+    expect(onPairingCreated).toHaveBeenCalledTimes(1)
+    expect(onPairingCreated).toHaveBeenCalledWith('pairing-1')
+    expect(events).toEqual(['pairing-created', 'toast', 'invalidate'])
   })
 })
