@@ -20,6 +20,7 @@ import { handleDeleteTask, handleUpsertTask } from './group-session/task-actions
 
 export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
   private hydrated = false
+  private hydrating: Promise<void> | null = null
   private operationQueue: Promise<unknown> = Promise.resolve()
 
   constructor(ctx: DurableObjectState, env: Cloudflare.Env) {
@@ -41,16 +42,19 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
       return new Response('Missing group session user', { status: 401 })
     }
 
-    await this.ensureHydrated(groupId)
-
     const pair = new WebSocketPair()
     const [client, server] = Object.values(pair) as [WebSocket, WebSocket]
-    server.serializeAttachment({ userId })
-    this.ctx.acceptWebSocket(server)
-    server.send(JSON.stringify({
-      type: 'snapshot',
-      tasks: getTasksForUser(this.ctx, userId),
-    } satisfies GroupSessionEvent))
+
+    await this.runExclusive(async () => {
+      await this.ensureHydrated(groupId)
+
+      server.serializeAttachment({ userId })
+      this.ctx.acceptWebSocket(server)
+      server.send(JSON.stringify({
+        type: 'snapshot',
+        tasks: getTasksForUser(this.ctx, userId),
+      } satisfies GroupSessionEvent))
+    })
 
     return new Response(null, {
       status: 101,
@@ -137,6 +141,21 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
       return
     }
 
+    if (this.hydrating !== null) {
+      await this.hydrating
+      return
+    }
+
+    this.hydrating = this.hydrate(groupId, prisma)
+    try {
+      await this.hydrating
+    }
+    finally {
+      this.hydrating = null
+    }
+  }
+
+  private async hydrate(groupId: string, prisma?: PrismaClient): Promise<void> {
     if (hasStoredGroupSessionState(this.ctx)) {
       this.hydrated = true
       return
