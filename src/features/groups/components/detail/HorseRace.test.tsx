@@ -1,11 +1,21 @@
+import type { ReactElement } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { TooltipProvider } from '@/shared/ui/tooltip'
 import HorseRace from './HorseRace'
+
+function renderWithTooltipProvider(element: ReactElement) {
+  return render(
+    <TooltipProvider>
+      {element}
+    </TooltipProvider>,
+  )
+}
 
 describe('horseRace', () => {
   it('renders all pool members and badges only the top three avatars', () => {
-    render(
+    renderWithTooltipProvider(
       <HorseRace
         currentUserId="user-1"
         ratings={{
@@ -73,7 +83,7 @@ describe('horseRace', () => {
   })
 
   it('does not render when fewer than two people are in the pool', () => {
-    render(
+    renderWithTooltipProvider(
       <HorseRace
         tasks={[
           {
@@ -96,7 +106,7 @@ describe('horseRace', () => {
   it('shows the member display name in a raised tooltip when hovering an avatar', async () => {
     const user = userEvent.setup()
 
-    render(
+    renderWithTooltipProvider(
       <HorseRace
         tasks={[
           {
