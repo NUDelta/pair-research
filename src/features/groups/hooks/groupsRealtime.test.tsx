@@ -1,4 +1,4 @@
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import type { GroupSessionEvent } from '@/features/groups/lib/groupSessionEvents'
 import { renderHook, waitFor } from '@testing-library/react'
 import { toast } from 'sonner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,58 +6,46 @@ import { useCurrentUserTaskDescription } from './useCurrentUserTaskDescription'
 import { useTaskRealtimeListener } from './useTaskRealtimeListener'
 
 const {
-  removeChannel,
   invalidate,
-  subscribe,
-  on,
-  channel,
   mockedUseRouter,
-  from,
-  postgresHandlers,
+  mockedUseServerFn,
+  subscribeToGroupTaskChanges,
+  groupSessionHandlers,
 } = vi.hoisted(() => {
-  const removeChannel = vi.fn()
   const invalidate = vi.fn()
-  const subscribe = vi.fn(() => ({ unsubscribe: vi.fn() }))
-  const postgresHandlers: Array<(payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => unknown> = []
-  const on = vi.fn(function on(
-    _event: string,
-    _config: Record<string, unknown>,
-    handler: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => unknown,
-  ) {
-    postgresHandlers.push(handler)
-    return { on, subscribe }
-  })
-  const channel = vi.fn(() => ({ on, subscribe }))
   const mockedUseRouter = vi.fn(() => ({
     invalidate,
   }))
-  const from = vi.fn(() => ({
-    delete: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-  }))
+  const mockedUseServerFn = vi.fn(() => vi.fn(async () => ({ success: true, token: 'token' })))
+  const groupSessionHandlers: Array<(event: GroupSessionEvent) => unknown> = []
+  const subscribeToGroupTaskChanges = vi.fn((
+    _groupId: string,
+    _getToken: () => Promise<string | null>,
+    handler: (event: GroupSessionEvent) => unknown,
+  ) => {
+    groupSessionHandlers.push(handler)
+    return vi.fn()
+  })
 
   return {
-    removeChannel,
     invalidate,
-    subscribe,
-    on,
-    channel,
     mockedUseRouter,
-    from,
-    postgresHandlers,
+    mockedUseServerFn,
+    subscribeToGroupTaskChanges,
+    groupSessionHandlers,
   }
 })
 
-vi.mock('@/shared/supabase/client', () => ({
-  createClient: () => ({
-    channel,
-    removeChannel,
-    from,
-  }),
-}))
-
 vi.mock('@tanstack/react-router', () => ({
   useRouter: mockedUseRouter,
+}))
+
+vi.mock('@tanstack/react-start', () => ({
+  useServerFn: mockedUseServerFn,
+}))
+
+vi.mock('@/features/groups/server/groupSessionToken', () => ({
+  createGroupSessionToken: vi.fn(),
 }))
 
 vi.mock('sonner', () => ({
@@ -66,16 +54,17 @@ vi.mock('sonner', () => ({
   },
 }))
 
+vi.mock('./subscribeToGroupTaskChanges', () => ({
+  subscribeToGroupTaskChanges,
+}))
+
 describe('groups realtime hooks', () => {
   beforeEach(() => {
-    channel.mockClear()
-    on.mockClear()
-    subscribe.mockClear()
-    removeChannel.mockClear()
     invalidate.mockClear()
     mockedUseRouter.mockClear()
-    from.mockClear()
-    postgresHandlers.length = 0
+    mockedUseServerFn.mockClear()
+    subscribeToGroupTaskChanges.mockClear()
+    groupSessionHandlers.length = 0
     vi.mocked(toast.success).mockClear()
   })
 
@@ -139,7 +128,7 @@ describe('groups realtime hooks', () => {
     })
   })
 
-  it('shares one group task channel across the current-user and others-task hooks', async () => {
+  it('shares the group session subscription between current-user and others-task hooks', () => {
     const initialTasks: Task[] = [
       {
         id: 'task-1',
@@ -151,46 +140,56 @@ describe('groups realtime hooks', () => {
       },
     ]
 
-    const { result, unmount } = renderHook(() => ({
+    const { unmount } = renderHook(() => ({
       others: useTaskRealtimeListener('group-1', 'user-1', initialTasks),
       currentUser: useCurrentUserTaskDescription('group-1', 'user-1', null),
     }))
 
-    expect(channel).toHaveBeenCalledTimes(1)
-    expect(subscribe).toHaveBeenCalledTimes(1)
-    expect(postgresHandlers).toHaveLength(1)
+    expect(subscribeToGroupTaskChanges).toHaveBeenCalledTimes(2)
+    expect(groupSessionHandlers).toHaveLength(2)
 
-    const sharedHandler = postgresHandlers[0]
-    expect(sharedHandler).toBeTypeOf('function')
+    unmount()
+  })
 
-    await sharedHandler({
-      schema: 'public',
-      table: 'task',
-      eventType: 'UPDATE',
-      commit_timestamp: '2026-04-13T10:00:00.000Z',
-      errors: [],
-      new: {
-        id: 'task-2',
-        description: 'Updated own task',
-        user_id: 'user-1',
-        group_id: 'group-1',
-        created_at: '2026-04-13T10:00:00.000Z',
-        pairing_id: null,
-        delete_pending: false,
-      },
-      old: {},
+  it('applies group session snapshots to local task state', async () => {
+    const initialTasks: Task[] = []
+    const { result } = renderHook(() =>
+      useTaskRealtimeListener('group-1', 'user-1', initialTasks),
+    )
+
+    await groupSessionHandlers[0]({
+      type: 'snapshot',
+      tasks: [
+        {
+          id: 'task-2',
+          description: 'Updated task',
+          userId: 'user-2',
+          fullName: 'Teammate',
+          avatarUrl: null,
+          helpCapacity: 5,
+          ratingsCompletedCount: 1,
+          ratingsCompletionOrder: 7,
+        },
+      ],
     })
 
     await waitFor(() => {
-      expect(result.current.currentUser.currentDescription).toBe('Updated own task')
+      expect(result.current.tasks).toEqual([
+        {
+          id: 'task-2',
+          description: 'Updated task',
+          userId: 'user-2',
+          fullName: 'Teammate',
+          avatarUrl: null,
+          helpCapacity: 5,
+          ratingsCompletedCount: 1,
+          ratingsCompletionOrder: 7,
+        },
+      ])
     })
-    expect(result.current.others.tasks).toEqual(initialTasks)
-
-    unmount()
-    expect(removeChannel).toHaveBeenCalledTimes(1)
   })
 
-  it('removes a deleted task for other raters as soon as delete_pending is broadcast', async () => {
+  it('removes a deleted task for other raters', async () => {
     const initialTasks: Task[] = [
       {
         id: '1',
@@ -206,25 +205,10 @@ describe('groups realtime hooks', () => {
       useTaskRealtimeListener('group-1', 'user-1', initialTasks),
     )
 
-    const taskHandler = postgresHandlers[0]
-    expect(taskHandler).toBeTypeOf('function')
-
-    await taskHandler({
-      schema: 'public',
-      table: 'task',
-      eventType: 'UPDATE',
-      commit_timestamp: '2026-04-13T10:00:00.000Z',
-      errors: [],
-      new: {
-        id: 1,
-        description: 'Draft review',
-        user_id: 'user-2',
-        group_id: 'group-1',
-        created_at: '2026-04-13T10:00:00.000Z',
-        pairing_id: null,
-        delete_pending: true,
-      },
-      old: {},
+    await groupSessionHandlers[0]({
+      type: 'task:deleted',
+      taskId: '1',
+      userId: 'user-2',
     })
 
     await waitFor(() => {
@@ -232,106 +216,24 @@ describe('groups realtime hooks', () => {
     })
   })
 
-  it('invalidates the group route when a paired round is reset', async () => {
-    renderHook(() =>
-      useTaskRealtimeListener('group-1', 'user-1', []),
-    )
-
-    const taskHandler = postgresHandlers[0]
-    expect(taskHandler).toBeTypeOf('function')
-
-    await taskHandler({
-      schema: 'public',
-      table: 'task',
-      eventType: 'UPDATE',
-      commit_timestamp: '2026-04-13T10:00:00.000Z',
-      errors: [],
-      new: {
-        id: 'task-2',
-        description: 'Wrapped round task',
-        user_id: 'user-2',
-        group_id: 'group-1',
-        created_at: '2026-04-13T10:00:00.000Z',
-        pairing_id: 'pairing-1',
-        delete_pending: true,
-      },
-      old: {
-        id: 'task-2',
-        pairing_id: 'pairing-1',
-      },
-    })
-
-    await waitFor(() => {
-      expect(invalidate).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  it('shows the pairing refresh toast only once per pairing id', async () => {
-    const initialTasks: Task[] = [
-      {
-        id: 'task-1',
-        description: 'Draft review',
-        userId: 'user-2',
-        fullName: 'Teammate one',
-        avatarUrl: null,
-        helpCapacity: 3,
-      },
-      {
-        id: 'task-2',
-        description: 'Methods section',
-        userId: 'user-3',
-        fullName: 'Teammate two',
-        avatarUrl: null,
-        helpCapacity: 4,
-      },
-    ]
-
+  it('invalidates the group route once for a created pairing', async () => {
+    const initialTasks: Task[] = []
     renderHook(() =>
       useTaskRealtimeListener('group-1', 'user-1', initialTasks),
     )
 
-    const taskHandler = postgresHandlers[0]
-    expect(taskHandler).toBeTypeOf('function')
-
-    await taskHandler({
-      schema: 'public',
-      table: 'task',
-      eventType: 'UPDATE',
-      commit_timestamp: '2026-04-13T10:00:00.000Z',
-      errors: [],
-      new: {
-        id: 'task-1',
-        description: 'Draft review',
-        user_id: 'user-2',
-        group_id: 'group-1',
-        created_at: '2026-04-13T10:00:00.000Z',
-        pairing_id: 'pairing-1',
-        delete_pending: false,
-      },
-      old: {},
+    await groupSessionHandlers[0]({
+      type: 'pairing:created',
+      pairingId: 'pairing-1',
     })
-
-    await taskHandler({
-      schema: 'public',
-      table: 'task',
-      eventType: 'UPDATE',
-      commit_timestamp: '2026-04-13T10:00:01.000Z',
-      errors: [],
-      new: {
-        id: 'task-2',
-        description: 'Methods section',
-        user_id: 'user-3',
-        group_id: 'group-1',
-        created_at: '2026-04-13T10:00:01.000Z',
-        pairing_id: 'pairing-1',
-        delete_pending: false,
-      },
-      old: {},
+    await groupSessionHandlers[0]({
+      type: 'pairing:created',
+      pairingId: 'pairing-1',
     })
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledTimes(1)
-      expect(toast.success).toHaveBeenCalledWith('Task paired with another user! Refreshing...')
+      expect(toast.success).toHaveBeenCalledWith('Pairs were created. Refreshing...')
       expect(invalidate).toHaveBeenCalledTimes(1)
     })
   })
