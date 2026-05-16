@@ -189,87 +189,10 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         }
       }
 
-      const tasksWithHelpCapacity = await prisma.task.findMany({
-        where: {
-          group_id: groupId,
-          pairing_id: null,
-          delete_pending: {
-            not: true,
-          },
-        },
-        select: {
-          id: true,
-          description: true,
-          user_id: true,
-          profile: {
-            select: {
-              full_name: true,
-              avatar_url: true,
-            },
-          },
-          task_help_capacity: {
-            where: {
-              user_id: userId,
-            },
-            select: {
-              help_capacity: true,
-            },
-          },
-        },
-      })
-
-      const activeTaskIds = tasksWithHelpCapacity.map(task => task.id)
-      const poolRatingRows = activeTaskIds.length > 0
-        ? await prisma.task_help_capacity.findMany({
-            where: {
-              task_id: {
-                in: activeTaskIds,
-              },
-            },
-            select: {
-              id: true,
-              user_id: true,
-              task_id: true,
-            },
-          })
-        : []
-
-      const ratingProgressByUserId = poolRatingRows.reduce<Record<string, {
-        count: number
-        completionOrder: number | null
-      }>>((acc, rating) => {
-        // task_help_capacity rows are immutable per (task, user), so the largest
-        // row id for a user's active-pool ratings reflects their most recently
-        // completed new rating without being affected by later edits.
-        const ratingId = Number(rating.id)
-        const current = acc[rating.user_id] ?? {
-          count: 0,
-          completionOrder: null,
-        }
-
-        acc[rating.user_id] = {
-          count: current.count + 1,
-          completionOrder: current.completionOrder === null
-            ? ratingId
-            : Math.max(current.completionOrder, ratingId),
-        }
-
-        return acc
-      }, {})
-
-      const tasks = tasksWithHelpCapacity.map((task) => {
-        const progress = ratingProgressByUserId[task.user_id]
-
-        return {
-          id: String(task.id),
-          description: task.description,
-          userId: task.user_id,
-          fullName: task.profile.full_name,
-          avatarUrl: task.profile.avatar_url,
-          helpCapacity: task.task_help_capacity[0]?.help_capacity ?? null,
-          ratingsCompletedCount: progress?.count ?? 0,
-          ratingsCompletionOrder: progress?.completionOrder ?? null,
-        }
+      const { getGroupSession } = await import('@/shared/server/cloudflare/bindings.server')
+      const { tasks } = await getGroupSession(groupId).getSnapshot({
+        groupId,
+        userId,
       })
 
       return { groupInfo, tasks, currentUserActivePairingTaskWithProfile }

@@ -1,3 +1,5 @@
+import type { GroupSessionTask } from '@/features/groups/lib/groupSessionEvents'
+
 export type PrismaClient = Awaited<ReturnType<typeof import('@/shared/server/prisma').getPrismaClient>>
 
 export interface GroupSessionRequest {
@@ -33,6 +35,10 @@ export interface MakePairsResponse {
   }
 }
 
+export interface GroupSessionSnapshot {
+  tasks: GroupSessionTask[]
+}
+
 export interface StoredTaskRow extends Record<string, SqlStorageValue> {
   id: string
   user_id: string
@@ -53,6 +59,16 @@ export interface StoredRatingRow extends Record<string, SqlStorageValue> {
 export interface RatingProgress {
   count: number
   completionOrder: number | null
+}
+
+export interface StoredTaskInput {
+  id: string
+  user_id: string
+  description: string
+  full_name: string | null
+  avatar_url: string | null
+  created_at: string
+  updated_at: string
 }
 
 export const ACTIVE_PAIRING_EXISTS_MESSAGE = 'This group already has an active pairing. Reset the pool before making new pairs.'

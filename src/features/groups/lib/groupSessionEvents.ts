@@ -26,6 +26,9 @@ export type GroupSessionEvent
   | {
     type: 'ratings:updated'
     taskIds: string[]
+    userId: string
+    ratingsCompletedCount: number
+    ratingsCompletionOrder: number | null
   }
   | {
     type: 'pairing:created'
@@ -52,7 +55,12 @@ export function parseGroupSessionEvent(data: string): GroupSessionEvent | null {
       case 'task:deleted':
         return typeof event.taskId === 'string' && typeof event.userId === 'string' ? event : null
       case 'ratings:updated':
-        return Array.isArray(event.taskIds) ? event : null
+        return Array.isArray(event.taskIds)
+          && typeof event.userId === 'string'
+          && typeof event.ratingsCompletedCount === 'number'
+          && (event.ratingsCompletionOrder === null || typeof event.ratingsCompletionOrder === 'number')
+          ? event
+          : null
       case 'pairing:created':
         return typeof event.pairingId === 'string' ? event : null
       case 'pool:reset':

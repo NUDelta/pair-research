@@ -114,7 +114,7 @@ export async function handleMakePairs(
     }
 
     const pairedTaskIds = pairs.flatMap(pair => pair.taskIds)
-    const pairedTaskBigIds = pairedTaskIds.map(taskId => BigInt(taskId))
+    const pairedTaskIdSet = new Set(pairedTaskIds)
 
     const pairing = await prisma.$transaction(async (tx) => {
       const nextPairing = await tx.pairing.create({
@@ -135,24 +135,74 @@ export async function handleMakePairs(
         throw new Error(ACTIVE_PAIRING_EXISTS_MESSAGE)
       }
 
-      const pairedTasks = await tx.task.updateMany({
-        where: {
-          group_id: request.groupId,
-          id: {
-            in: pairedTaskBigIds,
-          },
-          pairing_id: null,
-          delete_pending: {
-            not: true,
-          },
-        },
-        data: {
-          pairing_id: nextPairing.id,
-        },
+      const persistedTasks = await Promise.all(
+        tasks.map(async task =>
+          tx.task.upsert({
+            where: {
+              user_id_group_id: {
+                user_id: task.user_id,
+                group_id: request.groupId,
+              },
+            },
+            update: {
+              description: task.description,
+              pairing_id: pairedTaskIdSet.has(task.id) ? nextPairing.id : null,
+              delete_pending: false,
+              updated_at: new Date(task.updated_at),
+            },
+            create: {
+              description: task.description,
+              user_id: task.user_id,
+              group_id: request.groupId,
+              pairing_id: pairedTaskIdSet.has(task.id) ? nextPairing.id : null,
+              delete_pending: false,
+              created_at: new Date(task.created_at),
+              updated_at: new Date(task.updated_at),
+            },
+            select: {
+              id: true,
+              user_id: true,
+            },
+          }),
+        ),
+      )
+      const persistedTaskIdByUserId = new Map(
+        persistedTasks.map(task => [task.user_id, task.id]),
+      )
+      const persistedTaskIdBySessionTaskId = new Map(
+        tasks.flatMap((task) => {
+          const persistedTaskId = persistedTaskIdByUserId.get(task.user_id)
+
+          return persistedTaskId === undefined ? [] : [[task.id, persistedTaskId] as const]
+        }),
+      )
+      const persistedTaskIds = Array.from(persistedTaskIdBySessionTaskId.values())
+      const ratingsToPersist = ratings.flatMap((rating) => {
+        const persistedTaskId = persistedTaskIdBySessionTaskId.get(rating.task_id)
+
+        return persistedTaskId === undefined
+          ? []
+          : [{
+              task_id: persistedTaskId,
+              user_id: rating.user_id,
+              help_capacity: rating.help_capacity,
+            }]
       })
 
-      if (pairedTasks.count !== pairedTaskBigIds.length) {
-        throw new Error(POOL_CHANGED_MESSAGE)
+      if (persistedTaskIds.length > 0) {
+        await tx.task_help_capacity.deleteMany({
+          where: {
+            task_id: {
+              in: persistedTaskIds,
+            },
+          },
+        })
+      }
+
+      if (ratingsToPersist.length > 0) {
+        await tx.task_help_capacity.createMany({
+          data: ratingsToPersist,
+        })
       }
 
       await tx.pair.createMany({

@@ -1,9 +1,17 @@
-import type { PrismaClient, RatingProgress, StoredRatingRow, StoredTaskRow } from './types'
+import type { PrismaClient, RatingProgress, StoredRatingRow, StoredTaskInput, StoredTaskRow } from './types'
 import type { GroupSessionTask } from '@/features/groups/lib/groupSessionEvents'
 
 interface ViewerRatingRow extends Record<string, SqlStorageValue> {
   task_id: string
   help_capacity: number
+}
+
+interface StoredTaskIdRow extends Record<string, SqlStorageValue> {
+  id: string
+}
+
+interface CountRow extends Record<string, SqlStorageValue> {
+  count: number
 }
 
 export function initializeGroupSessionStorage(ctx: DurableObjectState): void {
@@ -48,7 +56,17 @@ export function toStoredTask(
   }
 }
 
-export function upsertStoredTask(ctx: DurableObjectState, task: StoredTaskRow): void {
+export function upsertStoredTask(ctx: DurableObjectState, task: StoredTaskInput): void {
+  const replacedTaskIds = ctx.storage.sql.exec<StoredTaskIdRow>(
+    'SELECT id FROM active_tasks WHERE user_id = ? AND id != ?',
+    task.user_id,
+    task.id,
+  ).toArray().map(row => row.id)
+
+  for (const replacedTaskId of replacedTaskIds) {
+    ctx.storage.sql.exec('DELETE FROM ratings WHERE task_id = ?', replacedTaskId)
+  }
+  ctx.storage.sql.exec('DELETE FROM active_tasks WHERE user_id = ? AND id != ?', task.user_id, task.id)
   ctx.storage.sql.exec(
     `INSERT INTO active_tasks (id, user_id, description, full_name, avatar_url, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -93,6 +111,29 @@ export function upsertStoredRatings(
   }
 }
 
+export function upsertStoredRatingUpdates(
+  ctx: DurableObjectState,
+  userId: string,
+  updates: Array<{ taskId: string, capacity: number }>,
+): RatingProgress {
+  const completionOrderBase = Date.now()
+
+  for (const [index, update] of updates.entries()) {
+    ctx.storage.sql.exec(
+      `INSERT INTO ratings (task_id, user_id, help_capacity, completion_order)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(task_id, user_id) DO UPDATE SET
+         help_capacity = excluded.help_capacity`,
+      update.taskId,
+      userId,
+      update.capacity,
+      completionOrderBase + index,
+    )
+  }
+
+  return getRatingProgressForUser(ctx, userId)
+}
+
 export function clearStoredGroupSession(ctx: DurableObjectState): void {
   ctx.storage.sql.exec('DELETE FROM ratings')
   ctx.storage.sql.exec('DELETE FROM active_tasks')
@@ -106,10 +147,45 @@ export function getStoredTasks(ctx: DurableObjectState): StoredTaskRow[] {
   ).toArray()
 }
 
+export function hasStoredGroupSessionState(ctx: DurableObjectState): boolean {
+  const activeTaskCount = ctx.storage.sql.exec<CountRow>(
+    'SELECT COUNT(*) as count FROM active_tasks',
+  ).one().count
+  const ratingCount = ctx.storage.sql.exec<CountRow>(
+    'SELECT COUNT(*) as count FROM ratings',
+  ).one().count
+
+  return activeTaskCount > 0 || ratingCount > 0
+}
+
 export function getStoredRatings(ctx: DurableObjectState): StoredRatingRow[] {
   return ctx.storage.sql.exec<StoredRatingRow>(
     'SELECT task_id, user_id, help_capacity, completion_order FROM ratings',
   ).toArray()
+}
+
+export function getStoredTaskById(ctx: DurableObjectState, taskId: string): StoredTaskRow | null {
+  const rows = ctx.storage.sql.exec<StoredTaskRow>(
+    `SELECT id, user_id, description, full_name, avatar_url, created_at, updated_at
+     FROM active_tasks
+     WHERE id = ?`,
+    taskId,
+  ).toArray()
+
+  return rows[0] ?? null
+}
+
+export function getStoredTaskByUserId(ctx: DurableObjectState, userId: string): StoredTaskRow | null {
+  const rows = ctx.storage.sql.exec<StoredTaskRow>(
+    `SELECT id, user_id, description, full_name, avatar_url, created_at, updated_at
+     FROM active_tasks
+     WHERE user_id = ?
+     ORDER BY created_at ASC, id ASC
+     LIMIT 1`,
+    userId,
+  ).toArray()
+
+  return rows[0] ?? null
 }
 
 export function removeStoredTasks(ctx: DurableObjectState, taskIds: string[]): void {
@@ -154,6 +230,13 @@ export function getRatingProgressByUserId(ctx: DurableObjectState): Map<string, 
   }
 
   return progress
+}
+
+export function getRatingProgressForUser(ctx: DurableObjectState, userId: string): RatingProgress {
+  return getRatingProgressByUserId(ctx).get(userId) ?? {
+    count: 0,
+    completionOrder: null,
+  }
 }
 
 export async function hydrateGroupSessionStorage(

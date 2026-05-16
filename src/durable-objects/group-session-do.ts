@@ -2,6 +2,7 @@ import type { GroupSessionRuntime } from './group-session/runtime'
 import type {
   DeleteTaskRequest,
   GroupSessionRequest,
+  GroupSessionSnapshot,
   MakePairsResponse,
   PrismaClient,
   UpsertRatingsRequest,
@@ -13,7 +14,7 @@ import { getPrisma } from './group-session/database'
 import { handleMakePairs } from './group-session/pairing-actions'
 import { handleResetPool } from './group-session/pool-actions'
 import { handleUpsertRatings } from './group-session/rating-actions'
-import { getTasksForUser, hydrateGroupSessionStorage, initializeGroupSessionStorage } from './group-session/storage'
+import { getTasksForUser, hasStoredGroupSessionState, hydrateGroupSessionStorage, initializeGroupSessionStorage } from './group-session/storage'
 import { handleDeleteTask, handleUpsertTask } from './group-session/task-actions'
 
 export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
@@ -92,6 +93,16 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
     })
   }
 
+  async getSnapshot(request: GroupSessionRequest): Promise<GroupSessionSnapshot> {
+    return this.runExclusive(async () => {
+      await this.ensureHydrated(request.groupId)
+
+      return {
+        tasks: getTasksForUser(this.ctx, request.userId),
+      }
+    })
+  }
+
   private runtime(): GroupSessionRuntime {
     return {
       ctx: this.ctx,
@@ -119,6 +130,11 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
 
   private async ensureHydrated(groupId: string, prisma?: PrismaClient): Promise<void> {
     if (this.hydrated) {
+      return
+    }
+
+    if (hasStoredGroupSessionState(this.ctx)) {
+      this.hydrated = true
       return
     }
 

@@ -11,13 +11,13 @@ import { subscribeToGroupTaskChanges } from './subscribeToGroupTaskChanges'
 /**
  * Real-time subscription to tasks updates, inserts, and deletes
  * @param groupId - the group ID to subscribe to
- * @param currentUserId - the current user ID
+ * @param _currentUserId - the current user ID
  * @param initialTasks - initial tasks to set the state
  * @returns { tasks } - the current tasks
  */
 export const useTaskRealtimeListener = (
   groupId: string,
-  currentUserId: string,
+  _currentUserId: string,
   initialTasks?: Task[],
 ) => {
   const router = useRouter()
@@ -93,6 +93,21 @@ export const useTaskRealtimeListener = (
     )
   }
 
+  const handleRatingProgressUpdate = (event: Extract<GroupSessionEvent, { type: 'ratings:updated' }>) => {
+    setTasks(current =>
+      produce(current, (draft) => {
+        const index = draft.findIndex(task => task.userId === event.userId)
+        if (index !== -1) {
+          draft[index] = {
+            ...draft[index],
+            ratingsCompletedCount: event.ratingsCompletedCount,
+            ratingsCompletionOrder: event.ratingsCompletionOrder,
+          }
+        }
+      }),
+    )
+  }
+
   const taskSubscriptionHandler = async (event: GroupSessionEvent) => {
     switch (event.type) {
       case 'snapshot':
@@ -100,10 +115,6 @@ export const useTaskRealtimeListener = (
         break
       case 'task:upserted': {
         const task = toTask(event.task)
-        if (task.userId === currentUserId) {
-          break
-        }
-
         if (tasksRef.current.some(currentTask => currentTask.id === task.id)) {
           handleTaskUpdate(task)
         }
@@ -113,9 +124,7 @@ export const useTaskRealtimeListener = (
         break
       }
       case 'task:deleted':
-        if (event.userId !== currentUserId) {
-          handleTaskDelete(event.taskId)
-        }
+        handleTaskDelete(event.taskId)
         break
       case 'pairing:created':
         if (!handledPairingRefreshIdsRef.current.has(event.pairingId)) {
@@ -129,6 +138,7 @@ export const useTaskRealtimeListener = (
         await router.invalidate()
         break
       case 'ratings:updated':
+        handleRatingProgressUpdate(event)
         break
       default:
         break
@@ -139,7 +149,7 @@ export const useTaskRealtimeListener = (
     return subscribeToGroupTaskChanges(groupId, getToken, taskSubscriptionHandler)
     // Ignore async function as dependency
     // eslint-disable-next-line react/exhaustive-deps
-  }, [groupId, currentUserId, getToken])
+  }, [groupId, getToken])
 
   return { tasks }
 }

@@ -1,7 +1,7 @@
 import type { GroupSessionRuntime } from './runtime'
 import type { UpsertRatingsRequest } from './types'
 import { getMembership, getPrisma } from './database'
-import { upsertStoredRatings } from './storage'
+import { getStoredTaskByUserId, getStoredTasks, upsertStoredRatingUpdates } from './storage'
 
 export async function handleUpsertRatings(
   runtime: GroupSessionRuntime,
@@ -29,19 +29,8 @@ export async function handleUpsertRatings(
       }
     }
 
-    const currentUserTask = await prisma.task.findFirst({
-      where: {
-        group_id: request.groupId,
-        user_id: request.userId,
-        pairing_id: null,
-        delete_pending: {
-          not: true,
-        },
-      },
-      select: {
-        id: true,
-      },
-    })
+    await runtime.ensureHydrated(request.groupId, prisma)
+    const currentUserTask = getStoredTaskByUserId(runtime.ctx, request.userId)
 
     if (currentUserTask === null) {
       return {
@@ -50,22 +39,9 @@ export async function handleUpsertRatings(
       }
     }
 
-    const allowedTasks = await prisma.task.findMany({
-      where: {
-        group_id: request.groupId,
-        user_id: {
-          not: request.userId,
-        },
-        pairing_id: null,
-        delete_pending: {
-          not: true,
-        },
-      },
-      select: {
-        id: true,
-      },
-    })
-    const allowedTaskIds = new Set(allowedTasks.map(task => String(task.id)))
+    const allowedTasks = getStoredTasks(runtime.ctx)
+      .filter(task => task.user_id !== request.userId)
+    const allowedTaskIds = new Set(allowedTasks.map(task => task.id))
     const scopedUpdates = validUpdates.filter(update => allowedTaskIds.has(update.taskId))
 
     if (scopedUpdates.length === 0) {
@@ -75,32 +51,13 @@ export async function handleUpsertRatings(
       }
     }
 
-    const savedRatings = await Promise.all(
-      scopedUpdates.map(async ({ taskId, capacity }) =>
-        prisma.task_help_capacity.upsert({
-          where: {
-            task_id_user_id: {
-              task_id: BigInt(taskId),
-              user_id: request.userId,
-            },
-          },
-          update: {
-            help_capacity: capacity,
-          },
-          create: {
-            user_id: request.userId,
-            task_id: BigInt(taskId),
-            help_capacity: capacity,
-          },
-        }),
-      ),
-    )
-
-    await runtime.ensureHydrated(request.groupId, prisma)
-    upsertStoredRatings(runtime.ctx, savedRatings)
+    const progress = upsertStoredRatingUpdates(runtime.ctx, request.userId, scopedUpdates)
     runtime.broadcast({
       type: 'ratings:updated',
       taskIds: scopedUpdates.map(update => update.taskId),
+      userId: request.userId,
+      ratingsCompletedCount: progress.count,
+      ratingsCompletionOrder: progress.completionOrder,
     })
 
     return {
