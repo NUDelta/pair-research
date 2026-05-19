@@ -3,7 +3,7 @@ import antfu from '@antfu/eslint-config'
 export default antfu({
   formatters: true,
   react: true,
-  ignores: ['src/components/ui/**.tsx', 'src/routeTree.gen.ts', '.output/**', 'prisma/generated/**'],
+  ignores: ['src/components/ui/**.tsx', 'src/routeTree.gen.ts', '.output/**', 'prisma/generated/**', 'e2e/.auth/**'],
   typescript: {
     tsconfigPath: 'tsconfig.json',
   },
