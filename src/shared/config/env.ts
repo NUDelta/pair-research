@@ -25,3 +25,11 @@ export function getTurnstilePublicEnv() {
     siteKey: siteKey.success ? siteKey.data : '',
   }
 }
+
+export function getGooglePublicEnv() {
+  const clientId = z.string().trim().safeParse(import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '')
+
+  return {
+    clientId: clientId.success ? clientId.data : '',
+  }
+}
