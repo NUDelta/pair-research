@@ -3,12 +3,16 @@ import { useEffect, useState } from 'react'
 import AuthPageShell from '@/features/auth/components/AuthPageShell'
 import ResetPasswordForm from '@/features/auth/components/ResetPasswordForm'
 import { buildAuthPageHref, resetPasswordSearchSchema } from '@/features/auth/schemas/authSearch'
+import { buildSeoHead, SEO_NOINDEX_ROBOTS } from '@/shared/seo'
 import { createClient } from '@/shared/supabase/client'
 
 export const Route = createFileRoute('/reset-password')({
   validateSearch: search => resetPasswordSearchSchema.parse(search),
-  head: () => ({
-    meta: [{ title: 'Create new password | Pair Research' }],
+  head: () => buildSeoHead({
+    title: 'Create a new password',
+    description: 'Create a new Pair Research password after opening a secure reset link.',
+    path: '/reset-password',
+    robots: SEO_NOINDEX_ROBOTS,
   }),
   component: ResetPasswordPage,
 })

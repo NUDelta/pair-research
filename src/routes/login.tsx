@@ -3,6 +3,7 @@ import AuthPageShell from '@/features/auth/components/AuthPageShell'
 import LoginForm from '@/features/auth/components/LoginForm'
 import { authPageSearchSchema, buildAuthPageHref } from '@/features/auth/schemas/authSearch'
 import { getCurrentUser } from '@/features/auth/server'
+import { buildSeoHead, SEO_NOINDEX_ROBOTS } from '@/shared/seo'
 
 export const Route = createFileRoute('/login')({
   validateSearch: search => authPageSearchSchema.parse(search),
@@ -13,8 +14,11 @@ export const Route = createFileRoute('/login')({
       throw redirect({ href: search.next ?? '/groups' })
     }
   },
-  head: () => ({
-    meta: [{ title: 'Sign in | Pair Research' }],
+  head: () => buildSeoHead({
+    title: 'Sign in',
+    description: 'Sign in to Pair Research with Google or email to manage groups and pair-support workflows.',
+    path: '/login',
+    robots: SEO_NOINDEX_ROBOTS,
   }),
   component: LoginPage,
 })

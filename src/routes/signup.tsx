@@ -4,6 +4,7 @@ import AuthPageShell from '@/features/auth/components/AuthPageShell'
 import SignupForm from '@/features/auth/components/SignupForm'
 import { authPageSearchSchema, buildAuthPageHref } from '@/features/auth/schemas/authSearch'
 import { getCurrentUser } from '@/features/auth/server'
+import { buildSeoHead, SEO_NOINDEX_ROBOTS } from '@/shared/seo'
 
 export const Route = createFileRoute('/signup')({
   validateSearch: search => authPageSearchSchema.parse(search),
@@ -14,8 +15,11 @@ export const Route = createFileRoute('/signup')({
       throw redirect({ href: search.next ?? '/groups' })
     }
   },
-  head: () => ({
-    meta: [{ title: 'Sign up | Pair Research' }],
+  head: () => buildSeoHead({
+    title: 'Create an account',
+    description: 'Create a Pair Research account with Google or email to join groups and coordinate peer support.',
+    path: '/signup',
+    robots: SEO_NOINDEX_ROBOTS,
   }),
   component: SignupPage,
 })

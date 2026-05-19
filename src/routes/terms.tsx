@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import LegalDocumentPage from '@/features/legal/components/LegalDocumentPage'
 import { legalPageSearchSchema } from '@/features/legal/lib/legalLinks'
+import { buildLegalPageJsonLd, buildSeoHead } from '@/shared/seo'
 
 const sections = [
   {
@@ -60,8 +61,15 @@ const references = [
 
 export const Route = createFileRoute('/terms')({
   validateSearch: search => legalPageSearchSchema.parse(search),
-  head: () => ({
-    meta: [{ title: 'Terms of Service | Pair Research' }],
+  head: () => buildSeoHead({
+    title: 'Terms of Service',
+    description: 'Review the basic rules for using Pair Research in coursework, research, and related academic collaboration.',
+    path: '/terms',
+    jsonLd: buildLegalPageJsonLd({
+      title: 'Terms of Service',
+      path: '/terms',
+      effectiveDate: '2026-04-14',
+    }),
   }),
   component: TermsPage,
 })
