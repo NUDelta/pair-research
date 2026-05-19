@@ -1,47 +1,76 @@
+import type { Graph, WebPage, WebSite, WithContext } from 'schema-dts'
 import { buildAbsoluteUrl } from './head'
 
-export function buildOrganizationJsonLd() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    'name': 'Pair Research',
-    'url': buildAbsoluteUrl('/'),
-    'logo': buildAbsoluteUrl('/images/logo.webp'),
-    'sameAs': [
-      'https://delta.northwestern.edu/',
-    ],
-  }
-}
+const GITHUB_REPOSITORY_URL = 'https://github.com/NUDelta/pair-research'
 
-export function buildWebSiteJsonLd() {
+export function buildWebSiteJsonLd(): WithContext<WebSite> {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': buildAbsoluteUrl('/#website'),
     'name': 'Pair Research',
     'url': buildAbsoluteUrl('/'),
     'description': 'A collaboration app for structured peer support in research and classroom groups.',
     'publisher': {
-      '@type': 'Organization',
-      'name': 'Delta Lab',
-      'url': 'https://delta.northwestern.edu/',
+      '@id': buildAbsoluteUrl('/#delta-lab'),
     },
   }
 }
 
-export function buildSoftwareApplicationJsonLd() {
+export function buildPairResearchJsonLd(): Graph {
   return {
     '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    'name': 'Pair Research',
-    'applicationCategory': 'EducationalApplication',
-    'operatingSystem': 'Web',
-    'url': buildAbsoluteUrl('/'),
-    'description': 'Pair Research matches group members so they can help each other move past blockers.',
-    'offers': {
-      '@type': 'Offer',
-      'price': '0',
-      'priceCurrency': 'USD',
-    },
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': buildAbsoluteUrl('/#website'),
+        'name': 'Pair Research',
+        'url': buildAbsoluteUrl('/'),
+        'description': 'A collaboration app for structured peer support in research and classroom groups.',
+        'publisher': {
+          '@id': buildAbsoluteUrl('/#delta-lab'),
+        },
+      },
+      {
+        '@type': 'WebApplication',
+        '@id': buildAbsoluteUrl('/#app'),
+        'name': 'Pair Research',
+        'applicationCategory': 'EducationalApplication',
+        'browserRequirements': 'Requires a modern web browser with JavaScript enabled.',
+        'operatingSystem': 'Web',
+        'url': buildAbsoluteUrl('/'),
+        'description': 'Pair Research matches group members so they can help each other move past blockers.',
+        'creator': {
+          '@id': buildAbsoluteUrl('/#delta-lab'),
+        },
+        'maintainer': {
+          '@id': buildAbsoluteUrl('/#delta-lab'),
+        },
+        'isBasedOn': {
+          '@id': buildAbsoluteUrl('/#source-code'),
+        },
+      },
+      {
+        '@type': 'ResearchOrganization',
+        '@id': buildAbsoluteUrl('/#delta-lab'),
+        'name': 'Delta Lab',
+        'url': 'https://delta.northwestern.edu/',
+      },
+      {
+        '@type': 'SoftwareSourceCode',
+        '@id': buildAbsoluteUrl('/#source-code'),
+        'name': 'Pair Research source code',
+        'codeRepository': GITHUB_REPOSITORY_URL,
+        'programmingLanguage': 'TypeScript',
+        'runtimePlatform': 'Web',
+        'targetProduct': {
+          '@id': buildAbsoluteUrl('/#app'),
+        },
+        'creator': {
+          '@id': buildAbsoluteUrl('/#delta-lab'),
+        },
+      },
+    ],
   }
 }
 
@@ -53,7 +82,7 @@ export function buildLegalPageJsonLd({
   title: string
   path: string
   effectiveDate: string
-}) {
+}): WithContext<WebPage> {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebPage',

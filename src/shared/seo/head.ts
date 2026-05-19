@@ -1,3 +1,4 @@
+import type { Graph, Thing, WithContext } from 'schema-dts'
 import { SITE_BASE_URL } from '@/shared/config/constants'
 import {
   SEO_DEFAULT_DESCRIPTION,
@@ -7,13 +8,7 @@ import {
   SEO_SITE_NAME,
 } from './config'
 
-type JsonLdValue
-  = string
-    | number
-    | boolean
-    | null
-    | JsonLdValue[]
-    | { [key: string]: JsonLdValue }
+type StructuredData = Graph | WithContext<Thing>
 
 interface SeoHeadOptions {
   title?: string
@@ -22,7 +17,7 @@ interface SeoHeadOptions {
   robots?: string
   imagePath?: string
   type?: 'website' | 'article'
-  jsonLd?: JsonLdValue | JsonLdValue[]
+  jsonLd?: StructuredData
 }
 
 export function buildAbsoluteUrl(path = '/') {
