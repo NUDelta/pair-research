@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import LegalDocumentPage from '@/features/legal/components/LegalDocumentPage'
 import { legalPageSearchSchema } from '@/features/legal/lib/legalLinks'
-import { buildLegalPageJsonLd, buildSeoHead } from '@/shared/seo'
+import { buildLegalPageJsonLd, buildSeoHead, SEO_TERMS_KEYWORDS } from '@/shared/seo'
 
 const sections = [
   {
@@ -65,6 +65,7 @@ export const Route = createFileRoute('/terms')({
     title: 'Terms of Service',
     description: 'Review the basic rules for using Pair Research in coursework, research, and related academic collaboration.',
     path: '/terms',
+    keywords: SEO_TERMS_KEYWORDS,
     jsonLd: buildLegalPageJsonLd({
       title: 'Terms of Service',
       path: '/terms',
