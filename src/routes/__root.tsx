@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
 import { Toaster } from 'sonner'
+import GoogleOneTap from '@/features/auth/components/GoogleOneTap'
 import { Footer, Header } from '@/shared/components/layout'
-import { SITE_BASE_URL } from '@/shared/config/constants'
 import GlobalErrorPage from '@/shared/errors/GlobalErrorPage'
 import NotFoundPage from '@/shared/errors/NotFoundPage'
+import { buildRootSeoMeta } from '@/shared/seo'
 import { TooltipProvider } from '@/shared/ui/tooltip'
 import appleIcon from './apple-icon.png?url'
 import favicon from './favicon.ico?url'
@@ -21,17 +22,8 @@ export const Route = createRootRoute({
       { rel: 'icon', type: 'image/svg+xml', href: icon0 ?? '/icon0.svg' },
     ]
 
-    if (SITE_BASE_URL !== '') {
-      links.push({ rel: 'canonical', href: SITE_BASE_URL })
-    }
-
     return {
-      meta: [
-        { charSet: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { title: 'Pair Research' },
-        { name: 'robots', content: 'noindex, nofollow' },
-      ],
+      meta: buildRootSeoMeta(),
       links,
     }
   },
@@ -44,6 +36,7 @@ function RootComponent() {
   return (
     <RootDocument>
       <TooltipProvider>
+        <GoogleOneTap />
         <Toaster position="top-center" richColors />
         <Header />
         <main className="mt-10 grow motion-safe:animate-fade-in-down">

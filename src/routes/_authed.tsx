@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { getCurrentUser } from '@/features/auth/server'
+import { SEO_NOINDEX_ROBOTS } from '@/shared/seo'
 
 export const Route = createFileRoute('/_authed')({
   beforeLoad: async ({ location }) => {
@@ -11,5 +12,8 @@ export const Route = createFileRoute('/_authed')({
 
     return { user }
   },
+  head: () => ({
+    meta: [{ name: 'robots', content: SEO_NOINDEX_ROBOTS }],
+  }),
   component: Outlet,
 })

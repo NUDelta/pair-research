@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/shared/supabase/client'
 import { Spinner } from '@/shared/ui'
 import { Button } from '@/shared/ui/button'
+import { startGoogleOAuth } from '../lib/googleAuth'
 
 interface OAuthButtonProps {
   label?: string
@@ -19,15 +20,7 @@ export const OAuthButton = ({
   const handleGoogle = async () => {
     setLoading(true)
     try {
-      const redirectTo = new URL('/auth/callback', globalThis.location.origin)
-      redirectTo.searchParams.set('next', nextPath)
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectTo.toString(),
-        },
-      })
+      const { error } = await startGoogleOAuth(supabase, nextPath, globalThis.location.origin)
 
       if (error) {
         setLoading(false)
@@ -50,7 +43,7 @@ export const OAuthButton = ({
       >
         {loading
           ? (
-              <Spinner text="Redirecting to Google.." className="w-5" />
+              <Spinner text="Redirecting to Google..." className="w-5" />
             )
           : (
               <>

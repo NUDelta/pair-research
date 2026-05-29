@@ -37,3 +37,29 @@ interface CurrentUserActivePair {
   helperFullName: string | null // The full name of the helper
   helperAvatarUrl: string | null // The avatar url of the helper
 }
+
+interface GoogleOneTapCredentialResponse {
+  credential?: string
+}
+
+interface GoogleOneTapInitializeOptions {
+  client_id: string
+  callback: (response: GoogleOneTapCredentialResponse) => void | Promise<void>
+  cancel_on_tap_outside?: boolean
+  context?: 'signin' | 'signup' | 'use'
+  itp_support?: boolean
+}
+
+interface Window {
+  google?: {
+    accounts: {
+      id: {
+        initialize: (options: GoogleOneTapInitializeOptions) => void
+        prompt: () => void
+        cancel: () => void
+      }
+    }
+  }
+}
+
+declare const google: Window['google']
