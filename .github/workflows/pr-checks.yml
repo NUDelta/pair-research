@@ -22,19 +22,8 @@ jobs:
       - name: 📂 Checkout
         uses: actions/checkout@v4
 
-      - name: 🧰 Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          package_json_file: package.json
-
-      - name: 🧱 Setup Node (cache pnpm)
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: pnpm
-
-      - name: 📦 Install deps (frozen)
-        run: pnpm install --frozen-lockfile
+      - name: 🧱 Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: 🚨 Run lint
         run: pnpm run lint:ci
@@ -50,19 +39,8 @@ jobs:
       - name: 📂 Checkout
         uses: actions/checkout@v4
 
-      - name: 🧰 Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          package_json_file: package.json
-
-      - name: 🧱 Setup Node (cache pnpm)
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: pnpm
-
-      - name: 📦 Install deps (frozen)
-        run: pnpm install --frozen-lockfile
+      - name: 🧱 Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: 🧪 Run unit tests
         run: pnpm run test:unit
@@ -97,19 +75,8 @@ jobs:
       - name: 📂 Checkout
         uses: actions/checkout@v4
 
-      - name: 🧰 Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          package_json_file: package.json
-
-      - name: 🧱 Setup Node (cache pnpm)
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: pnpm
-
-      - name: 📦 Install deps (frozen)
-        run: pnpm install --frozen-lockfile
+      - name: 🧱 Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: 🎭 Install Playwright browsers
         run: pnpm run test:e2e:install
@@ -229,19 +196,8 @@ jobs:
       - name: 📂 Checkout
         uses: actions/checkout@v4
 
-      - name: 🧰 Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          package_json_file: package.json
-
-      - name: 🧱 Setup Node (cache pnpm)
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: pnpm
-
-      - name: 📦 Install deps (frozen)
-        run: pnpm install --frozen-lockfile
+      - name: 🧱 Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: 🏗️ Run build
         run: pnpm run build
