@@ -8,7 +8,7 @@ export interface ParsedGroupMemberInviteRow {
 
 const emailHeaderAliases = new Set(['email', 'member', 'memberemail', 'member_email'])
 const roleHeaderAliases = new Set(['role', 'roletitle', 'role_title', 'title', 'memberrole', 'member_role'])
-const accessHeaderAliases = new Set(['access', 'admin', 'isadmin', 'is_admin'])
+const accessHeaderAliases = new Set(['access'])
 
 export function parseGroupMemberInviteRows(source: string): ParsedGroupMemberInviteRow[] {
   const rows = source
