@@ -10,16 +10,16 @@ export const deleteGroupRole = createServerFn({ method: 'POST' })
     try {
       const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
-      const adminContext = await findManagedGroup(user.id, data.groupId)
+      const managementContext = await findManagedGroup(user.id, data.groupId)
 
-      if (adminContext === null) {
+      if (managementContext === null) {
         return {
           success: false,
           message: 'Only group managers can delete roles.',
         }
       }
 
-      const { prisma } = adminContext
+      const { prisma } = managementContext
       const roleId = BigInt(data.roleId)
       const replacementRoleId = data.replacementRoleId === undefined ? undefined : BigInt(data.replacementRoleId)
 

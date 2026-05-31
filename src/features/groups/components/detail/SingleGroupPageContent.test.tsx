@@ -144,7 +144,7 @@ const baseProps = {
     userId: 'user-1',
     fullName: 'Ada Lovelace',
     avatarUrl: null,
-    isAdmin: true,
+    hasManagementAccess: true,
     hasActivePairing: false,
   },
   initialTasks: [baseTask],
@@ -292,7 +292,7 @@ describe('singleGroupPageContent', () => {
     )
   })
 
-  it('passes admin active-round summary props when the current user is left out', () => {
+  it('passes manager active-round summary props when the current user is left out', () => {
     render(
       <SingleGroupPageContent
         {...baseProps}
@@ -314,7 +314,7 @@ describe('singleGroupPageContent', () => {
         currentUserInPool: true,
         currentUserLeftOut: true,
         hasActivePairing: true,
-        isAdmin: true,
+        hasManagementAccess: true,
         activeRoundPairs: [],
         tasks: [
           expect.objectContaining({
@@ -331,7 +331,7 @@ describe('singleGroupPageContent', () => {
         {...baseProps}
         groupInfo={{
           ...baseProps.groupInfo,
-          isAdmin: false,
+          hasManagementAccess: false,
         }}
         initialTasks={[teammateTask]}
         currentUserActivePairingTaskWithProfile={{
@@ -357,7 +357,7 @@ describe('singleGroupPageContent', () => {
       expect.objectContaining({
         currentUserHasTask: true,
         currentUserInPool: false,
-        isAdmin: false,
+        hasManagementAccess: false,
         activeRoundPairs: [],
       }),
     )
@@ -433,7 +433,7 @@ describe('singleGroupPageContent', () => {
     expect(screen.getByTestId('pairing-confetti')).toBeInTheDocument()
   })
 
-  it('passes active round pair summaries to the admin round panel', () => {
+  it('passes active round pair summaries to the manager round panel', () => {
     render(
       <SingleGroupPageContent
         {...baseProps}

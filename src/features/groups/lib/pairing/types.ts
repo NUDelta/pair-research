@@ -8,7 +8,7 @@ export interface PairingTaskCandidate {
   description: string
   /** Owner of the task. This is the participant who may be paired. */
   userId: string
-  /** Display name used in warnings and admin confirmation flows. */
+  /** Display name used in warnings and manager confirmation flows. */
   fullName: string | null
 }
 

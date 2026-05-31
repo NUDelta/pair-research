@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { groupsResponseSchema } from './group'
 
 describe('groupsResponseSchema', () => {
-  it('accepts admin group payloads with nullable descriptions and profile fields', () => {
+  it('accepts manager group payloads with nullable descriptions and profile fields', () => {
     const result = groupsResponseSchema.parse([
       {
         id: 'group-1',

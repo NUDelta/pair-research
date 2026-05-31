@@ -127,7 +127,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         fullName: membership.profile.full_name,
         avatarUrl: membership.profile.avatar_url,
         permission: membership.permission,
-        isAdmin: hasGroupManagementAccess(membership.permission),
+        hasManagementAccess: hasGroupManagementAccess(membership.permission),
         hasActivePairing: activePairing !== null,
         joinedAt: membership.joined_at.toISOString(),
       }

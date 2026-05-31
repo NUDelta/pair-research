@@ -16,16 +16,16 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
     try {
       const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
-      const adminContext = await findManagedGroup(user.id, data.groupId)
+      const managementContext = await findManagedGroup(user.id, data.groupId)
 
-      if (adminContext === null) {
+      if (managementContext === null) {
         return {
           success: false,
           message: 'Only group managers can add members.',
         }
       }
 
-      const { prisma } = adminContext
+      const { prisma } = managementContext
       const normalizedInvites = data.invites.map(invite => ({
         email: normalizeInviteEmail(invite.email),
         roleId: invite.roleId,
@@ -33,7 +33,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
       }))
 
       if (
-        !canManagePrivilegedAccess(adminContext.actorPermission)
+        !canManagePrivilegedAccess(managementContext.actorPermission)
         && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
       ) {
         return {

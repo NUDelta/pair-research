@@ -32,7 +32,7 @@ interface SingleGroupPageContentProps {
     userId: string
     fullName: string | null
     avatarUrl: string | null
-    isAdmin: boolean
+    hasManagementAccess: boolean
     hasActivePairing: boolean
   }
   initialTasks: Task[]
@@ -106,7 +106,7 @@ export default function SingleGroupPageContent({
           roundStatusNote={roundStatusNote}
           actions={(
             <>
-              {groupInfo.isAdmin && (
+              {groupInfo.hasManagementAccess && (
                 <Button asChild variant="outline" className="hover-lift-sm hover:shadow-sm">
                   <Link to="/groups/$slug/settings" params={{ slug: groupInfo.id }}>
                     <Settings2Icon data-icon="inline-start" />
@@ -120,7 +120,7 @@ export default function SingleGroupPageContent({
                   groupId={groupInfo.id}
                 />
               )}
-              {groupInfo.isAdmin && (
+              {groupInfo.hasManagementAccess && (
                 <>
                   <ResetPoolButton groupId={groupInfo.id} />
                   {!groupInfo.hasActivePairing && (
@@ -172,7 +172,7 @@ export default function SingleGroupPageContent({
           currentUserInPool={currentUserTask !== undefined}
           currentUserLeftOut={currentUserLeftOutOfActivePairing}
           hasActivePairing={groupInfo.hasActivePairing}
-          isAdmin={groupInfo.isAdmin}
+          hasManagementAccess={groupInfo.hasManagementAccess}
           raceTasks={tasks}
           tasks={othersTasks}
         />

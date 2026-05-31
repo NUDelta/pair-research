@@ -10,16 +10,16 @@ export const updateGroupBasics = createServerFn({ method: 'POST' })
     try {
       const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
-      const adminContext = await findManagedGroup(user.id, data.groupId)
+      const managementContext = await findManagedGroup(user.id, data.groupId)
 
-      if (adminContext === null) {
+      if (managementContext === null) {
         return {
           success: false,
           message: 'Only group managers can update group settings.',
         }
       }
 
-      const { prisma } = adminContext
+      const { prisma } = managementContext
 
       await prisma.group.update({
         where: {

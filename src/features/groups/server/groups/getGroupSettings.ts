@@ -9,13 +9,13 @@ export const getGroupSettings = createServerFn({ method: 'GET' })
     try {
       const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
-      const adminContext = await findManagedGroup(user.id, data.groupId)
+      const managementContext = await findManagedGroup(user.id, data.groupId)
 
-      if (adminContext === null) {
+      if (managementContext === null) {
         return null
       }
 
-      const { prisma, group } = adminContext
+      const { prisma, group } = managementContext
 
       const [roles, members] = await Promise.all([
         prisma.group_role.findMany({
@@ -70,7 +70,7 @@ export const getGroupSettings = createServerFn({ method: 'GET' })
           activePairingId: group.active_pairing_id,
         },
         currentUserId: user.id,
-        currentUserPermission: adminContext.actorPermission,
+        currentUserPermission: managementContext.actorPermission,
         roles: roles.map(role => ({
           id: role.id.toString(),
           title: role.title,

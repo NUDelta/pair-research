@@ -13,7 +13,7 @@ export const groupSchema = z.object({
   joinedAt: z.string().describe('Joined this group at'),
 })
 
-export const groupAdminSchema = groupSchema.extend({
+export const groupManagerSchema = groupSchema.extend({
   createdAt: z.string().describe('Group Created At'),
   groupMembers: z.array(
     userSchema.extend({
@@ -26,7 +26,7 @@ export const groupAdminSchema = groupSchema.extend({
 })
 
 // Union: manager groups must be checked first so manager-only fields are preserved.
-export const groupUnionSchema = z.union([groupAdminSchema, groupSchema])
+export const groupUnionSchema = z.union([groupManagerSchema, groupSchema])
 
 // Entire response: list of mixed or consistent groups
 export const groupsResponseSchema = z.array(groupUnionSchema)

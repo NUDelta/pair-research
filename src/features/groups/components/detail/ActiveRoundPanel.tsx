@@ -9,7 +9,7 @@ interface ActiveRoundPanelProps {
   currentUserHasActivePairing?: boolean
   currentUserId?: string
   currentUserLeftOut: boolean
-  isAdmin: boolean
+  hasManagementAccess: boolean
   leftOutNames?: string[]
   pairSummaries?: Array<{
     id: string
@@ -141,25 +141,25 @@ export default function ActiveRoundPanel({
   currentUserHasActivePairing = false,
   currentUserId,
   currentUserLeftOut,
-  isAdmin,
+  hasManagementAccess,
   leftOutNames = [],
   pairSummaries = [],
 }: ActiveRoundPanelProps) {
   const orderedPairSummaries = orderPairSummaries(pairSummaries, currentUserId)
-  const canViewPairSummaries = isAdmin || currentUserHasActivePairing || currentUserLeftOut
-  const icon = isAdmin
+  const canViewPairSummaries = hasManagementAccess || currentUserHasActivePairing || currentUserLeftOut
+  const icon = hasManagementAccess
     ? <RotateCcwIcon className="size-5 text-amber-600" />
     : currentUserLeftOut
       ? <AlertCircleIcon className="size-5 text-sky-600" />
       : <UsersIcon className="size-5 text-slate-600" />
 
-  const title = currentUserLeftOut && !isAdmin ? 'No pair this round' : 'Round complete'
-  const description = isAdmin
+  const title = currentUserLeftOut && !hasManagementAccess ? 'No pair this round' : 'Round complete'
+  const description = hasManagementAccess
     ? `${activePairCount === 1 ? '1 pair was' : `${activePairCount} pairs were`} created this round.`
     : currentUserLeftOut
       ? 'You were not paired this round. Wait for a group manager to reset the pool from the header before the next round begins.'
       : 'This round is complete. Wait for a group manager to reset the pool from the header before the next round begins.'
-  const adminResetGuidance = isAdmin
+  const managerResetGuidance = hasManagementAccess
     ? 'Use Reset Pool in the header when you are ready to start the next round.'
     : null
 
@@ -208,7 +208,7 @@ export default function ActiveRoundPanel({
             </div>
           </div>
         )}
-        {isAdmin && leftOutNames.length > 0 && (
+        {hasManagementAccess && leftOutNames.length > 0 && (
           <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-amber-900">
             <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
             <p>
@@ -218,8 +218,8 @@ export default function ActiveRoundPanel({
             </p>
           </div>
         )}
-        {adminResetGuidance !== null && (
-          <p>{adminResetGuidance}</p>
+        {managerResetGuidance !== null && (
+          <p>{managerResetGuidance}</p>
         )}
       </CardContent>
     </Card>
