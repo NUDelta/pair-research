@@ -1,0 +1,29 @@
+name: Setup Node and pnpm
+description: Install pnpm, configure Node.js with pnpm cache, and optionally install dependencies.
+
+inputs:
+  node-version:
+    description: Node.js version passed to actions/setup-node.
+    default: lts/*
+  install:
+    description: Whether to run pnpm install.
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: 🧰 Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        package_json_file: package.json
+
+    - name: 🧱 Setup Node (cache pnpm)
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+
+    - name: 📦 Install deps (frozen)
+      if: inputs.install == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile

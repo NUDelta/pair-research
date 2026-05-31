@@ -34,19 +34,8 @@ jobs:
       - name: 📂 Checkout
         uses: actions/checkout@v4
 
-      - name: 🧰 Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          package_json_file: package.json
-
-      - name: 🧱 Setup Node (cache pnpm)
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: pnpm
-
-      - name: 📦 Install deps (frozen)
-        run: pnpm install --frozen-lockfile
+      - name: 🧱 Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: 🏗️ Run build
         run: pnpm run build
