@@ -29,9 +29,7 @@ interface ImportGroupMemberInvitesOptions {
   defaultPermission: GroupPermission
 }
 
-const truthyAccessValues = new Set(['1', 'admin', 'administrator', 'full', 'true', 'yes', 'y'])
-const falsyAccessValues = new Set(['0', 'false', 'member', 'no', 'n', 'standard', 'user'])
-const ownerAccessValues = new Set(['owner'])
+const explicitAccessValues = new Set<GroupPermission>(['owner', 'admin', 'member'])
 
 export function createEmptyGroupMemberInviteDraft(defaultRoleId: string): GroupMemberInviteDraft {
   return {
@@ -156,16 +154,8 @@ function resolveAccessValue(value: string | null, defaultPermission: GroupPermis
   }
 
   const normalizedValue = value.trim().toLowerCase()
-  if (ownerAccessValues.has(normalizedValue)) {
-    return 'owner'
-  }
-
-  if (truthyAccessValues.has(normalizedValue)) {
-    return 'admin'
-  }
-
-  if (falsyAccessValues.has(normalizedValue)) {
-    return 'member'
+  if (explicitAccessValues.has(normalizedValue as GroupPermission)) {
+    return normalizedValue as GroupPermission
   }
 
   return defaultPermission

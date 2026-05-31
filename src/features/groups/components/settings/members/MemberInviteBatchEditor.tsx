@@ -258,7 +258,7 @@ export default function MemberInviteBatchEditor({
             {' '}
             {maxInvites}
             {' '}
-            members at once. CSV supports `email`, `role`, and `access` columns.
+            members at once. CSV supports `email`, `role`, and `access` columns; access accepts `owner`, `admin`, or `member`.
           </>
         )}
         label="Paste emails or CSV"

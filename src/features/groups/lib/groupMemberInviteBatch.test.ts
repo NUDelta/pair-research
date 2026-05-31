@@ -55,6 +55,25 @@ describe('importGroupMemberInvites', () => {
     expect(result.ignoredExistingEmails).toEqual([])
     expect(result.summary.truncatedCount).toBe(2)
   })
+
+  it('ignores legacy boolean access values in favor of the default permission', () => {
+    const result = importGroupMemberInvites({
+      existingInvites: [],
+      roles,
+      source: [
+        'email,role,access',
+        'alpha@example.com,Reviewer,true',
+        'beta@example.com,Reviewer,yes',
+      ].join('\n'),
+      defaultRoleId: '2',
+      defaultPermission: 'member',
+    })
+
+    expect(result.invites).toEqual([
+      { email: 'alpha@example.com', roleId: '3', permission: 'member' },
+      { email: 'beta@example.com', roleId: '3', permission: 'member' },
+    ])
+  })
 })
 
 describe('addGroupMembersSchema', () => {
