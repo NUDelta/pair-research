@@ -40,6 +40,25 @@ export async function handleResetPool(
     const activeTaskIds = activeTasks.map(task => task.id)
 
     await prisma.$transaction(async (tx) => {
+      const currentMembership = await tx.group_member.findFirst({
+        where: {
+          group_id: request.groupId,
+          user_id: request.userId,
+          is_pending: false,
+        },
+        select: {
+          permission: true,
+        },
+      })
+
+      if (currentMembership === null) {
+        throw new Error('You are not a member in this group')
+      }
+
+      if (!hasGroupManagementAccess(currentMembership.permission)) {
+        throw new Error('Only group admins can reset the pool')
+      }
+
       if (activeTaskIds.length > 0) {
         await tx.task_help_capacity.deleteMany({
           where: {
@@ -68,7 +87,7 @@ export async function handleResetPool(
           },
         })
       }
-    })
+    }, { isolationLevel: 'Serializable' })
 
     clearStoredGroupSession(runtime.ctx)
     runtime.broadcast({ type: 'pool:reset' })
@@ -79,6 +98,13 @@ export async function handleResetPool(
     }
   }
   catch (error) {
+    if (
+      error instanceof Error
+      && (error.message === 'You are not a member in this group' || error.message === 'Only group admins can reset the pool')
+    ) {
+      return { success: false, message: error.message }
+    }
+
     console.error('Error resetting pool through group session:', error)
     return {
       success: false,

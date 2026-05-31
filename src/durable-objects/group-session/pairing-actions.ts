@@ -118,6 +118,25 @@ export async function handleMakePairs(
     const pairedTaskIdSet = new Set(pairedTaskIds)
 
     const pairing = await prisma.$transaction(async (tx) => {
+      const currentMembership = await tx.group_member.findFirst({
+        where: {
+          group_id: request.groupId,
+          user_id: request.userId,
+          is_pending: false,
+        },
+        select: {
+          permission: true,
+        },
+      })
+
+      if (currentMembership === null) {
+        throw new Error('You are not a member in this group')
+      }
+
+      if (!hasGroupManagementAccess(currentMembership.permission)) {
+        throw new Error('Only group admins can make pairs')
+      }
+
       const nextPairing = await tx.pairing.create({
         data: {
           group_id: request.groupId,
@@ -233,7 +252,7 @@ export async function handleMakePairs(
       })
 
       return nextPairing
-    })
+    }, { isolationLevel: 'Serializable' })
 
     removeStoredTasks(runtime.ctx, pairedTaskIds)
     pruneRatingsToActiveTasks(runtime.ctx)
@@ -256,6 +275,13 @@ export async function handleMakePairs(
     }
   }
   catch (error) {
+    if (
+      error instanceof Error
+      && (error.message === 'You are not a member in this group' || error.message === 'Only group admins can make pairs')
+    ) {
+      return { success: false, message: error.message }
+    }
+
     if (error instanceof Error && error.message === ACTIVE_PAIRING_EXISTS_MESSAGE) {
       return { success: false, message: ACTIVE_PAIRING_EXISTS_MESSAGE }
     }

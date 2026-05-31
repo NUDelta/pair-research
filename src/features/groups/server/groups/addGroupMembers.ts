@@ -1,12 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
 import { normalizeInviteEmail } from '@/features/groups/lib/groupNormalization'
-import { canManagePrivilegedAccess, isPrivilegedPermission } from '@/features/groups/lib/groupPermissions'
+import { canManagePrivilegedAccess, hasGroupManagementAccess, isPrivilegedPermission } from '@/features/groups/lib/groupPermissions'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { addGroupMembersSchema } from '../../schemas/groupManagement'
 import {
   ensureProfileForInvite,
   findManagedGroup,
   inviteCreatedUserByEmail,
+  withSerializableRetry,
 } from './groupManagement'
 
 export const addGroupMembers = createServerFn({ method: 'POST' })
@@ -122,15 +123,84 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
         })),
       )
 
-      await prisma.group_member.createMany({
-        data: ensuredProfiles.map(({ invite, ensuredProfile }) => ({
-          group_id: data.groupId,
-          user_id: ensuredProfile.profile.id,
-          role_id: BigInt(invite.roleId),
-          permission: invite.permission,
-          is_pending: true,
-        })),
-      })
+      await withSerializableRetry(async () =>
+        prisma.$transaction(async (tx) => {
+          const [currentActorMembership, currentRoles, currentMemberships] = await Promise.all([
+            tx.group_member.findFirst({
+              where: {
+                group_id: data.groupId,
+                user_id: user.id,
+                is_pending: false,
+              },
+              select: {
+                permission: true,
+              },
+            }),
+            tx.group_role.findMany({
+              where: {
+                group_id: data.groupId,
+                id: { in: uniqueRoleIds },
+              },
+              select: {
+                id: true,
+              },
+            }),
+            tx.group_member.findMany({
+              where: {
+                group_id: data.groupId,
+                user_id: {
+                  in: ensuredProfiles.map(({ ensuredProfile }) => ensuredProfile.profile.id),
+                },
+              },
+              select: {
+                user_id: true,
+                is_pending: true,
+                profile: {
+                  select: {
+                    email: true,
+                  },
+                },
+              },
+            }),
+          ])
+
+          if (currentActorMembership === null || !hasGroupManagementAccess(currentActorMembership.permission)) {
+            throw new Error('Only group admins can add members.')
+          }
+
+          if (
+            !canManagePrivilegedAccess(currentActorMembership.permission)
+            && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
+          ) {
+            throw new Error('Only group owners can invite owners or admins.')
+          }
+
+          if (currentRoles.length !== uniqueRoleIds.length) {
+            throw new Error('Selected role is no longer available for this group.')
+          }
+
+          const currentMembershipByUserId = new Map(currentMemberships.map(membership => [membership.user_id, membership]))
+          for (const { ensuredProfile } of ensuredProfiles) {
+            const currentMembership = currentMembershipByUserId.get(ensuredProfile.profile.id)
+            if (currentMembership === undefined) {
+              continue
+            }
+
+            throw new Error(currentMembership.is_pending
+              ? `${currentMembership.profile.email} already has a pending invitation to this group.`
+              : `${currentMembership.profile.email} is already a member of this group.`)
+          }
+
+          await tx.group_member.createMany({
+            data: ensuredProfiles.map(({ invite, ensuredProfile }) => ({
+              group_id: data.groupId,
+              user_id: ensuredProfile.profile.id,
+              role_id: BigInt(invite.roleId),
+              permission: invite.permission,
+              is_pending: true,
+            })),
+          })
+        }, { isolationLevel: 'Serializable' }))
 
       await Promise.all(
         ensuredProfiles.map(async ({ invite, ensuredProfile }) => {

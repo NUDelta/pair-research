@@ -1,5 +1,7 @@
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 
+const SERIALIZABLE_RETRY_LIMIT = 3
+
 export async function findManagedGroup(userId: string, groupId: string) {
   const { getPrismaClient } = await import('@/shared/server/prisma')
   const prisma = await getPrismaClient()
@@ -33,6 +35,31 @@ export async function findManagedGroup(userId: string, groupId: string) {
     group: membership.group,
     actorPermission: membership.permission,
   }
+}
+
+export async function withSerializableRetry<T>(operation: () => Promise<T>) {
+  let lastError: unknown
+
+  for (let attempt = 0; attempt < SERIALIZABLE_RETRY_LIMIT; attempt += 1) {
+    try {
+      return await operation()
+    }
+    catch (error) {
+      lastError = error
+      if (!isPrismaSerializationConflict(error)) {
+        throw error
+      }
+    }
+  }
+
+  throw lastError
+}
+
+function isPrismaSerializationConflict(error: unknown) {
+  return typeof error === 'object'
+    && error !== null
+    && 'code' in error
+    && error.code === 'P2034'
 }
 
 export async function ensureProfileForInvite(email: string) {
