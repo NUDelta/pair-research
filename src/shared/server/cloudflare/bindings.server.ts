@@ -20,5 +20,5 @@ export function getR2Binding(): R2Bucket {
 export function getGroupSession(groupId: string): GroupSessionStub {
   const namespace = assertBinding(env.GROUP_SESSIONS, 'GROUP_SESSIONS')
 
-  return namespace.getByName(groupId) as unknown as GroupSessionStub
+  return namespace.getByName(groupId)
 }
