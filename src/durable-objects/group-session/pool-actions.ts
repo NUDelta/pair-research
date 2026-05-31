@@ -4,6 +4,8 @@ import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions
 import { getMembership, getPrisma } from './database'
 import { clearStoredGroupSession } from './storage'
 
+const RESET_POOL_MANAGER_REQUIRED_MESSAGE = 'Only group managers can reset the pool'
+
 export async function handleResetPool(
   runtime: GroupSessionRuntime,
   request: GroupSessionRequest,
@@ -22,7 +24,7 @@ export async function handleResetPool(
     if (!hasGroupManagementAccess(membership.permission)) {
       return {
         success: false,
-        message: 'Only group admins can reset the pool',
+        message: RESET_POOL_MANAGER_REQUIRED_MESSAGE,
       }
     }
 
@@ -56,7 +58,7 @@ export async function handleResetPool(
       }
 
       if (!hasGroupManagementAccess(currentMembership.permission)) {
-        throw new Error('Only group admins can reset the pool')
+        throw new Error(RESET_POOL_MANAGER_REQUIRED_MESSAGE)
       }
 
       if (activeTaskIds.length > 0) {
@@ -100,7 +102,7 @@ export async function handleResetPool(
   catch (error) {
     if (
       error instanceof Error
-      && (error.message === 'You are not a member in this group' || error.message === 'Only group admins can reset the pool')
+      && (error.message === 'You are not a member in this group' || error.message === RESET_POOL_MANAGER_REQUIRED_MESSAGE)
     ) {
       return { success: false, message: error.message }
     }

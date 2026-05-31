@@ -15,6 +15,8 @@ import {
   POOL_CHANGED_MESSAGE,
 } from './types'
 
+const MAKE_PAIRS_MANAGER_REQUIRED_MESSAGE = 'Only group managers can make pairs'
+
 export async function handleMakePairs(
   runtime: GroupSessionRuntime,
   request: GroupSessionRequest,
@@ -33,7 +35,7 @@ export async function handleMakePairs(
     if (!hasGroupManagementAccess(membership.permission)) {
       return {
         success: false,
-        message: 'Only group admins can make pairs',
+        message: MAKE_PAIRS_MANAGER_REQUIRED_MESSAGE,
       }
     }
 
@@ -134,7 +136,7 @@ export async function handleMakePairs(
       }
 
       if (!hasGroupManagementAccess(currentMembership.permission)) {
-        throw new Error('Only group admins can make pairs')
+        throw new Error(MAKE_PAIRS_MANAGER_REQUIRED_MESSAGE)
       }
 
       const nextPairing = await tx.pairing.create({
@@ -277,7 +279,7 @@ export async function handleMakePairs(
   catch (error) {
     if (
       error instanceof Error
-      && (error.message === 'You are not a member in this group' || error.message === 'Only group admins can make pairs')
+      && (error.message === 'You are not a member in this group' || error.message === MAKE_PAIRS_MANAGER_REQUIRED_MESSAGE)
     ) {
       return { success: false, message: error.message }
     }
