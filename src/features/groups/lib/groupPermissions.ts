@@ -1,4 +1,5 @@
 export const groupPermissionValues = ['owner', 'admin', 'member'] as const
+const memberOnlyPermissionValues = ['member'] as const
 
 export type GroupPermission = typeof groupPermissionValues[number]
 
@@ -16,6 +17,16 @@ export function canManagePrivilegedAccess(permission: GroupPermission) {
 
 export function isPrivilegedPermission(permission: GroupPermission) {
   return permission === 'owner' || permission === 'admin'
+}
+
+export function getAssignableGroupPermissions(actorPermission: GroupPermission): readonly GroupPermission[] {
+  return canManagePrivilegedAccess(actorPermission)
+    ? groupPermissionValues
+    : memberOnlyPermissionValues
+}
+
+export function canAssignGroupPermission(actorPermission: GroupPermission, permission: GroupPermission) {
+  return getAssignableGroupPermissions(actorPermission).includes(permission)
 }
 
 export function getGroupPermissionLabel(permission: GroupPermission) {

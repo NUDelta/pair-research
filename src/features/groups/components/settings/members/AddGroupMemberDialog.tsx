@@ -1,5 +1,6 @@
 import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { ShieldPlusIcon, UserPlusIcon } from 'lucide-react'
 import { MAX_GROUP_MEMBER_INVITES } from '@/features/groups/lib/groupMemberInviteBatch'
 import { Spinner } from '@/shared/ui'
@@ -10,6 +11,7 @@ import { useGroupMemberInviteDialog } from './useGroupMemberInviteDialog'
 
 interface AddGroupMemberDialogProps {
   applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
+  currentUserPermission: GroupPermission
   existingMemberEmails?: string[]
   groupId: string
   roles: GroupSettingsRole[]
@@ -18,12 +20,14 @@ interface AddGroupMemberDialogProps {
 
 export default function AddGroupMemberDialog({
   applyOptimisticUpdate,
+  currentUserPermission,
   existingMemberEmails = [],
   groupId,
   roles,
   triggerClassName,
 }: AddGroupMemberDialogProps) {
   const {
+    availablePermissions,
     defaultPermission,
     defaultRoleId,
     draftSource,
@@ -49,7 +53,7 @@ export default function AddGroupMemberDialog({
     setDraftSource,
     setSelectedRowIds,
     toggleRowSelection,
-  } = useGroupMemberInviteDialog({ applyOptimisticUpdate, existingMemberEmails, groupId, roles })
+  } = useGroupMemberInviteDialog({ applyOptimisticUpdate, currentUserPermission, existingMemberEmails, groupId, roles })
 
   return (
     <Dialog open={open} onOpenChange={handleDialogToggle}>
@@ -103,6 +107,7 @@ export default function AddGroupMemberDialog({
               rowErrors={rowErrors}
               selectedCount={selectedRowIds.length}
               selectedRowIds={selectedRowIdSet}
+              availablePermissions={availablePermissions}
             />
           </div>
           <DialogFooter className="border-t pt-4">

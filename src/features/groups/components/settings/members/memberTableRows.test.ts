@@ -70,7 +70,15 @@ describe('buildGroupMemberTableRows', () => {
       currentUserId: 'member-id',
       currentUserPermission: 'owner',
       hasActivePairing: false,
-      members,
+      members: [
+        ...members,
+        {
+          ...members[0],
+          userId: 'owner-2',
+          email: 'owner2@example.com',
+          isCreator: false,
+        },
+      ],
     })
 
     expect(rows[0]?.canRemove).toBe(true)
@@ -102,10 +110,62 @@ describe('buildGroupMemberTableRows', () => {
     })
 
     expect(rows[3]).toMatchObject({
+      accessDisabledReason: 'Please wait for the invited member to finish syncing before managing them.',
       canSelect: false,
       canRemove: false,
       managementDisabledReason: 'Please wait for the invited member to finish syncing before managing them.',
       removeDisabledReason: 'Please wait for the invited member to finish syncing before managing them.',
+    })
+  })
+
+  it('allows admins to manage member rows without changing access levels', () => {
+    const rows = buildGroupMemberTableRows({
+      currentUserId: 'admin-id',
+      currentUserPermission: 'admin',
+      hasActivePairing: false,
+      members,
+    })
+
+    expect(rows[1]).toMatchObject({
+      canSelect: true,
+      canRemove: true,
+      accessDisabledReason: 'Only group owners can change member access.',
+      managementDisabledReason: null,
+      removeDisabledReason: null,
+    })
+  })
+
+  it('blocks admins from managing owner rows', () => {
+    const rows = buildGroupMemberTableRows({
+      currentUserId: 'admin-id',
+      currentUserPermission: 'admin',
+      hasActivePairing: false,
+      members,
+    })
+
+    expect(rows[0]).toMatchObject({
+      accessDisabledReason: 'Only group owners can manage owners or admins.',
+      canSelect: false,
+      canRemove: false,
+      managementDisabledReason: 'Only group owners can manage owners or admins.',
+      removeDisabledReason: 'Only group owners can manage owners or admins.',
+    })
+  })
+
+  it('keeps the final confirmed owner from being demoted or removed', () => {
+    const rows = buildGroupMemberTableRows({
+      currentUserId: 'someone-else',
+      currentUserPermission: 'owner',
+      hasActivePairing: false,
+      members,
+    })
+
+    expect(rows[0]).toMatchObject({
+      accessDisabledReason: 'Add or promote another owner before changing this owner access.',
+      canSelect: true,
+      canRemove: false,
+      managementDisabledReason: null,
+      removeDisabledReason: 'Add or promote another owner before removing this owner.',
     })
   })
 })

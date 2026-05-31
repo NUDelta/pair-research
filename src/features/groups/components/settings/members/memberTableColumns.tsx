@@ -4,6 +4,7 @@ import type { GroupMemberTableRow } from './memberTableRows'
 import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Trash2Icon } from 'lucide-react'
+import { getAssignableGroupPermissions } from '@/features/groups/lib/groupPermissions'
 import { getInitials } from '@/shared/lib/avatar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -17,6 +18,7 @@ import MemberRoleSelect from './MemberRoleSelect'
 const columnHelper = createColumnHelper<GroupMemberTableRow>()
 
 interface CreateGroupMemberColumnsOptions {
+  currentUserPermission: GroupPermission
   onAccessChange: (member: GroupMemberTableRow, nextPermission: GroupPermission) => void
   onRemove: (member: GroupMemberTableRow) => Promise<void>
   onRoleChange: (member: GroupMemberTableRow, nextRoleId: string) => void
@@ -26,6 +28,7 @@ interface CreateGroupMemberColumnsOptions {
 }
 
 export function createGroupMemberColumns({
+  currentUserPermission,
   onAccessChange,
   onRemove,
   onRoleChange,
@@ -33,6 +36,8 @@ export function createGroupMemberColumns({
   roles,
   rowState,
 }: CreateGroupMemberColumnsOptions) {
+  const assignablePermissions = getAssignableGroupPermissions(currentUserPermission)
+
   return [
     columnHelper.display({
       id: 'select',
@@ -117,7 +122,9 @@ export function createGroupMemberColumns({
         return (
           <MemberAccessSelect
             permission={state.permission}
-            disabled={row.original.managementDisabledReason !== null}
+            availablePermissions={assignablePermissions}
+            disabled={row.original.accessDisabledReason !== null}
+            disabledReason={row.original.accessDisabledReason}
             memberName={row.original.displayName}
             isBusy={isBusy}
             isPending={pendingState.access === true}

@@ -164,6 +164,7 @@ export default function GroupMembersTable({
 
   const columns = useMemo(
     () => createGroupMemberColumns({
+      currentUserPermission,
       onAccessChange: (member, nextPermission) => {
         const state = memberState[member.userId] ?? {
           permission: member.permission,
@@ -191,7 +192,7 @@ export default function GroupMembersTable({
       roles,
       rowState: memberState,
     }),
-    [memberState, pendingActions, persistMemberUpdate, removeMember, roles],
+    [currentUserPermission, memberState, pendingActions, persistMemberUpdate, removeMember, roles],
   )
 
   return (
@@ -200,7 +201,7 @@ export default function GroupMembersTable({
         <div className="flex flex-col gap-1">
           <CardTitle>Members</CardTitle>
           <CardDescription>
-            Manage invitations, roles, and admin access directly from the table.
+            Manage invitations, roles, and access directly from the table.
           </CardDescription>
         </div>
       </CardHeader>
@@ -233,6 +234,7 @@ export default function GroupMembersTable({
               return (
                 <GroupMembersToolbar
                   applyOptimisticUpdate={applyOptimisticUpdate}
+                  currentUserPermission={currentUserPermission}
                   existingMemberEmails={members.map(member => member.email)}
                   groupId={groupId}
                   hasNonRemovableSelected={hasNonRemovableSelected}

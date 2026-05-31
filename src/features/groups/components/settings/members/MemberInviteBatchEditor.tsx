@@ -7,7 +7,7 @@ import { PlusIcon, Trash2Icon, UploadIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import InvitePreparationPanel from '@/features/groups/components/invites/InvitePreparationPanel'
 import PreparedInvitesTable from '@/features/groups/components/invites/PreparedInvitesTable'
-import { getGroupPermissionLabel, groupPermissionValues } from '@/features/groups/lib/groupPermissions'
+import { getGroupPermissionLabel } from '@/features/groups/lib/groupPermissions'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -17,6 +17,7 @@ import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 
 interface MemberInviteBatchEditorProps {
+  availablePermissions: readonly GroupPermission[]
   defaultPermission: GroupPermission
   defaultRoleId: string
   draftSource: string
@@ -54,6 +55,7 @@ function toInviteDraft(row: InviteRow): GroupMemberInviteDraft {
 }
 
 export default function MemberInviteBatchEditor({
+  availablePermissions,
   defaultPermission,
   defaultRoleId,
   draftSource,
@@ -176,7 +178,7 @@ export default function MemberInviteBatchEditor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {groupPermissionValues.map(permission => (
+                    {availablePermissions.map(permission => (
                       <SelectItem key={permission} value={permission}>
                         {getGroupPermissionLabel(permission)}
                       </SelectItem>
@@ -211,7 +213,7 @@ export default function MemberInviteBatchEditor({
         ),
       }),
     ] as ColumnDef<InviteRow>[]
-  }, [allRowsSelected, hasRows, onRemoveRow, onSelectAllRows, onSelectRow, onUpdateRow, roles, rowErrors, selectedRowIds])
+  }, [allRowsSelected, availablePermissions, hasRows, onRemoveRow, onSelectAllRows, onSelectRow, onUpdateRow, roles, rowErrors, selectedRowIds])
 
   return (
     <div className="flex flex-col gap-4">
@@ -256,13 +258,13 @@ export default function MemberInviteBatchEditor({
             {' '}
             {maxInvites}
             {' '}
-            members at once. CSV supports `email`, `role`, and `access/admin` columns.
+            members at once. CSV supports `email`, `role`, and `access` columns.
           </>
         )}
         label="Paste emails or CSV"
         maxInvites={maxInvites}
         onSourceChange={onDraftSourceChange}
-        placeholder={'member1@example.com\nmember2@example.com,Researcher,admin'}
+        placeholder={`member1@example.com\nmember2@example.com,Researcher,${defaultPermission}`}
         sourceId="member-invite-source"
         sourceValue={draftSource}
       />
@@ -295,7 +297,7 @@ export default function MemberInviteBatchEditor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {groupPermissionValues.map(permission => (
+                    {availablePermissions.map(permission => (
                       <SelectItem key={permission} value={permission}>
                         {getGroupPermissionLabel(permission)}
                       </SelectItem>

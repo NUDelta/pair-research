@@ -5,6 +5,7 @@ import AddGroupMemberDialog from './AddGroupMemberDialog'
 
 const { mockUseGroupMemberInviteDialog } = vi.hoisted(() => ({
   mockUseGroupMemberInviteDialog: vi.fn(() => ({
+    availablePermissions: ['member'],
     defaultPermission: 'member',
     defaultRoleId: 'role-1',
     draftSource: '',
@@ -90,6 +91,7 @@ describe('addGroupMemberDialog', () => {
     render(
       <AddGroupMemberDialog
         applyOptimisticUpdate={applyOptimisticUpdate}
+        currentUserPermission="admin"
         groupId="group-1"
         roles={[{ id: 'role-1', title: 'Researcher' }]}
       />,
@@ -103,6 +105,7 @@ describe('addGroupMemberDialog', () => {
     expect(screen.getByTestId('member-invite-batch-editor')).toBeInTheDocument()
     expect(mockUseGroupMemberInviteDialog).toHaveBeenCalledWith({
       applyOptimisticUpdate,
+      currentUserPermission: 'admin',
       existingMemberEmails: [],
       groupId: 'group-1',
       roles: [{ id: 'role-1', title: 'Researcher' }],

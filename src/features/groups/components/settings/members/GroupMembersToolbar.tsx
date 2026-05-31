@@ -1,6 +1,7 @@
 import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
 import type { GroupMemberTableRow } from './memberTableRows'
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { MoreHorizontalIcon, Trash2Icon } from 'lucide-react'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -19,6 +20,7 @@ import AddGroupMemberDialog from './AddGroupMemberDialog'
 
 interface GroupMembersToolbarProps {
   applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
+  currentUserPermission: GroupPermission
   existingMemberEmails: string[]
   groupId: string
   hasNonRemovableSelected: boolean
@@ -33,6 +35,7 @@ interface GroupMembersToolbarProps {
 
 export default function GroupMembersToolbar({
   applyOptimisticUpdate,
+  currentUserPermission,
   existingMemberEmails,
   groupId,
   hasNonRemovableSelected,
@@ -109,6 +112,7 @@ export default function GroupMembersToolbar({
         </DropdownMenu>
         <AddGroupMemberDialog
           applyOptimisticUpdate={applyOptimisticUpdate}
+          currentUserPermission={currentUserPermission}
           existingMemberEmails={existingMemberEmails}
           groupId={groupId}
           roles={roles}

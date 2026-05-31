@@ -13,6 +13,7 @@ import {
   importGroupMemberInvites,
   MAX_GROUP_MEMBER_INVITES,
 } from '@/features/groups/lib/groupMemberInviteBatch'
+import { canAssignGroupPermission, getAssignableGroupPermissions } from '@/features/groups/lib/groupPermissions'
 import { addGroupMembersSchema } from '@/features/groups/schemas/groupManagement'
 import { addGroupMembers } from '@/features/groups/server/groups/addGroupMembers'
 import { applyGroupMemberInvites } from '../optimisticGroupSettings'
@@ -28,11 +29,13 @@ const addGroupMembersFormSchema = addGroupMembersSchema.omit({ groupId: true })
 
 export function useGroupMemberInviteDialog({
   applyOptimisticUpdate,
+  currentUserPermission,
   existingMemberEmails = [],
   groupId,
   roles,
 }: {
   applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
+  currentUserPermission: GroupPermission
   existingMemberEmails?: string[]
   groupId: string
   roles: GroupSettingsRole[]
@@ -50,14 +53,36 @@ export function useGroupMemberInviteDialog({
   const nextRowIdRef = useRef(0)
   const nextOptimisticMemberIdRef = useRef(0)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const availablePermissions = useMemo(
+    () => getAssignableGroupPermissions(currentUserPermission),
+    [currentUserPermission],
+  )
   const roleIds = useMemo(() => new Set(roles.map(role => role.id)), [roles])
   const resolvedDefaultRoleId = roleIds.has(defaultRoleId) ? defaultRoleId : (roles[0]?.id ?? '')
+  const resolvedDefaultPermission = canAssignGroupPermission(currentUserPermission, defaultPermission)
+    ? defaultPermission
+    : 'member'
   const inviteRows = useMemo(
-    () => syncInviteRowRoles(storedInviteRows, roleIds, resolvedDefaultRoleId),
-    [resolvedDefaultRoleId, roleIds, storedInviteRows],
+    () => syncInviteRowRoles(storedInviteRows, roleIds, resolvedDefaultRoleId)
+      .map(row => ({
+        ...row,
+        permission: canAssignGroupPermission(currentUserPermission, row.permission)
+          ? row.permission
+          : 'member',
+      })),
+    [currentUserPermission, resolvedDefaultRoleId, roleIds, storedInviteRows],
   )
   const selectedRowIdSet = useMemo(() => new Set(selectedRowIds), [selectedRowIds])
   const hasPrivilegedInvite = inviteRows.some(row => row.permission !== 'member')
+
+  function sanitizeInviteDraft(draft: GroupMemberInviteDraft): GroupMemberInviteDraft {
+    return {
+      ...draft,
+      permission: canAssignGroupPermission(currentUserPermission, draft.permission)
+        ? draft.permission
+        : 'member',
+    }
+  }
 
   function resetDialogState() {
     setDraftSource('')
@@ -70,7 +95,7 @@ export function useGroupMemberInviteDialog({
 
   function createInviteRow(draft: GroupMemberInviteDraft): InviteRow {
     nextRowIdRef.current += 1
-    return { id: `invite-${nextRowIdRef.current}`, ...draft }
+    return { id: `invite-${nextRowIdRef.current}`, ...sanitizeInviteDraft(draft) }
   }
 
   function createOptimisticMembers(invites: GroupMemberInviteDraft[]) {
@@ -103,7 +128,7 @@ export function useGroupMemberInviteDialog({
       roles,
       source: trimmedSource,
       defaultRoleId: resolvedDefaultRoleId,
-      defaultPermission,
+      defaultPermission: resolvedDefaultPermission,
     })
 
     if (summary.existingMemberCount > 0) {
@@ -157,7 +182,7 @@ export function useGroupMemberInviteDialog({
   }
 
   function handleUpdateRow(rowId: string, nextRow: GroupMemberInviteDraft) {
-    setStoredInviteRows(currentRows => currentRows.map(row => row.id === rowId ? { ...row, ...nextRow } : row))
+    setStoredInviteRows(currentRows => currentRows.map(row => row.id === rowId ? { ...row, ...sanitizeInviteDraft(nextRow) } : row))
     clearRowErrors(rowId)
   }
 
@@ -170,7 +195,7 @@ export function useGroupMemberInviteDialog({
   function handleApplyAssignment() {
     setStoredInviteRows(currentRows => applySharedAssignmentToInviteRows(currentRows, selectedRowIds, {
       roleId: resolvedDefaultRoleId,
-      permission: defaultPermission,
+      permission: resolvedDefaultPermission,
     }))
   }
 
@@ -196,9 +221,13 @@ export function useGroupMemberInviteDialog({
     })
   }
 
+  function handleUpdateDefaultPermission(permission: GroupPermission) {
+    setDefaultPermission(canAssignGroupPermission(currentUserPermission, permission) ? permission : 'member')
+  }
+
   function handleSubmit() {
     const validationResult = addGroupMembersFormSchema.safeParse({
-      invites: inviteRows.map(({ email, roleId, permission }) => ({ email, roleId, permission })),
+      invites: inviteRows.map(({ email, roleId, permission }) => sanitizeInviteDraft({ email, roleId, permission })),
     })
 
     if (!validationResult.success) {
@@ -246,7 +275,8 @@ export function useGroupMemberInviteDialog({
   }
 
   return {
-    defaultPermission,
+    availablePermissions,
+    defaultPermission: resolvedDefaultPermission,
     defaultRoleId: resolvedDefaultRoleId,
     draftSource,
     fileInputRef,
@@ -266,7 +296,7 @@ export function useGroupMemberInviteDialog({
     rowErrors,
     selectedRowIdSet,
     selectedRowIds,
-    setDefaultPermission,
+    setDefaultPermission: handleUpdateDefaultPermission,
     setDefaultRoleId,
     setDraftSource,
     setSelectedRowIds,

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import MemberInviteBatchEditor from './MemberInviteBatchEditor'
 
 const baseProps = {
+  availablePermissions: ['owner', 'admin', 'member'] as const,
   defaultPermission: 'member' as const,
   defaultRoleId: '1',
   draftSource: '',
@@ -62,5 +63,17 @@ describe('memberInviteBatchEditor', () => {
 
     await user.click(screen.getByRole('button', { name: /remove invite 1/i }))
     expect(onRemoveRow).toHaveBeenCalledWith('invite-1')
+  })
+
+  it('describes the current access CSV format', () => {
+    render(
+      <MemberInviteBatchEditor
+        {...baseProps}
+        availablePermissions={['member'] as const}
+      />,
+    )
+
+    expect(screen.getByText(/CSV supports `email`, `role`, and `access` columns/i)).toBeVisible()
+    expect(screen.queryByText(/access\/admin/i)).not.toBeInTheDocument()
   })
 })
