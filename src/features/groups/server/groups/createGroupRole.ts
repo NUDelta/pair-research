@@ -15,7 +15,7 @@ export const createGroupRole = createServerFn({ method: 'POST' })
       if (adminContext === null) {
         return {
           success: false,
-          message: 'Only group admins can create roles.',
+          message: 'Only group managers can create roles.',
         }
       }
 

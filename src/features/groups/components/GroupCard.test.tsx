@@ -103,6 +103,8 @@ describe('groupCard', () => {
       />,
     )
 
+    expect(screen.getByText('Invited as Member')).toBeVisible()
+
     const acceptButton = screen.getByRole('button', { name: /accept/i })
     await user.click(acceptButton)
 
@@ -138,6 +140,8 @@ describe('groupCard', () => {
       />,
     )
 
+    expect(screen.getByText('Invited as Member')).toBeVisible()
+
     await user.click(screen.getByRole('button', { name: /accept/i }))
 
     await waitFor(() => {
@@ -166,6 +170,7 @@ describe('groupCard', () => {
     const groupLink = screen.getByRole('link', { name: /Research Collective/i })
     const settingsButton = screen.getByRole('button', { name: 'Open settings for Research Collective' })
 
+    expect(screen.getByText('Admin access')).toBeVisible()
     expect(groupLink).toHaveAttribute('href', '/groups/group-1')
     expect(settingsButton.closest('a')).toBeNull()
 

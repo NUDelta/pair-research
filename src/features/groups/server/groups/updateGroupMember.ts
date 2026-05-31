@@ -20,7 +20,7 @@ export const updateGroupMember = createServerFn({ method: 'POST' })
       if (adminContext === null) {
         return {
           success: false,
-          message: 'Only group admins can update group members.',
+          message: 'Only group managers can update group members.',
         }
       }
 
@@ -76,7 +76,7 @@ export const updateGroupMember = createServerFn({ method: 'POST' })
           if (actorMembership === null || !hasGroupManagementAccess(actorMembership.permission)) {
             return {
               success: false,
-              message: 'Only group admins can update group members.',
+              message: 'Only group managers can update group members.',
             }
           }
 

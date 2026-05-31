@@ -15,7 +15,7 @@ export const bulkManageGroupRoles = createServerFn({ method: 'POST' })
       if (adminContext === null) {
         return {
           success: false,
-          message: 'Only group admins can manage roles.',
+          message: 'Only group managers can manage roles.',
         }
       }
 

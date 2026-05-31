@@ -15,7 +15,7 @@ export const updateGroupBasics = createServerFn({ method: 'POST' })
       if (adminContext === null) {
         return {
           success: false,
-          message: 'Only group admins can update group settings.',
+          message: 'Only group managers can update group settings.',
         }
       }
 

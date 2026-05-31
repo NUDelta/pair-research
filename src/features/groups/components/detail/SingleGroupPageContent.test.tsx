@@ -325,7 +325,7 @@ describe('singleGroupPageContent', () => {
     )
   })
 
-  it('keeps admin-only actions out of the header for non-admin members', () => {
+  it('keeps manager-only actions out of the header for non-manager members', () => {
     render(
       <SingleGroupPageContent
         {...baseProps}

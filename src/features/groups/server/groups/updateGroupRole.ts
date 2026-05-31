@@ -15,7 +15,7 @@ export const updateGroupRole = createServerFn({ method: 'POST' })
       if (adminContext === null) {
         return {
           success: false,
-          message: 'Only group admins can update roles.',
+          message: 'Only group managers can update roles.',
         }
       }
 

@@ -15,7 +15,7 @@ export const deleteGroupRole = createServerFn({ method: 'POST' })
       if (adminContext === null) {
         return {
           success: false,
-          message: 'Only group admins can delete roles.',
+          message: 'Only group managers can delete roles.',
         }
       }
 

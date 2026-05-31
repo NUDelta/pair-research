@@ -157,8 +157,8 @@ export default function ActiveRoundPanel({
   const description = isAdmin
     ? `${activePairCount === 1 ? '1 pair was' : `${activePairCount} pairs were`} created this round.`
     : currentUserLeftOut
-      ? 'You were not paired this round. Wait for an admin to reset the pool from the header before the next round begins.'
-      : 'This round is complete. Wait for an admin to reset the pool from the header before the next round begins.'
+      ? 'You were not paired this round. Wait for a group manager to reset the pool from the header before the next round begins.'
+      : 'This round is complete. Wait for a group manager to reset the pool from the header before the next round begins.'
   const adminResetGuidance = isAdmin
     ? 'Use Reset Pool in the header when you are ready to start the next round.'
     : null

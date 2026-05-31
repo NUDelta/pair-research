@@ -16,7 +16,7 @@ export const removeGroupMember = createServerFn({ method: 'POST' })
       if (adminContext === null) {
         return {
           success: false,
-          message: 'Only group admins can remove members.',
+          message: 'Only group managers can remove members.',
         }
       }
 
@@ -66,7 +66,7 @@ export const removeGroupMember = createServerFn({ method: 'POST' })
           ])
 
           if (actorMembership === null || !hasGroupManagementAccess(actorMembership.permission)) {
-            throw new Error('Only group admins can remove members.')
+            throw new Error('Only group managers can remove members.')
           }
 
           if (group === null) {

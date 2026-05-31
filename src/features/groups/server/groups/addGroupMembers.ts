@@ -21,7 +21,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
       if (adminContext === null) {
         return {
           success: false,
-          message: 'Only group admins can add members.',
+          message: 'Only group managers can add members.',
         }
       }
 
@@ -165,7 +165,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
           ])
 
           if (currentActorMembership === null || !hasGroupManagementAccess(currentActorMembership.permission)) {
-            throw new Error('Only group admins can add members.')
+            throw new Error('Only group managers can add members.')
           }
 
           if (

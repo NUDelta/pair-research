@@ -25,7 +25,7 @@ export const groupAdminSchema = groupSchema.extend({
   ).describe('Group Members'),
 })
 
-// Union: admin groups must be checked first so admin-only fields are preserved.
+// Union: manager groups must be checked first so manager-only fields are preserved.
 export const groupUnionSchema = z.union([groupAdminSchema, groupSchema])
 
 // Entire response: list of mixed or consistent groups
