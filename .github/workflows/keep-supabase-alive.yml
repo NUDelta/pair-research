@@ -1,0 +1,44 @@
+name: 🫀 Keep Supabase Alive
+
+on:
+  schedule:
+    # Run at midnight UTC on Sunday and Friday.
+    - cron: '0 0 * * 0,5'
+  workflow_dispatch:
+
+concurrency:
+  group: keep-supabase-alive
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  ping:
+    name: 🫀 Ping Supabase REST API
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+
+    steps:
+      - name: 🫀 Ping profile table
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_SECRET_KEY:-}" ]; then
+            echo "::error::VITE_SUPABASE_URL and SUPABASE_SECRET_KEY secrets are required."
+            exit 1
+          fi
+
+          base_url="${SUPABASE_URL%/}"
+
+          curl --fail --show-error --silent \
+            --retry 3 \
+            --retry-delay 5 \
+            --max-time 20 \
+            "${base_url}/rest/v1/profile?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_SECRET_KEY}" \
+            -H "Accept: application/json" \
+            --output /dev/null
