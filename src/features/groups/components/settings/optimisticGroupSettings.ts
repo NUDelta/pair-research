@@ -1,6 +1,7 @@
 import type { Draft } from 'immer'
 import type { GroupSettingsData, GroupSettingsMember, GroupSettingsRole } from './types'
 import type { GroupMemberInviteDraft } from '@/features/groups/lib/groupMemberInviteBatch'
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { applyPatches, enablePatches, produceWithPatches } from 'immer'
 import { normalizeNullableDescription, normalizeRoleTitle } from '@/features/groups/lib/groupNormalization'
 import { resolveBulkRoleActionPlan } from '@/features/groups/lib/groupRoleBulkActions'
@@ -35,11 +36,11 @@ interface ApplyBulkRoleActionInput {
 
 interface ApplyGroupMemberInviteInput {
   invites: GroupMemberInviteDraft[]
-  tempMembers: Array<Pick<GroupSettingsMember, 'email' | 'isAdmin' | 'joinedAt' | 'roleId' | 'userId'>>
+  tempMembers: Array<Pick<GroupSettingsMember, 'email' | 'joinedAt' | 'permission' | 'roleId' | 'userId'>>
 }
 
 interface ApplyMemberUpdateInput {
-  isAdmin: boolean
+  permission: GroupPermission
   roleId: string
   userId: string
 }
@@ -226,7 +227,7 @@ export function applyBulkRoleAction(
 
 export function applyMemberUpdate(
   draft: Draft<GroupSettingsData>,
-  { isAdmin, roleId, userId }: ApplyMemberUpdateInput,
+  { permission, roleId, userId }: ApplyMemberUpdateInput,
 ) {
   const member = draft.members.find(currentMember => currentMember.userId === userId)
   const roleTitle = getRoleTitle(draft, roleId)
@@ -235,7 +236,7 @@ export function applyMemberUpdate(
     return false
   }
 
-  member.isAdmin = isAdmin
+  member.permission = permission
   member.roleId = roleId
   member.roleTitle = roleTitle
   return true
@@ -283,7 +284,7 @@ export function applyGroupMemberInvites(
       email: invite.email,
       roleId: invite.roleId,
       roleTitle,
-      isAdmin: invite.isAdmin,
+      permission: invite.permission,
       isPending: true,
       joinedAt: tempMember.joinedAt,
       isCreator: false,

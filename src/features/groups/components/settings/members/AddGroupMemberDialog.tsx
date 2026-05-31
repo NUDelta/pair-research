@@ -24,7 +24,7 @@ export default function AddGroupMemberDialog({
   triggerClassName,
 }: AddGroupMemberDialogProps) {
   const {
-    defaultIsAdmin,
+    defaultPermission,
     defaultRoleId,
     draftSource,
     fileInputRef,
@@ -37,14 +37,14 @@ export default function AddGroupMemberDialog({
     handleRemoveRow,
     handleSubmit,
     handleUpdateRow,
-    hasAdminInvite,
+    hasPrivilegedInvite,
     inviteRows,
     isPending,
     open,
     rowErrors,
     selectedRowIdSet,
     selectedRowIds,
-    setDefaultIsAdmin,
+    setDefaultPermission,
     setDefaultRoleId,
     setDraftSource,
     setSelectedRowIds,
@@ -83,7 +83,7 @@ export default function AddGroupMemberDialog({
             className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
           >
             <MemberInviteBatchEditor
-              defaultIsAdmin={defaultIsAdmin}
+              defaultPermission={defaultPermission}
               defaultRoleId={defaultRoleId}
               draftSource={draftSource}
               inviteRows={inviteRows}
@@ -96,7 +96,7 @@ export default function AddGroupMemberDialog({
               onRemoveRow={handleRemoveRow}
               onSelectAllRows={checked => setSelectedRowIds(checked ? inviteRows.map(row => row.id) : [])}
               onSelectRow={toggleRowSelection}
-              onUpdateDefaultAccess={setDefaultIsAdmin}
+              onUpdateDefaultAccess={setDefaultPermission}
               onUpdateDefaultRole={setDefaultRoleId}
               onUpdateRow={handleUpdateRow}
               roles={roles}
@@ -118,10 +118,10 @@ export default function AddGroupMemberDialog({
                 ? <Spinner text="Adding members..." />
                 : (
                     <>
-                      {hasAdminInvite
+                      {hasPrivilegedInvite
                         ? <ShieldPlusIcon data-icon="inline-start" />
                         : <UserPlusIcon data-icon="inline-start" />}
-                      {hasAdminInvite ? 'Add members with access' : 'Add members'}
+                      {hasPrivilegedInvite ? 'Add members with access' : 'Add members'}
                     </>
                   )}
             </Button>

@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 
 export const getSingleGroup = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => {
@@ -24,7 +25,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
           is_pending: false,
         },
         select: {
-          is_admin: true,
+          permission: true,
           joined_at: true,
           group: {
             select: {
@@ -125,7 +126,8 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
         userId,
         fullName: membership.profile.full_name,
         avatarUrl: membership.profile.avatar_url,
-        isAdmin: membership.is_admin,
+        permission: membership.permission,
+        isAdmin: hasGroupManagementAccess(membership.permission),
         hasActivePairing: activePairing !== null,
         joinedAt: membership.joined_at.toISOString(),
       }

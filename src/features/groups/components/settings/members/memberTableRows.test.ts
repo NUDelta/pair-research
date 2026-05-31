@@ -9,7 +9,7 @@ const members = [
     email: 'creator@example.com',
     roleId: '1',
     roleTitle: 'Owner',
-    isAdmin: true,
+    permission: 'owner' as const,
     isPending: false,
     joinedAt: '2026-01-10T00:00:00.000Z',
     isCreator: true,
@@ -21,7 +21,7 @@ const members = [
     email: 'member@example.com',
     roleId: '2',
     roleTitle: 'Researcher',
-    isAdmin: false,
+    permission: 'member' as const,
     isPending: false,
     joinedAt: '2026-02-20T00:00:00.000Z',
     isCreator: false,
@@ -33,7 +33,7 @@ const members = [
     email: 'pending@example.com',
     roleId: '2',
     roleTitle: 'Researcher',
-    isAdmin: false,
+    permission: 'member' as const,
     isPending: true,
     joinedAt: '2026-03-01T00:00:00.000Z',
     isCreator: false,
@@ -45,7 +45,7 @@ const members = [
     email: 'optimistic@example.com',
     roleId: '2',
     roleTitle: 'Researcher',
-    isAdmin: false,
+    permission: 'member' as const,
     isPending: true,
     joinedAt: '2026-03-02T00:00:00.000Z',
     isCreator: false,
@@ -57,6 +57,7 @@ describe('buildGroupMemberTableRows', () => {
   it('falls back to email when the full name is empty', () => {
     const rows = buildGroupMemberTableRows({
       currentUserId: 'current-user',
+      currentUserPermission: 'owner',
       hasActivePairing: false,
       members,
     })
@@ -64,15 +65,16 @@ describe('buildGroupMemberTableRows', () => {
     expect(rows[1]?.displayName).toBe('member@example.com')
   })
 
-  it('marks creator and current user rows as non-removable with specific reasons', () => {
+  it('marks current user rows as non-removable with a specific reason', () => {
     const rows = buildGroupMemberTableRows({
       currentUserId: 'member-id',
+      currentUserPermission: 'owner',
       hasActivePairing: false,
       members,
     })
 
-    expect(rows[0]?.canRemove).toBe(false)
-    expect(rows[0]?.removeDisabledReason).toBe('The group creator cannot be removed.')
+    expect(rows[0]?.canRemove).toBe(true)
+    expect(rows[0]?.removeDisabledReason).toBeNull()
     expect(rows[1]?.canRemove).toBe(false)
     expect(rows[1]?.removeDisabledReason).toBe('Use a dedicated leave-group flow instead of removing yourself from settings.')
   })
@@ -80,6 +82,7 @@ describe('buildGroupMemberTableRows', () => {
   it('blocks confirmed members during an active pairing but still allows pending invites', () => {
     const rows = buildGroupMemberTableRows({
       currentUserId: 'someone-else',
+      currentUserPermission: 'owner',
       hasActivePairing: true,
       members,
     })
@@ -93,6 +96,7 @@ describe('buildGroupMemberTableRows', () => {
   it('disables selection and management for optimistic invite rows until reconciliation', () => {
     const rows = buildGroupMemberTableRows({
       currentUserId: 'someone-else',
+      currentUserPermission: 'owner',
       hasActivePairing: false,
       members,
     })

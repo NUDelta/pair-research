@@ -1,3 +1,5 @@
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
+
 export interface GroupSettingsRole {
   id: string
   title: string
@@ -11,7 +13,7 @@ export interface GroupSettingsMember {
   email: string
   roleId: string
   roleTitle: string
-  isAdmin: boolean
+  permission: GroupPermission
   isPending: boolean
   joinedAt: string
   isCreator: boolean
@@ -27,6 +29,7 @@ export interface GroupSettingsData {
     activePairingId: string | null
   }
   currentUserId: string
+  currentUserPermission: GroupPermission
   roles: GroupSettingsRole[]
   members: GroupSettingsMember[]
 }

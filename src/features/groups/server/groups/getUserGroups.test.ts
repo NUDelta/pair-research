@@ -36,7 +36,7 @@ describe('getUserGroups', () => {
     await expect(loadUserGroups()).rejects.toThrow('database unavailable')
   })
 
-  it('loads all admin group members with one batched query', async () => {
+  it('loads all managed group members with one batched query', async () => {
     mockGetUser.mockResolvedValue({ id: 'user-1' })
     mockFindMany
       .mockResolvedValueOnce([
@@ -48,7 +48,7 @@ describe('getUserGroups', () => {
             created_at: new Date('2026-04-01T10:00:00.000Z'),
           },
           group_role: { title: 'Professor' },
-          is_admin: true,
+          permission: 'owner',
           is_pending: false,
           joined_at: new Date('2026-04-02T10:00:00.000Z'),
         },
@@ -60,7 +60,7 @@ describe('getUserGroups', () => {
             created_at: new Date('2026-04-03T10:00:00.000Z'),
           },
           group_role: { title: 'Student' },
-          is_admin: false,
+          permission: 'member',
           is_pending: false,
           joined_at: new Date('2026-04-04T10:00:00.000Z'),
         },
@@ -72,7 +72,7 @@ describe('getUserGroups', () => {
             created_at: new Date('2026-04-05T10:00:00.000Z'),
           },
           group_role: { title: 'Lead' },
-          is_admin: true,
+          permission: 'admin',
           is_pending: false,
           joined_at: new Date('2026-04-06T10:00:00.000Z'),
         },
@@ -87,7 +87,7 @@ describe('getUserGroups', () => {
             email: 'ada@example.com',
           },
           group_role: { title: 'Professor' },
-          is_admin: true,
+          permission: 'owner',
           is_pending: false,
           joined_at: new Date('2026-04-02T10:00:00.000Z'),
         },
@@ -100,7 +100,7 @@ describe('getUserGroups', () => {
             email: 'grace@example.com',
           },
           group_role: { title: 'Lead' },
-          is_admin: true,
+          permission: 'admin',
           is_pending: false,
           joined_at: new Date('2026-04-06T10:00:00.000Z'),
         },

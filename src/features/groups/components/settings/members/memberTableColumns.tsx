@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { GroupSettingsRole } from '../types'
 import type { GroupMemberTableRow } from './memberTableRows'
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Trash2Icon } from 'lucide-react'
 import { getInitials } from '@/shared/lib/avatar'
@@ -16,17 +17,15 @@ import MemberRoleSelect from './MemberRoleSelect'
 const columnHelper = createColumnHelper<GroupMemberTableRow>()
 
 interface CreateGroupMemberColumnsOptions {
-  creatorId: string
-  onAccessChange: (member: GroupMemberTableRow, nextIsAdmin: boolean) => void
+  onAccessChange: (member: GroupMemberTableRow, nextPermission: GroupPermission) => void
   onRemove: (member: GroupMemberTableRow) => Promise<void>
   onRoleChange: (member: GroupMemberTableRow, nextRoleId: string) => void
   pendingActions: Readonly<Record<string, { access?: boolean, remove?: boolean, role?: boolean }>>
   roles: GroupSettingsRole[]
-  rowState: Record<string, { isAdmin: boolean, roleId: string }>
+  rowState: Record<string, { permission: GroupPermission, roleId: string }>
 }
 
 export function createGroupMemberColumns({
-  creatorId,
   onAccessChange,
   onRemove,
   onRoleChange,
@@ -86,7 +85,7 @@ export function createGroupMemberColumns({
       cell: ({ row }) => {
         const state = rowState[row.original.userId] ?? {
           roleId: row.original.roleId,
-          isAdmin: row.original.isAdmin,
+          permission: row.original.permission,
         }
         const pendingState = pendingActions[row.original.userId] ?? {}
         const isBusy = Boolean(pendingState.role || pendingState.access || pendingState.remove)
@@ -110,15 +109,15 @@ export function createGroupMemberColumns({
       cell: ({ row }) => {
         const state = rowState[row.original.userId] ?? {
           roleId: row.original.roleId,
-          isAdmin: row.original.isAdmin,
+          permission: row.original.permission,
         }
         const pendingState = pendingActions[row.original.userId] ?? {}
         const isBusy = Boolean(pendingState.role || pendingState.access || pendingState.remove)
 
         return (
           <MemberAccessSelect
-            isAdmin={state.isAdmin}
-            disabled={row.original.userId === creatorId || row.original.managementDisabledReason !== null}
+            permission={state.permission}
+            disabled={row.original.managementDisabledReason !== null}
             memberName={row.original.displayName}
             isBusy={isBusy}
             isPending={pendingState.access === true}

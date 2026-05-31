@@ -10,6 +10,14 @@ datasource db {
   schemas  = ["auth", "public"]
 }
 
+enum group_permission {
+  owner
+  admin
+  member
+
+  @@schema("public")
+}
+
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model profile {
   id                                   String               @id @default(dbgenerated("auth.uid()")) @db.Uuid
@@ -63,16 +71,16 @@ model group {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model group_member {
-  id         BigInt     @id @unique @default(autoincrement())
-  group_id   String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         BigInt           @id @unique @default(autoincrement())
+  group_id   String           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   role_id    BigInt
-  is_admin   Boolean    @default(false)
-  is_pending Boolean    @default(true)
-  joined_at  DateTime   @default(now()) @db.Timestamptz(6)
-  group      group      @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  group_role group_role @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  profile    profile    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  permission group_permission @default(member)
+  is_pending Boolean          @default(true)
+  joined_at  DateTime         @default(now()) @db.Timestamptz(6)
+  group      group            @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  group_role group_role       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profile    profile          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([group_id, user_id], map: "unique_group_user")
   @@schema("public")

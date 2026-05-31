@@ -39,7 +39,7 @@ export const bulkUpdateGroupMemberRoles = createServerFn({ method: 'POST' })
           },
           select: {
             user_id: true,
-            is_admin: true,
+            permission: true,
             is_pending: true,
           },
         }),
@@ -65,9 +65,10 @@ export const bulkUpdateGroupMemberRoles = createServerFn({ method: 'POST' })
       }
 
       const bulkUpdateError = getBulkMemberRoleUpdateError({
+        actorPermission: adminContext.actorPermission,
         members: members.map(member => ({
           userId: member.user_id,
-          isAdmin: member.is_admin,
+          permission: member.permission,
           isPending: member.is_pending,
         })),
         targetUserIds,

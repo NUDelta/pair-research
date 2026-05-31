@@ -1,4 +1,5 @@
 import type { GroupSettingsRole } from '../components/settings/types'
+import type { GroupPermission } from './groupPermissions'
 import { groupMemberInviteSchema } from '../schemas/groupManagement'
 import { parseGroupMemberInviteRows } from './groupMemberInviteCsv'
 
@@ -7,7 +8,7 @@ export const MAX_GROUP_MEMBER_INVITES = 20
 export interface GroupMemberInviteDraft {
   email: string
   roleId: string
-  isAdmin: boolean
+  permission: GroupPermission
 }
 
 export interface GroupMemberInviteImportSummary {
@@ -25,17 +26,18 @@ interface ImportGroupMemberInvitesOptions {
   roles: GroupSettingsRole[]
   source: string
   defaultRoleId: string
-  defaultIsAdmin: boolean
+  defaultPermission: GroupPermission
 }
 
 const truthyAccessValues = new Set(['1', 'admin', 'administrator', 'full', 'true', 'yes', 'y'])
 const falsyAccessValues = new Set(['0', 'false', 'member', 'no', 'n', 'standard', 'user'])
+const ownerAccessValues = new Set(['owner'])
 
 export function createEmptyGroupMemberInviteDraft(defaultRoleId: string): GroupMemberInviteDraft {
   return {
     email: '',
     roleId: defaultRoleId,
-    isAdmin: false,
+    permission: 'member',
   }
 }
 
@@ -45,7 +47,7 @@ export function importGroupMemberInvites({
   roles,
   source,
   defaultRoleId,
-  defaultIsAdmin,
+  defaultPermission,
 }: ImportGroupMemberInvitesOptions) {
   const rows = parseGroupMemberInviteRows(source)
   const existingEmails = new Set(existingInvites.map(invite => normalizeInviteEmail(invite.email)))
@@ -72,7 +74,7 @@ export function importGroupMemberInvites({
     const parsedInvite = groupMemberInviteSchema.safeParse({
       email: normalizedEmail,
       roleId: defaultRoleId,
-      isAdmin: defaultIsAdmin,
+      permission: defaultPermission,
     })
 
     if (!parsedInvite.success) {
@@ -104,7 +106,7 @@ export function importGroupMemberInvites({
     nextInvites.push({
       email: normalizedEmail,
       roleId: resolvedRole.roleId,
-      isAdmin: resolveAccessValue(row.accessValue, defaultIsAdmin),
+      permission: resolveAccessValue(row.accessValue, defaultPermission),
     })
     existingEmails.add(normalizedEmail)
     summary.addedCount += 1
@@ -148,21 +150,25 @@ function resolveRoleId({
   }
 }
 
-function resolveAccessValue(value: string | null, defaultIsAdmin: boolean) {
+function resolveAccessValue(value: string | null, defaultPermission: GroupPermission): GroupPermission {
   if (value === null || value.trim().length === 0) {
-    return defaultIsAdmin
+    return defaultPermission
   }
 
   const normalizedValue = value.trim().toLowerCase()
+  if (ownerAccessValues.has(normalizedValue)) {
+    return 'owner'
+  }
+
   if (truthyAccessValues.has(normalizedValue)) {
-    return true
+    return 'admin'
   }
 
   if (falsyAccessValues.has(normalizedValue)) {
-    return false
+    return 'member'
   }
 
-  return defaultIsAdmin
+  return defaultPermission
 }
 
 function normalizeInviteEmail(email: string) {

@@ -1,5 +1,6 @@
 import type { GroupSessionRuntime } from './runtime'
 import type { GroupSessionRequest } from './types'
+import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { getMembership, getPrisma } from './database'
 import { clearStoredGroupSession } from './storage'
 
@@ -18,7 +19,7 @@ export async function handleResetPool(
       }
     }
 
-    if (!membership.is_admin) {
+    if (!hasGroupManagementAccess(membership.permission)) {
       return {
         success: false,
         message: 'Only group admins can reset the pool',

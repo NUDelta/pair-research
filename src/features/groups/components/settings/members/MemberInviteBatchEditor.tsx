@@ -1,11 +1,13 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { GroupSettingsRole } from '../types'
 import type { GroupMemberInviteDraft } from '@/features/groups/lib/groupMemberInviteBatch'
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { createColumnHelper } from '@tanstack/react-table'
 import { PlusIcon, Trash2Icon, UploadIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import InvitePreparationPanel from '@/features/groups/components/invites/InvitePreparationPanel'
 import PreparedInvitesTable from '@/features/groups/components/invites/PreparedInvitesTable'
+import { getGroupPermissionLabel, groupPermissionValues } from '@/features/groups/lib/groupPermissions'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -15,7 +17,7 @@ import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 
 interface MemberInviteBatchEditorProps {
-  defaultIsAdmin: boolean
+  defaultPermission: GroupPermission
   defaultRoleId: string
   draftSource: string
   inviteRows: InviteRow[]
@@ -28,11 +30,11 @@ interface MemberInviteBatchEditorProps {
   onRemoveRow: (rowId: string) => void
   onSelectAllRows: (checked: boolean) => void
   onSelectRow: (rowId: string, checked: boolean) => void
-  onUpdateDefaultAccess: (value: boolean) => void
+  onUpdateDefaultAccess: (value: GroupPermission) => void
   onUpdateDefaultRole: (roleId: string) => void
   onUpdateRow: (rowId: string, nextRow: GroupMemberInviteDraft) => void
   roles: GroupSettingsRole[]
-  rowErrors: Record<string, Partial<Record<'email' | 'roleId', string>>>
+  rowErrors: Record<string, Partial<Record<'email' | 'permission' | 'roleId', string>>>
   selectedCount: number
   selectedRowIds: Set<string>
 }
@@ -47,12 +49,12 @@ function toInviteDraft(row: InviteRow): GroupMemberInviteDraft {
   return {
     email: row.email,
     roleId: row.roleId,
-    isAdmin: row.isAdmin,
+    permission: row.permission,
   }
 }
 
 export default function MemberInviteBatchEditor({
-  defaultIsAdmin,
+  defaultPermission,
   defaultRoleId,
   draftSource,
   inviteRows,
@@ -155,17 +157,39 @@ export default function MemberInviteBatchEditor({
           )
         },
       }),
-      columnHelper.accessor('isAdmin', {
+      columnHelper.accessor('permission', {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Access" />,
-        cell: ({ row }) => (
-          <label className="flex min-h-10 items-center gap-3 rounded-lg border px-3 py-2 text-sm">
-            <Checkbox
-              checked={row.original.isAdmin}
-              onCheckedChange={checked => onUpdateRow(row.original.id, { ...toInviteDraft(row.original), isAdmin: checked === true })}
-            />
-            Admin access
-          </label>
-        ),
+        cell: ({ row }) => {
+          const errors = rowErrors[row.original.id]
+
+          return (
+            <div className="grid min-w-40 gap-2">
+              <Select
+                value={row.original.permission}
+                onValueChange={permission => onUpdateRow(row.original.id, {
+                  ...toInviteDraft(row.original),
+                  permission: permission as GroupPermission,
+                })}
+              >
+                <SelectTrigger aria-invalid={errors?.permission !== undefined}>
+                  <SelectValue placeholder="Choose access" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {groupPermissionValues.map(permission => (
+                      <SelectItem key={permission} value={permission}>
+                        {getGroupPermissionLabel(permission)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              {errors?.permission !== undefined && (
+                <p className="text-sm text-destructive">{errors.permission}</p>
+              )}
+            </div>
+          )
+        },
       }),
       columnHelper.display({
         id: 'actions',
@@ -264,11 +288,21 @@ export default function MemberInviteBatchEditor({
               </Select>
             </div>
             <label className="flex min-h-10 items-center gap-3 rounded-lg border px-3 py-2 text-sm">
-              <Checkbox
-                checked={defaultIsAdmin}
-                onCheckedChange={checked => onUpdateDefaultAccess(checked === true)}
-              />
-              Shared admin access
+              <span className="text-muted-foreground">Shared access</span>
+              <Select value={defaultPermission} onValueChange={permission => onUpdateDefaultAccess(permission as GroupPermission)}>
+                <SelectTrigger className="min-w-[140px]">
+                  <SelectValue placeholder="Choose access" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {groupPermissionValues.map(permission => (
+                      <SelectItem key={permission} value={permission}>
+                        {getGroupPermissionLabel(permission)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </label>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

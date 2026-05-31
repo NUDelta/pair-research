@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import MemberInviteBatchEditor from './MemberInviteBatchEditor'
 
 const baseProps = {
-  defaultIsAdmin: false,
+  defaultPermission: 'member' as const,
   defaultRoleId: '1',
   draftSource: '',
   inviteRows: [],
@@ -47,7 +47,7 @@ describe('memberInviteBatchEditor', () => {
       <MemberInviteBatchEditor
         {...baseProps}
         inviteRows={[
-          { id: 'invite-1', email: 'member@example.com', roleId: '1', isAdmin: false },
+          { id: 'invite-1', email: 'member@example.com', roleId: '1', permission: 'member' as const },
         ]}
         onRemoveRow={onRemoveRow}
         onSelectAllRows={onSelectAllRows}

@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { groupsResponseSchema } from '@/features/groups/schemas/group'
 
 export async function loadUserGroups() {
@@ -20,15 +21,15 @@ export async function loadUserGroups() {
       },
     })
 
-    const adminGroupIds = memberships
-      .filter(membership => membership.is_admin)
+    const managedGroupIds = memberships
+      .filter(membership => hasGroupManagementAccess(membership.permission))
       .map(membership => membership.group.id)
 
-    const adminGroupMembers = adminGroupIds.length > 0
+    const managedGroupMembers = managedGroupIds.length > 0
       ? await prisma.group_member.findMany({
           where: {
             group_id: {
-              in: adminGroupIds,
+              in: managedGroupIds,
             },
           },
           include: {
@@ -38,38 +39,38 @@ export async function loadUserGroups() {
         })
       : []
 
-    const adminMembersByGroupId = new Map<string, typeof adminGroupMembers>()
-    for (const member of adminGroupMembers) {
-      const groupMembers = adminMembersByGroupId.get(member.group_id) ?? []
+    const managedMembersByGroupId = new Map<string, typeof managedGroupMembers>()
+    for (const member of managedGroupMembers) {
+      const groupMembers = managedMembersByGroupId.get(member.group_id) ?? []
       groupMembers.push(member)
-      adminMembersByGroupId.set(member.group_id, groupMembers)
+      managedMembersByGroupId.set(member.group_id, groupMembers)
     }
 
     const result = memberships.map((membership) => {
-      const { group, group_role, is_admin, is_pending, joined_at } = membership
+      const { group, group_role, permission, is_pending, joined_at } = membership
 
       const baseGroup = {
         id: group.id,
         groupName: group.name,
         groupDescription: group.description,
         role: group_role.title,
-        isAdmin: is_admin,
+        permission,
         isPending: is_pending,
         joinedAt: joined_at.toISOString(),
       }
 
-      if (!is_admin) {
+      if (!hasGroupManagementAccess(permission)) {
         return baseGroup
       }
 
-      const members = adminMembersByGroupId.get(group.id) ?? []
+      const members = managedMembersByGroupId.get(group.id) ?? []
       const groupMembers = members.map(m => ({
         id: m.profile.id,
         fullName: m.profile.full_name,
         avatarUrl: m.profile.avatar_url,
         email: m.profile.email,
         role: m.group_role.title,
-        isAdmin: m.is_admin,
+        permission: m.permission,
         isPending: m.is_pending,
         joinedAt: m.joined_at.toISOString(),
       }))

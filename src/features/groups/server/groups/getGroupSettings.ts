@@ -35,13 +35,13 @@ export const getGroupSettings = createServerFn({ method: 'GET' })
             group_id: data.groupId,
           },
           orderBy: [
-            { is_admin: 'desc' },
+            { permission: 'asc' },
             { is_pending: 'asc' },
             { joined_at: 'asc' },
           ],
           select: {
             user_id: true,
-            is_admin: true,
+            permission: true,
             is_pending: true,
             joined_at: true,
             group_role: {
@@ -70,6 +70,7 @@ export const getGroupSettings = createServerFn({ method: 'GET' })
           activePairingId: group.active_pairing_id,
         },
         currentUserId: user.id,
+        currentUserPermission: adminContext.actorPermission,
         roles: roles.map(role => ({
           id: role.id.toString(),
           title: role.title,
@@ -81,7 +82,7 @@ export const getGroupSettings = createServerFn({ method: 'GET' })
           email: member.profile.email,
           roleId: member.group_role.id.toString(),
           roleTitle: member.group_role.title,
-          isAdmin: member.is_admin,
+          permission: member.permission,
           isPending: member.is_pending,
           joinedAt: member.joined_at.toISOString(),
           isCreator: member.user_id === group.creator_id,

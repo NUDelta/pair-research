@@ -76,7 +76,7 @@ function looksLikeEmailList(columns: string[]) {
     const parsedInvite = groupMemberInviteSchema.safeParse({
       email: value.trim().toLowerCase(),
       roleId: '1',
-      isAdmin: false,
+      permission: 'member',
     })
     return parsedInvite.success
   })

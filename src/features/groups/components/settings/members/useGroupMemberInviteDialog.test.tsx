@@ -68,7 +68,7 @@ describe('useGroupMemberInviteDialog', () => {
           id: 'invite-1',
           email: 'grace@example.com',
           roleId: '1',
-          isAdmin: false,
+          permission: 'member',
         },
       ])
     })
@@ -112,13 +112,13 @@ describe('useGroupMemberInviteDialog', () => {
           id: 'invite-1',
           email: 'grace@example.com',
           roleId: '1',
-          isAdmin: false,
+          permission: 'member',
         },
         {
           id: 'invite-2',
           email: 'barbara@example.com',
           roleId: '1',
-          isAdmin: false,
+          permission: 'member',
         },
       ])
     })
@@ -175,6 +175,7 @@ describe('useGroupMemberInviteDialog', () => {
         activePairingId: null,
       },
       currentUserId: 'user-1',
+      currentUserPermission: 'owner',
       roles: [{ id: '1', title: 'Researcher' }],
       members: [],
     }
@@ -187,6 +188,7 @@ describe('useGroupMemberInviteDialog', () => {
         activePairingId: null,
       },
       currentUserId: 'user-1',
+      currentUserPermission: 'owner',
       roles: [{ id: '1', title: 'Researcher' }],
       members: [],
     }

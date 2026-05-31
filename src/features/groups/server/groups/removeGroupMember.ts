@@ -26,18 +26,18 @@ export const removeGroupMember = createServerFn({ method: 'POST' })
         },
         select: {
           user_id: true,
-          is_admin: true,
+          permission: true,
           is_pending: true,
         },
       })
 
       const removalError = getMemberRemovalError({
         actorUserId: user.id,
-        creatorId: group.creator_id,
+        actorPermission: adminContext.actorPermission,
         hasActivePairing: group.active_pairing_id !== null,
         members: members.map(member => ({
           userId: member.user_id,
-          isAdmin: member.is_admin,
+          permission: member.permission,
           isPending: member.is_pending,
         })),
         targetUserId: data.userId,

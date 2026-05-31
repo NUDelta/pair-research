@@ -8,6 +8,7 @@ import {
   getGroupInvitationAcceptanceErrorMessage,
   runGroupInvitationAcceptance,
 } from '@/features/groups/lib/groupInvitationAcceptance'
+import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { acceptGroupInvitation } from '@/features/groups/server/groups/acceptGroupInvitation'
 import { cn } from '@/shared/lib/utils'
 import { Spinner } from '@/shared/ui'
@@ -36,7 +37,7 @@ const GroupCard = ({
   const {
     groupName,
     groupDescription,
-    isAdmin,
+    permission,
     isPending,
     joinedAt,
   } = group
@@ -50,7 +51,7 @@ const GroupCard = ({
   const isNavigable = href !== undefined
   const acceptPending = controlledIsAccepting ?? isAccepting
 
-  const settingsAction = isAdmin && !isPending
+  const settingsAction = hasGroupManagementAccess(permission) && !isPending
     ? (
         <Button
           variant="ghost"

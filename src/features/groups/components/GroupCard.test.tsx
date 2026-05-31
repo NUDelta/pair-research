@@ -96,7 +96,7 @@ describe('groupCard', () => {
           groupName: 'Research Collective',
           groupDescription: 'Weekly paper reviews',
           role: 'Member',
-          isAdmin: false,
+          permission: 'member',
           isPending: true,
           joinedAt: '2026-04-10T10:00:00.000Z',
         }}
@@ -130,7 +130,7 @@ describe('groupCard', () => {
           groupName: 'Research Collective',
           groupDescription: 'Weekly paper reviews',
           role: 'Member',
-          isAdmin: false,
+          permission: 'member',
           isPending: true,
           joinedAt: '2026-04-10T10:00:00.000Z',
         }}
@@ -156,7 +156,7 @@ describe('groupCard', () => {
           groupName: 'Research Collective',
           groupDescription: 'Weekly paper reviews',
           role: 'Member',
-          isAdmin: true,
+          permission: 'admin',
           isPending: false,
           joinedAt: '2026-04-10T10:00:00.000Z',
         }}

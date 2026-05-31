@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { normalizeInviteEmail } from '@/features/groups/lib/groupNormalization'
+import { canManagePrivilegedAccess, isPrivilegedPermission } from '@/features/groups/lib/groupPermissions'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { addGroupMembersSchema } from '../../schemas/groupManagement'
 import {
@@ -27,8 +28,19 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
       const normalizedInvites = data.invites.map(invite => ({
         email: normalizeInviteEmail(invite.email),
         roleId: invite.roleId,
-        isAdmin: invite.isAdmin,
+        permission: invite.permission,
       }))
+
+      if (
+        !canManagePrivilegedAccess(adminContext.actorPermission)
+        && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
+      ) {
+        return {
+          success: false,
+          message: 'Only group owners can invite owners or admins.',
+        }
+      }
+
       const seenEmails = new Set<string>()
 
       for (const invite of normalizedInvites) {
@@ -115,7 +127,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
           group_id: data.groupId,
           user_id: ensuredProfile.profile.id,
           role_id: BigInt(invite.roleId),
-          is_admin: invite.isAdmin,
+          permission: invite.permission,
           is_pending: true,
         })),
       })

@@ -1,5 +1,6 @@
 import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsMember, GroupSettingsRole } from '../types'
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { useCallback, useMemo, useState, useTransition } from 'react'
@@ -17,8 +18,8 @@ import { buildGroupMemberTableRows } from './memberTableRows'
 
 interface GroupMembersTableProps {
   applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
-  creatorId: string
   currentUserId: string
+  currentUserPermission: GroupPermission
   groupId: string
   hasActivePairing: boolean
   members: GroupSettingsMember[]
@@ -29,8 +30,8 @@ type MemberPendingActions = Record<string, { access?: boolean, remove?: boolean,
 
 export default function GroupMembersTable({
   applyOptimisticUpdate,
-  creatorId,
   currentUserId,
+  currentUserPermission,
   groupId,
   hasActivePairing,
   members,
@@ -48,10 +49,11 @@ export default function GroupMembersTable({
   const data = useMemo(
     () => buildGroupMemberTableRows({
       currentUserId,
+      currentUserPermission,
       hasActivePairing,
       members,
     }),
-    [currentUserId, hasActivePairing, members],
+    [currentUserId, currentUserPermission, hasActivePairing, members],
   )
 
   const memberState = useMemo(
@@ -59,7 +61,7 @@ export default function GroupMembersTable({
       Object.fromEntries(members.map(member => [
         member.userId,
         {
-          isAdmin: member.isAdmin,
+          permission: member.permission,
           roleId: member.roleId,
         },
       ])),
@@ -91,13 +93,13 @@ export default function GroupMembersTable({
 
   const persistMemberUpdate = useCallback(async (
     member: GroupSettingsMember,
-    nextState: { isAdmin: boolean, roleId: string },
+    nextState: { permission: GroupPermission, roleId: string },
     action: 'access' | 'role',
   ) => {
     const rollback = applyOptimisticUpdate((draft) => {
       applyMemberUpdate(draft, {
         userId: member.userId,
-        isAdmin: nextState.isAdmin,
+        permission: nextState.permission,
         roleId: nextState.roleId,
       })
     })
@@ -108,7 +110,7 @@ export default function GroupMembersTable({
         groupId,
         userId: member.userId,
         roleId: nextState.roleId,
-        isAdmin: nextState.isAdmin,
+        permission: nextState.permission,
       },
     })
 
@@ -162,22 +164,21 @@ export default function GroupMembersTable({
 
   const columns = useMemo(
     () => createGroupMemberColumns({
-      creatorId,
-      onAccessChange: (member, nextIsAdmin) => {
+      onAccessChange: (member, nextPermission) => {
         const state = memberState[member.userId] ?? {
-          isAdmin: member.isAdmin,
+          permission: member.permission,
           roleId: member.roleId,
         }
 
         void persistMemberUpdate(member, {
           ...state,
-          isAdmin: nextIsAdmin,
+          permission: nextPermission,
         }, 'access')
       },
       onRemove: removeMember,
       onRoleChange: (member, nextRoleId) => {
         const state = memberState[member.userId] ?? {
-          isAdmin: member.isAdmin,
+          permission: member.permission,
           roleId: member.roleId,
         }
 
@@ -190,7 +191,7 @@ export default function GroupMembersTable({
       roles,
       rowState: memberState,
     }),
-    [creatorId, memberState, pendingActions, persistMemberUpdate, removeMember, roles],
+    [memberState, pendingActions, persistMemberUpdate, removeMember, roles],
   )
 
   return (

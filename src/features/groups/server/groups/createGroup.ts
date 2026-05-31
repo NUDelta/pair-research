@@ -151,7 +151,7 @@ export const createGroup = createServerFn({ method: 'POST' })
           group_id: group.id,
           user_id: user.id,
           role_id: creatorRole.id,
-          is_admin: true,
+          permission: 'owner' as const,
           is_pending: false,
           joined_at: new Date(),
         },
@@ -159,7 +159,7 @@ export const createGroup = createServerFn({ method: 'POST' })
           group_id: group.id,
           user_id: u.id,
           role_id: createdRolesMap[memberEmailTitlesMap[u.email]?.trim()]?.id ?? creatorRole.id,
-          is_admin: false,
+          permission: 'member' as const,
           is_pending: true,
         })),
       ]

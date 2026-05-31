@@ -1,4 +1,6 @@
 import type { GroupSettingsMember } from '../types'
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
+import { canManagePrivilegedAccess, isPrivilegedPermission } from '@/features/groups/lib/groupPermissions'
 
 export interface GroupMemberTableRow extends GroupSettingsMember {
   canRemove: boolean
@@ -11,12 +13,14 @@ export interface GroupMemberTableRow extends GroupSettingsMember {
 
 interface BuildGroupMemberTableRowsOptions {
   currentUserId: string
+  currentUserPermission: GroupPermission
   hasActivePairing: boolean
   members: GroupSettingsMember[]
 }
 
 export function buildGroupMemberTableRows({
   currentUserId,
+  currentUserPermission,
   hasActivePairing,
   members,
 }: BuildGroupMemberTableRowsOptions): GroupMemberTableRow[] {
@@ -27,15 +31,15 @@ export function buildGroupMemberTableRows({
       : member.email
     const managementDisabledReason = member.isOptimistic === true
       ? 'Please wait for the invited member to finish syncing before managing them.'
-      : null
+      : isPrivilegedPermission(member.permission) && !canManagePrivilegedAccess(currentUserPermission)
+        ? 'Only group owners can manage owners or admins.'
+        : null
     const removeDisabledReason = managementDisabledReason
-      ?? (member.isCreator
-        ? 'The group creator cannot be removed.'
-        : member.userId === currentUserId
-          ? 'Use a dedicated leave-group flow instead of removing yourself from settings.'
-          : hasActivePairing && !member.isPending
-            ? 'Reset the active pairing before removing this confirmed member.'
-            : null)
+      ?? (member.userId === currentUserId
+        ? 'Use a dedicated leave-group flow instead of removing yourself from settings.'
+        : hasActivePairing && !member.isPending
+          ? 'Reset the active pairing before removing this confirmed member.'
+          : null)
 
     return {
       ...member,

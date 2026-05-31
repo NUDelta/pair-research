@@ -1,3 +1,5 @@
+import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
+
 export async function findManagedGroup(userId: string, groupId: string) {
   const { getPrismaClient } = await import('@/shared/server/prisma')
   const prisma = await getPrismaClient()
@@ -9,7 +11,7 @@ export async function findManagedGroup(userId: string, groupId: string) {
       is_pending: false,
     },
     select: {
-      is_admin: true,
+      permission: true,
       group: {
         select: {
           id: true,
@@ -22,13 +24,14 @@ export async function findManagedGroup(userId: string, groupId: string) {
     },
   })
 
-  if (membership === null || !membership.is_admin) {
+  if (membership === null || !hasGroupManagementAccess(membership.permission)) {
     return null
   }
 
   return {
     prisma,
     group: membership.group,
+    actorPermission: membership.permission,
   }
 }
 

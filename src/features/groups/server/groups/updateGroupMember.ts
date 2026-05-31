@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getAdminUpdateError } from '@/features/groups/lib/groupManagementRules'
+import { getPermissionUpdateError } from '@/features/groups/lib/groupManagementRules'
+import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { updateGroupMemberSchema } from '../../schemas/groupManagement'
 import { findManagedGroup } from './groupManagement'
@@ -23,7 +24,7 @@ export const updateGroupMember = createServerFn({ method: 'POST' })
         }
       }
 
-      const { prisma, group } = adminContext
+      const { prisma } = adminContext
       const roleId = BigInt(data.roleId)
 
       const [role, members, targetMembership] = await Promise.all([
@@ -42,7 +43,7 @@ export const updateGroupMember = createServerFn({ method: 'POST' })
           },
           select: {
             user_id: true,
-            is_admin: true,
+            permission: true,
             is_pending: true,
           },
         }),
@@ -55,7 +56,7 @@ export const updateGroupMember = createServerFn({ method: 'POST' })
           },
           select: {
             role_id: true,
-            is_admin: true,
+            permission: true,
           },
         }),
       ])
@@ -74,26 +75,26 @@ export const updateGroupMember = createServerFn({ method: 'POST' })
         }
       }
 
-      const adminUpdateError = getAdminUpdateError({
+      const permissionUpdateError = getPermissionUpdateError({
         actorUserId: user.id,
-        creatorId: group.creator_id,
+        actorPermission: adminContext.actorPermission,
         members: members.map(member => ({
           userId: member.user_id,
-          isAdmin: member.is_admin,
+          permission: member.permission,
           isPending: member.is_pending,
         })),
         targetUserId: data.userId,
-        nextIsAdmin: data.isAdmin,
+        nextPermission: data.permission,
       })
 
-      if (adminUpdateError !== null) {
+      if (permissionUpdateError !== null) {
         return {
           success: false,
-          message: adminUpdateError,
+          message: permissionUpdateError,
         }
       }
 
-      if (targetMembership.role_id === role.id && targetMembership.is_admin === data.isAdmin) {
+      if (targetMembership.role_id === role.id && targetMembership.permission === data.permission) {
         return {
           success: true,
           message: 'No member changes were needed.',
@@ -109,14 +110,14 @@ export const updateGroupMember = createServerFn({ method: 'POST' })
         },
         data: {
           role_id: role.id,
-          is_admin: data.isAdmin,
+          permission: data.permission,
         },
       })
 
       return {
         success: true,
         message: 'Group member updated successfully.',
-        lostManagementAccess: data.userId === user.id && !data.isAdmin,
+        lostManagementAccess: data.userId === user.id && !hasGroupManagementAccess(data.permission),
       }
     }
     catch (error) {

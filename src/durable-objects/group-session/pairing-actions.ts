@@ -1,5 +1,6 @@
 import type { GroupSessionRuntime } from './runtime'
 import type { GroupSessionRequest, MakePairsResponse } from './types'
+import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { buildPairs } from '@/features/groups/lib/pairing'
 import { getMembership, getPrisma } from './database'
 import { buildPairingHistory } from './pairing-history'
@@ -29,7 +30,7 @@ export async function handleMakePairs(
       }
     }
 
-    if (!membership.is_admin) {
+    if (!hasGroupManagementAccess(membership.permission)) {
       return {
         success: false,
         message: 'Only group admins can make pairs',

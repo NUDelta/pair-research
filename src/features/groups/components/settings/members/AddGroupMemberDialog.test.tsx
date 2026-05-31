@@ -5,7 +5,7 @@ import AddGroupMemberDialog from './AddGroupMemberDialog'
 
 const { mockUseGroupMemberInviteDialog } = vi.hoisted(() => ({
   mockUseGroupMemberInviteDialog: vi.fn(() => ({
-    defaultIsAdmin: false,
+    defaultPermission: 'member',
     defaultRoleId: 'role-1',
     draftSource: '',
     fileInputRef: { current: null },
@@ -18,14 +18,14 @@ const { mockUseGroupMemberInviteDialog } = vi.hoisted(() => ({
     handleRemoveRow: vi.fn(),
     handleSubmit: vi.fn(),
     handleUpdateRow: vi.fn(),
-    hasAdminInvite: false,
+    hasPrivilegedInvite: false,
     inviteRows: [],
     isPending: false,
     open: true,
     rowErrors: {},
     selectedRowIdSet: new Set<string>(),
     selectedRowIds: [],
-    setDefaultIsAdmin: vi.fn(),
+    setDefaultPermission: vi.fn(),
     setDefaultRoleId: vi.fn(),
     setDraftSource: vi.fn(),
     setSelectedRowIds: vi.fn(),
