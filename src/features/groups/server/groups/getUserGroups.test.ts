@@ -140,4 +140,37 @@ describe('getUserGroups', () => {
       ],
     })
   })
+
+  it('does not expose management data for pending manager invitations', async () => {
+    mockGetUser.mockResolvedValue({ id: 'user-1' })
+    mockFindMany.mockResolvedValueOnce([
+      {
+        group: {
+          id: 'group-1',
+          name: 'Pending Owner Group',
+          description: null,
+          created_at: new Date('2026-04-01T10:00:00.000Z'),
+        },
+        group_role: { title: 'Professor' },
+        permission: 'owner',
+        is_pending: true,
+        joined_at: new Date('2026-04-02T10:00:00.000Z'),
+      },
+    ])
+
+    const groups = await loadUserGroups()
+
+    expect(mockFindMany).toHaveBeenCalledTimes(1)
+    expect(groups).toEqual([
+      {
+        id: 'group-1',
+        groupName: 'Pending Owner Group',
+        groupDescription: null,
+        role: 'Professor',
+        permission: 'owner',
+        isPending: true,
+        joinedAt: '2026-04-02T10:00:00.000Z',
+      },
+    ])
+  })
 })

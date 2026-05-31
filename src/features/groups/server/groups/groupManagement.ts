@@ -1,6 +1,46 @@
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 
 const SERIALIZABLE_RETRY_LIMIT = 3
+
+interface GroupMembershipReader {
+  group_member: {
+    findFirst: (args: {
+      where: {
+        group_id: string
+        user_id: string
+        is_pending: false
+      }
+      select: {
+        permission: true
+      }
+    }) => Promise<{ permission: GroupPermission } | null>
+  }
+}
+
+interface InviteProfileDb {
+  profile: {
+    findFirst: (args: {
+      where: {
+        email: string
+      }
+      select: {
+        id: true
+        email: true
+      }
+    }) => Promise<{ id: string, email: string } | null>
+    create: (args: {
+      data: {
+        id: string
+        email: string
+      }
+      select: {
+        id: true
+        email: true
+      }
+    }) => Promise<{ id: string, email: string }>
+  }
+}
 
 export async function findManagedGroup(userId: string, groupId: string) {
   const { getPrismaClient } = await import('@/shared/server/prisma')
@@ -55,6 +95,30 @@ export async function withSerializableRetry<T>(operation: () => Promise<T>) {
   throw lastError
 }
 
+export async function ensureCurrentGroupManager(
+  db: GroupMembershipReader,
+  userId: string,
+  groupId: string,
+  message: string,
+) {
+  const currentMembership = await db.group_member.findFirst({
+    where: {
+      group_id: groupId,
+      user_id: userId,
+      is_pending: false,
+    },
+    select: {
+      permission: true,
+    },
+  })
+
+  if (currentMembership === null || !hasGroupManagementAccess(currentMembership.permission)) {
+    throw new Error(message)
+  }
+
+  return currentMembership.permission
+}
+
 function isPrismaSerializationConflict(error: unknown) {
   return typeof error === 'object'
     && error !== null
@@ -62,12 +126,11 @@ function isPrismaSerializationConflict(error: unknown) {
     && error.code === 'P2034'
 }
 
-export async function ensureProfileForInvite(email: string) {
-  const { getPrismaClient } = await import('@/shared/server/prisma')
-  const prisma = await getPrismaClient()
+export async function ensureProfileForInvite(email: string, db?: InviteProfileDb) {
+  const profileDb = db ?? await getProfileInviteDb()
   const normalizedEmail = email.trim().toLowerCase()
 
-  const existingProfile = await prisma.profile.findFirst({
+  const existingProfile = await profileDb.profile.findFirst({
     where: {
       email: normalizedEmail,
     },
@@ -95,7 +158,7 @@ export async function ensureProfileForInvite(email: string) {
     throw new Error(error?.message ?? 'Failed to create the invited user account.')
   }
 
-  const createdProfile = await prisma.profile.create({
+  const createdProfile = await profileDb.profile.create({
     data: {
       id: user.id,
       email: normalizedEmail,
@@ -111,6 +174,11 @@ export async function ensureProfileForInvite(email: string) {
     invitedNewUser: true,
     serviceRoleSupabase,
   }
+}
+
+async function getProfileInviteDb() {
+  const { getPrismaClient } = await import('@/shared/server/prisma')
+  return getPrismaClient()
 }
 
 export async function inviteCreatedUserByEmail(

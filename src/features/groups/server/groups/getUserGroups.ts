@@ -22,7 +22,7 @@ export async function loadUserGroups() {
     })
 
     const managedGroupIds = memberships
-      .filter(membership => hasGroupManagementAccess(membership.permission))
+      .filter(membership => hasGroupManagementAccess(membership.permission) && !membership.is_pending)
       .map(membership => membership.group.id)
 
     const managedGroupMembers = managedGroupIds.length > 0
@@ -59,7 +59,7 @@ export async function loadUserGroups() {
         joinedAt: joined_at.toISOString(),
       }
 
-      if (!hasGroupManagementAccess(permission)) {
+      if (!hasGroupManagementAccess(permission) || is_pending) {
         return baseGroup
       }
 

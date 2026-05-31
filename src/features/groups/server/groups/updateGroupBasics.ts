@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { normalizeNullableDescription } from '@/features/groups/lib/groupNormalization'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { updateGroupBasicsSchema } from '../../schemas/groupManagement'
-import { findManagedGroup } from './groupManagement'
+import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
 
 export const updateGroupBasics = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(updateGroupBasicsSchema, data))
@@ -21,15 +21,20 @@ export const updateGroupBasics = createServerFn({ method: 'POST' })
 
       const { prisma } = managementContext
 
-      await prisma.group.update({
-        where: {
-          id: data.groupId,
-        },
-        data: {
-          name: data.groupName.trim(),
-          description: normalizeNullableDescription(data.groupDescription),
-        },
-      })
+      await withSerializableRetry(async () =>
+        prisma.$transaction(async (tx) => {
+          await ensureCurrentGroupManager(tx, user.id, data.groupId, 'Only group managers can update group settings.')
+
+          await tx.group.update({
+            where: {
+              id: data.groupId,
+            },
+            data: {
+              name: data.groupName.trim(),
+              description: normalizeNullableDescription(data.groupDescription),
+            },
+          })
+        }, { isolationLevel: 'Serializable' }))
 
       return {
         success: true,
