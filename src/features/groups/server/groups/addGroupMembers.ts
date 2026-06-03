@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { normalizeInviteEmail } from '@/features/groups/lib/groupNormalization'
-import { canManagePrivilegedAccess, isPrivilegedPermission } from '@/features/groups/lib/groupPermissions'
+import { canManagePrivilegedAccess, hasGroupManagementAccess, isPrivilegedPermission } from '@/features/groups/lib/groupPermissions'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { addGroupMembersSchema } from '../../schemas/groupManagement'
 import {
@@ -10,6 +10,10 @@ import {
   inviteCreatedUserByEmail,
   withSerializableRetry,
 } from './groupManagement'
+
+interface LockedMembershipRow {
+  permission: 'owner' | 'admin' | 'member'
+}
 
 export const addGroupMembers = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(addGroupMembersSchema, data))
@@ -117,12 +121,49 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
         }
       }
 
-      const ensuredProfiles = await withSerializableRetry(async () =>
+      await withSerializableRetry(async () =>
         prisma.$transaction(async (tx) => {
           const currentActorPermission = await ensureCurrentGroupManager(tx, user.id, data.groupId, 'Only group managers can add members.')
 
           if (
             !canManagePrivilegedAccess(currentActorPermission)
+            && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
+          ) {
+            throw new Error('Only group owners can invite owners or admins.')
+          }
+
+          const currentRoles = await tx.group_role.findMany({
+            where: {
+              group_id: data.groupId,
+              id: { in: uniqueRoleIds },
+            },
+            select: {
+              id: true,
+            },
+          })
+
+          if (currentRoles.length !== uniqueRoleIds.length) {
+            throw new Error('Selected role is no longer available for this group.')
+          }
+        }, { isolationLevel: 'Serializable' }))
+
+      const ensuredProfiles = await withSerializableRetry(async () =>
+        prisma.$transaction(async (tx) => {
+          const [currentActorMembership] = await tx.$queryRaw<LockedMembershipRow[]>`
+            select permission
+            from public.group_member
+            where group_id = ${data.groupId}::uuid
+              and user_id = ${user.id}::uuid
+              and is_pending = false
+            for update
+          `
+
+          if (currentActorMembership === undefined || !hasGroupManagementAccess(currentActorMembership.permission)) {
+            throw new Error('Only group managers can add members.')
+          }
+
+          if (
+            !canManagePrivilegedAccess(currentActorMembership.permission)
             && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
           ) {
             throw new Error('Only group owners can invite owners or admins.')
@@ -179,7 +220,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
               : `${currentMembership.profile.email} is already a member of this group.`)
           }
 
-          await tx.group_member.createMany({
+          const createdMemberships = await tx.group_member.createMany({
             data: ensuredInviteProfiles.map(({ invite, ensuredProfile }) => ({
               group_id: data.groupId,
               user_id: ensuredProfile.profile.id,
@@ -187,7 +228,12 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
               permission: invite.permission,
               is_pending: true,
             })),
+            skipDuplicates: true,
           })
+
+          if (createdMemberships.count !== ensuredInviteProfiles.length) {
+            throw new Error('One or more invitees already has a group membership. Refresh and try again.')
+          }
 
           return ensuredInviteProfiles
         }, { isolationLevel: 'Serializable' }))
