@@ -1,4 +1,3 @@
-import type { User } from '@supabase/supabase-js'
 import type { TurnstileAwareActionResponse } from '@/shared/turnstile/constants'
 import { createServerFn } from '@tanstack/react-start'
 import { groupSchema } from '@/features/groups/schemas/groupForm'
@@ -7,6 +6,7 @@ import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
 import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
 import { buildCreateGroupData } from './buildCreateGroupData'
+import { ensureAuthUserForInvite, upsertInviteProfile } from './groupManagement'
 
 const createGroupRequestSchema = groupSchema.merge(turnstileTokenSchema)
 
@@ -63,40 +63,6 @@ export const createGroup = createServerFn({ method: 'POST' })
         return acc
       }, {} as Record<string, string>)
 
-      const group = await prisma.group.create({
-        data: buildCreateGroupData({
-          groupName,
-          groupDescription,
-          creatorId: user.id,
-        }),
-      })
-
-      const createdRoles = await Promise.all(
-        roles.map(async role =>
-          prisma.group_role.create({
-            data: {
-              group_id: group.id,
-              title: role.title.trim(),
-            },
-          }),
-        ),
-      )
-
-      const createdRolesMap = createdRoles.reduce<Record<string, { id: bigint }>>((acc, role) => {
-        acc[role.title.trim()] = role
-        return acc
-      }, {})
-
-      if (createdRoles.length === 0) {
-        throw new Error('Roles creation failed')
-      }
-
-      const creatorRole = createdRolesMap[assignedRole.trim()]
-
-      if (creatorRole === undefined) {
-        throw new Error('Creator role not found')
-      }
-
       const existingUsers = await prisma.profile.findMany({
         where: {
           email: {
@@ -113,70 +79,86 @@ export const createGroup = createServerFn({ method: 'POST' })
         m => !existingUsers.some(u => u.email === m.email),
       )
 
-      const { createServiceRoleSupabase } = await import('@/shared/server/supabase/serviceRole')
-      const serviceRoleSupabase = await createServiceRoleSupabase()
-      const userCreations = await Promise.allSettled(
-        newUsers.map(async ({ email }) => {
-          const {
-            data: { user },
-            error,
-          } = await serviceRoleSupabase.auth.admin.createUser({ email })
-          return { user, error, email }
-        }),
+      const ensuredNewUsers = await Promise.all(
+        newUsers.map(async ({ email }) => ensureAuthUserForInvite(email)),
       )
+      const invitedUsers = ensuredNewUsers.map(({ user }) => user)
+      const allGroupMembers = [...existingUsers, ...invitedUsers]
+      await prisma.$transaction(async (tx) => {
+        const group = await tx.group.create({
+          data: buildCreateGroupData({
+            groupName,
+            groupDescription,
+            creatorId: user.id,
+          }),
+        })
 
-      const successfulUsers = userCreations
-        .filter(
-          (r): r is PromiseFulfilledResult<{ user: User, error: null, email: string }> =>
-            r.status === 'fulfilled'
-            && r.value.user !== null
-            && r.value.error === null,
+        const createdRoles = await Promise.all(
+          roles.map(async role =>
+            tx.group_role.create({
+              data: {
+                group_id: group.id,
+                title: role.title.trim(),
+              },
+            }),
+          ),
         )
-        .map(r => ({ id: r.value.user.id, email: r.value.email }))
 
-      const profileCreations = await Promise.allSettled(
-        successfulUsers.map(async u => prisma.profile.create({
-          data: { id: u.id, email: u.email },
-        })),
-      )
+        const createdRolesMap = createdRoles.reduce<Record<string, { id: bigint }>>((acc, role) => {
+          acc[role.title.trim()] = role
+          return acc
+        }, {})
+
+        if (createdRoles.length === 0) {
+          throw new Error('Roles creation failed')
+        }
+
+        const creatorRole = createdRolesMap[assignedRole.trim()]
+
+        if (creatorRole === undefined) {
+          throw new Error('Creator role not found')
+        }
+
+        if (invitedUsers.length > 0) {
+          await Promise.all(invitedUsers.map(async invitedUser => upsertInviteProfile(tx, invitedUser)))
+        }
+
+        await tx.group_member.createMany({
+          data: [
+            {
+              group_id: group.id,
+              user_id: user.id,
+              role_id: creatorRole.id,
+              permission: 'owner' as const,
+              is_pending: false,
+              joined_at: new Date(),
+            },
+            ...allGroupMembers.map(u => ({
+              group_id: group.id,
+              user_id: u.id,
+              role_id: createdRolesMap[memberEmailTitlesMap[u.email]?.trim()]?.id ?? creatorRole.id,
+              permission: 'member' as const,
+              is_pending: true,
+            })),
+          ],
+        })
+      })
 
       const inviteResults = await Promise.allSettled(
-        successfulUsers.map(async u => serviceRoleSupabase.auth.admin.inviteUserByEmail(u.email)),
+        ensuredNewUsers.map(async ensuredUser =>
+          ensuredUser.serviceRoleSupabase.auth.admin.inviteUserByEmail(ensuredUser.user.email),
+        ),
       )
-
-      const allGroupMembers = [...existingUsers, ...successfulUsers]
-
-      const groupMembersToCreate = [
-        {
-          group_id: group.id,
-          user_id: user.id,
-          role_id: creatorRole.id,
-          permission: 'owner' as const,
-          is_pending: false,
-          joined_at: new Date(),
-        },
-        ...allGroupMembers.map(u => ({
-          group_id: group.id,
-          user_id: u.id,
-          role_id: createdRolesMap[memberEmailTitlesMap[u.email]?.trim()]?.id ?? creatorRole.id,
-          permission: 'member' as const,
-          is_pending: true,
-        })),
-      ]
-
-      await prisma.group_member.createMany({ data: groupMembersToCreate })
-
-      const successfulProfiles = profileCreations.filter(p => p.status === 'fulfilled')
 
       const failedInvites = inviteResults
         .filter(r => r.status === 'rejected')
-        .map((_, i) => successfulUsers[i].email)
+        .map((_, i) => ensuredNewUsers[i].user.email)
 
       console.warn(`Failed invites (${failedInvites.length}): `, failedInvites.join(', '))
 
       return {
         success: true,
-        message: `Group created successfully. ${successfulProfiles.length} out of ${newUsers.length} new members invited.`,
+        message: `Group created successfully. ${invitedUsers.length} out of ${newUsers.length} new members invited.`,
       }
     }
     catch (error_) {

@@ -1,7 +1,9 @@
+import type { User } from '@supabase/supabase-js'
 import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 
 const SERIALIZABLE_RETRY_LIMIT = 3
+const AUTH_USER_LIST_PAGE_SIZE = 1000
 
 interface GroupMembershipReader {
   group_member: {
@@ -29,8 +31,68 @@ interface InviteProfileDb {
         email: true
       }
     }) => Promise<{ id: string, email: string } | null>
-    create: (args: {
-      data: {
+    upsert: (args: {
+      where: {
+        id: string
+      }
+      update: {
+        email: string
+      }
+      create: {
+        id: string
+        email: string
+      }
+      select: {
+        id: true
+        email: true
+      }
+    }) => Promise<{ id: string, email: string }>
+  }
+}
+
+interface InviteServiceRoleSupabase {
+  auth: {
+    admin: {
+      createUser: (args: { email: string }) => Promise<{
+        data: { user: User | null }
+        error: { message?: string } | null
+      }>
+      inviteUserByEmail: (email: string) => Promise<unknown>
+      listUsers: (args: { page: number, perPage: number }) => Promise<{
+        data: { users: User[] }
+        error: { message?: string } | null
+      }>
+    }
+  }
+}
+
+export interface EnsuredInviteProfile {
+  profile: {
+    id: string
+    email: string
+  }
+  invitedNewUser: boolean
+  serviceRoleSupabase?: InviteServiceRoleSupabase
+}
+
+export interface EnsuredInviteAuthUser {
+  user: {
+    id: string
+    email: string
+  }
+  serviceRoleSupabase: InviteServiceRoleSupabase
+}
+
+interface InviteProfileWriter {
+  profile: {
+    upsert: (args: {
+      where: {
+        id: string
+      }
+      update: {
+        email: string
+      }
+      create: {
         id: string
         email: string
       }
@@ -126,7 +188,7 @@ function isPrismaSerializationConflict(error: unknown) {
     && error.code === 'P2034'
 }
 
-export async function ensureProfileForInvite(email: string, db?: InviteProfileDb) {
+export async function ensureProfileForInvite(email: string, db?: InviteProfileDb): Promise<EnsuredInviteProfile> {
   const profileDb = db ?? await getProfileInviteDb()
   const normalizedEmail = email.trim().toLowerCase()
 
@@ -147,6 +209,18 @@ export async function ensureProfileForInvite(email: string, db?: InviteProfileDb
     }
   }
 
+  const ensuredAuthUser = await ensureAuthUserForInvite(normalizedEmail)
+  const createdProfile = await upsertInviteProfile(profileDb, ensuredAuthUser.user)
+
+  return {
+    profile: createdProfile,
+    invitedNewUser: true,
+    serviceRoleSupabase: ensuredAuthUser.serviceRoleSupabase,
+  }
+}
+
+export async function ensureAuthUserForInvite(email: string): Promise<EnsuredInviteAuthUser> {
+  const normalizedEmail = email.trim().toLowerCase()
   const { createServiceRoleSupabase } = await import('@/shared/server/supabase/serviceRole')
   const serviceRoleSupabase = await createServiceRoleSupabase()
   const {
@@ -154,25 +228,70 @@ export async function ensureProfileForInvite(email: string, db?: InviteProfileDb
     error,
   } = await serviceRoleSupabase.auth.admin.createUser({ email: normalizedEmail })
 
-  if (error !== null || user === null) {
-    throw new Error(error?.message ?? 'Failed to create the invited user account.')
+  if (error === null && user !== null) {
+    return {
+      user: {
+        id: user.id,
+        email: normalizedEmail,
+      },
+      serviceRoleSupabase,
+    }
   }
 
-  const createdProfile = await profileDb.profile.create({
-    data: {
-      id: user.id,
-      email: normalizedEmail,
+  const existingAuthUser = await findAuthUserByEmail(serviceRoleSupabase, normalizedEmail)
+  if (existingAuthUser !== null) {
+    return {
+      user: {
+        id: existingAuthUser.id,
+        email: normalizedEmail,
+      },
+      serviceRoleSupabase,
+    }
+  }
+
+  throw new Error(error?.message ?? 'Failed to create the invited user account.')
+}
+
+export async function upsertInviteProfile(db: InviteProfileWriter, profile: { id: string, email: string }) {
+  return db.profile.upsert({
+    where: {
+      id: profile.id,
+    },
+    update: {
+      email: profile.email,
+    },
+    create: {
+      id: profile.id,
+      email: profile.email,
     },
     select: {
       id: true,
       email: true,
     },
   })
+}
 
-  return {
-    profile: createdProfile,
-    invitedNewUser: true,
-    serviceRoleSupabase,
+async function findAuthUserByEmail(serviceRoleSupabase: InviteServiceRoleSupabase, email: string) {
+  const normalizedEmail = email.trim().toLowerCase()
+
+  for (let page = 1; ; page += 1) {
+    const { data, error } = await serviceRoleSupabase.auth.admin.listUsers({
+      page,
+      perPage: AUTH_USER_LIST_PAGE_SIZE,
+    })
+
+    if (error !== null) {
+      return null
+    }
+
+    const matchedUser = data.users.find(user => user.email?.trim().toLowerCase() === normalizedEmail)
+    if (matchedUser !== undefined) {
+      return matchedUser
+    }
+
+    if (data.users.length < AUTH_USER_LIST_PAGE_SIZE) {
+      return null
+    }
   }
 }
 
