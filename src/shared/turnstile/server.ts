@@ -60,16 +60,29 @@ export async function verifyTurnstileToken({
     }
   }
 
-  const response = await fetch(TURNSTILE_VERIFY_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      secret,
-      response: token,
-    }),
-  })
+  let response: Response
+  try {
+    response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        secret,
+        response: token,
+      }),
+    })
+  }
+  catch (error) {
+    console.error('[TURNSTILE_VERIFY_REQUEST_FAILED]', error)
+    return {
+      success: false,
+      interactive: true,
+      message: 'We could not confirm the security check. Please try again.',
+      code: TURNSTILE_ERROR_CODES.failed,
+      errors: ['request-failed'],
+    }
+  }
 
   if (!response.ok) {
     return {
@@ -81,7 +94,20 @@ export async function verifyTurnstileToken({
     }
   }
 
-  const payload: TurnstileServerValidationResponse = await response.json()
+  let payload: TurnstileServerValidationResponse
+  try {
+    payload = await response.json()
+  }
+  catch (error) {
+    console.error('[TURNSTILE_VERIFY_RESPONSE_INVALID]', error)
+    return {
+      success: false,
+      interactive: true,
+      message: 'We could not confirm the security check. Please try again.',
+      code: TURNSTILE_ERROR_CODES.failed,
+      errors: ['invalid-response'],
+    }
+  }
   const actionMismatch = payload.action !== action
   const allowedHostnames = getAllowedTurnstileHostnames()
   const hostnameMismatch = payload.hostname === undefined || !allowedHostnames.has(payload.hostname)

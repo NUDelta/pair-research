@@ -35,8 +35,9 @@ export const Route = createFileRoute('/auth/confirm')({
             return createRedirectResponse(redirectUrl)
           }
 
+          console.error('[AUTH CONFIRM] Error occurred:', error instanceof Error ? error.message : error)
           const errorRedirectUrl = new URL(buildAuthPageHref('/login', { nextPath: next }), targetOrigin)
-          errorRedirectUrl.searchParams.set('error', error.message)
+          errorRedirectUrl.searchParams.set('error', 'auth-confirm-failed')
           return createRedirectResponse(errorRedirectUrl)
         }
 

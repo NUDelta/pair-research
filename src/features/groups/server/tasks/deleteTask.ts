@@ -17,7 +17,7 @@ export const deleteTask = createServerFn({ method: 'POST' })
       })
     }
     catch (error_) {
-      console.error('Error upserting task:', error_)
+      console.error('[DELETE_TASK]', error_)
       return {
         success: false,
         message: 'Failed to delete the task',

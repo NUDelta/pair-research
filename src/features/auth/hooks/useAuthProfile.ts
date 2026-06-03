@@ -13,7 +13,7 @@ import { getOrCreateProfile } from '@/features/account/server/getOrCreateProfile
 import { getAuthProfileSnapshot } from '@/features/auth/lib/authProfile'
 import { createClient } from '@/shared/supabase/client'
 import { isMissingSupabaseSessionError } from '../lib/authErrors'
-import { isAuthFeedbackSource } from '../lib/authFeedback'
+import { getAuthErrorMessage, isAuthFeedbackSource } from '../lib/authFeedback'
 
 const emptyProfile = {
   full_name: null,
@@ -102,7 +102,7 @@ export const useAuthProfile = (
       }
 
       if (error !== null && error.trim() !== '') {
-        toast.error(error)
+        toast.error(getAuthErrorMessage(error))
       }
 
       if (from === 'auth-callback') {

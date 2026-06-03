@@ -151,4 +151,43 @@ describe('verifyTurnstileToken', () => {
       errors: ['hostname-mismatch'],
     })
   })
+
+  it('returns a safe failure when the verification request fails', async () => {
+    fetchMock.mockRejectedValue(new Error('network unavailable'))
+
+    const { verifyTurnstileToken } = await import('./server')
+    const result = await verifyTurnstileToken({
+      action: 'contact',
+      token: 'token',
+    })
+
+    expect(result).toMatchObject({
+      success: false,
+      interactive: true,
+      code: TURNSTILE_ERROR_CODES.failed,
+      errors: ['request-failed'],
+    })
+  })
+
+  it('returns a safe failure when the verification response is invalid JSON', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => {
+        throw new Error('invalid json')
+      },
+    })
+
+    const { verifyTurnstileToken } = await import('./server')
+    const result = await verifyTurnstileToken({
+      action: 'contact',
+      token: 'token',
+    })
+
+    expect(result).toMatchObject({
+      success: false,
+      interactive: true,
+      code: TURNSTILE_ERROR_CODES.failed,
+      errors: ['invalid-response'],
+    })
+  })
 })

@@ -197,6 +197,18 @@ function parseUrl(name: string, value: string) {
   }
 }
 
+function extractEmailAddress(value: string) {
+  const trimmedValue = value.trim()
+  const angleAddress = trimmedValue.match(/<([^<>]+)>$/)?.[1]?.trim()
+  return angleAddress ?? trimmedValue
+}
+
+function getEmailDomain(value: string) {
+  const email = extractEmailAddress(value)
+  const parts = email.split('@')
+  return parts.length === 2 ? parts[1].toLowerCase() : ''
+}
+
 const failures: string[] = []
 
 function assert(condition: boolean, message: string) {
@@ -225,7 +237,7 @@ if (hasEnvValue('VITE_SUPABASE_URL')) {
 }
 
 if (hasEnvValue('CONTACT_FROM_EMAIL')) {
-  assert(process.env.CONTACT_FROM_EMAIL.includes('@notify.pairresearch.io'), 'CONTACT_FROM_EMAIL must use the notify.pairresearch.io sending domain.')
+  assert(getEmailDomain(process.env.CONTACT_FROM_EMAIL) === 'notify.pairresearch.io', 'CONTACT_FROM_EMAIL must use the notify.pairresearch.io sending domain.')
 }
 
 if (hasEnvValue('CONTACT_ADMIN_EMAIL')) {

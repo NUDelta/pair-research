@@ -1,6 +1,5 @@
 import { z } from 'zod'
-
-export const groupIdSchema = z.string().uuid('Group ID must be a valid UUID')
+import { groupIdSchema } from '@/features/groups/schemas/groupManagement'
 
 export const taskIdSchema = z.string().trim().min(1, 'Task ID is required')
 

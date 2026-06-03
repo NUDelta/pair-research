@@ -5,7 +5,7 @@ const groupNameRegex = /^[\p{L}\p{N}_\- ]+$/u
 const groupDescriptionRegex = /^[^<>]*$/
 const roleTitleRegex = /^[\p{L}\p{N}_\- ]+$/u
 
-const groupIdSchema = z.string().uuid('Group ID must be a valid UUID')
+export const groupIdSchema = z.string().uuid('Group ID must be a valid UUID')
 const userIdSchema = z.string().uuid('User ID must be a valid UUID')
 const roleIdSchema = z.string().regex(/^\d+$/, 'Role ID must be a valid numeric identifier')
 const emailSchema = z.string().trim().min(1, 'Email is required').email('Please enter a valid email address').refine(

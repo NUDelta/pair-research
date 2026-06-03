@@ -1,6 +1,6 @@
 import startHandler, { createServerEntry } from '@tanstack/react-start/server-entry'
 import { GROUP_SESSION_WEBSOCKET_PROTOCOL } from '@/features/groups/lib/groupSessionProtocol'
-import { groupIdSchema } from '@/features/groups/server/groupActionInputs'
+import { groupIdSchema } from '@/features/groups/schemas/groupManagement'
 import { verifyGroupSessionTokenValue } from '@/features/groups/server/groupSessionToken'
 
 export { GroupSessionDO } from './durable-objects/group-session-do'
