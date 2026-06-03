@@ -21,7 +21,7 @@ interface OthersTasksProps {
   currentUserInPool?: boolean
   currentUserLeftOut?: boolean
   hasActivePairing?: boolean
-  isAdmin?: boolean
+  hasManagementAccess?: boolean
   raceTasks?: Task[]
   tasks?: Task[]
 }
@@ -36,7 +36,7 @@ const OthersTasks = ({
   currentUserInPool,
   currentUserLeftOut = false,
   hasActivePairing,
-  isAdmin,
+  hasManagementAccess,
   raceTasks = [],
   tasks = [],
 }: OthersTasksProps) => {
@@ -48,7 +48,7 @@ const OthersTasks = ({
           currentUserHasActivePairing={currentUserHasActivePairing}
           currentUserId={currentUserId}
           currentUserLeftOut={currentUserLeftOut}
-          isAdmin={isAdmin === true}
+          hasManagementAccess={hasManagementAccess === true}
           pairSummaries={activeRoundPairs}
           leftOutNames={tasks.map(task => task.fullName ?? 'Group member')}
         />

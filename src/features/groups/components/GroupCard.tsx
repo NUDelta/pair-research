@@ -8,9 +8,11 @@ import {
   getGroupInvitationAcceptanceErrorMessage,
   runGroupInvitationAcceptance,
 } from '@/features/groups/lib/groupInvitationAcceptance'
+import { getGroupPermissionLabel, hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { acceptGroupInvitation } from '@/features/groups/server/groups/acceptGroupInvitation'
 import { cn } from '@/shared/lib/utils'
 import { Spinner } from '@/shared/ui'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/shared/ui/card'
 
@@ -36,7 +38,7 @@ const GroupCard = ({
   const {
     groupName,
     groupDescription,
-    isAdmin,
+    permission,
     isPending,
     joinedAt,
   } = group
@@ -49,8 +51,10 @@ const GroupCard = ({
   const acceptGroupInvitationFn = useServerFn(acceptGroupInvitation)
   const isNavigable = href !== undefined
   const acceptPending = controlledIsAccepting ?? isAccepting
+  const permissionLabel = getGroupPermissionLabel(permission)
+  const accessLabel = isPending ? `Invited as ${permissionLabel}` : `${permissionLabel} access`
 
-  const settingsAction = isAdmin && !isPending
+  const settingsAction = hasGroupManagementAccess(permission) && !isPending
     ? (
         <Button
           variant="ghost"
@@ -123,10 +127,11 @@ const GroupCard = ({
               )}
         </CardContent>
       </div>
-      <CardFooter className="text-sm text-muted-foreground">
+      <CardFooter className="flex flex-col items-start gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <Badge variant={isPending ? 'secondary' : 'outline'}>{accessLabel}</Badge>
         {isPending
           ? (
-              <div className="flex justify-end w-full">
+              <div className="flex w-full justify-end sm:w-auto">
                 <Button
                   variant="secondary"
                   size="sm"

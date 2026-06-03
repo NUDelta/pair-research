@@ -14,7 +14,7 @@ function renderWithTooltipProvider(element: ReactElement) {
 }
 
 describe('others tasks empty states', () => {
-  it('shows an admin-specific message when the current round is complete', () => {
+  it('shows a manager-specific message when the current round is complete', () => {
     renderWithTooltipProvider(
       <OthersTasks
         activePairCount={2}
@@ -23,7 +23,7 @@ describe('others tasks empty states', () => {
         currentUserHasTask
         currentUserInPool={false}
         hasActivePairing
-        isAdmin
+        hasManagementAccess
         raceTasks={[]}
         tasks={[]}
       />,
@@ -34,7 +34,7 @@ describe('others tasks empty states', () => {
     expect(screen.getByText('Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
   })
 
-  it('shows an admin-specific message when someone was left out of the round', async () => {
+  it('shows a manager-specific message when someone was left out of the round', async () => {
     const user = userEvent.setup()
 
     renderWithTooltipProvider(
@@ -46,7 +46,7 @@ describe('others tasks empty states', () => {
         currentUserInPool={false}
         currentUserLeftOut
         hasActivePairing
-        isAdmin
+        hasManagementAccess
         raceTasks={[]}
         activeRoundPairs={[
           {
@@ -99,7 +99,7 @@ describe('others tasks empty states', () => {
     expect(screen.getByText('Use Reset Pool in the header when you are ready to start the next round.')).toBeInTheDocument()
   })
 
-  it('shows a member-specific message when waiting for an admin reset', () => {
+  it('shows a member-specific message when waiting for a manager reset', () => {
     renderWithTooltipProvider(
       <OthersTasks
         activePairCount={1}
@@ -108,17 +108,17 @@ describe('others tasks empty states', () => {
         currentUserHasTask
         currentUserInPool={false}
         hasActivePairing
-        isAdmin={false}
+        hasManagementAccess={false}
         raceTasks={[]}
         tasks={[]}
       />,
     )
 
     expect(screen.getByText('Round complete')).toBeInTheDocument()
-    expect(screen.getByText('This round is complete. Wait for an admin to reset the pool from the header before the next round begins.')).toBeInTheDocument()
+    expect(screen.getByText('This round is complete. Wait for a group manager to reset the pool from the header before the next round begins.')).toBeInTheDocument()
   })
 
-  it('shows all pairs to non-admin members who were matched, with their pair first and their profile first', () => {
+  it('shows all pairs to non-manager members who were matched, with their pair first and their profile first', () => {
     renderWithTooltipProvider(
       <OthersTasks
         activePairCount={2}
@@ -164,7 +164,7 @@ describe('others tasks empty states', () => {
         currentUserHasTask
         currentUserInPool={false}
         hasActivePairing
-        isAdmin={false}
+        hasManagementAccess={false}
         raceTasks={[]}
         tasks={[]}
       />,
@@ -212,14 +212,14 @@ describe('others tasks empty states', () => {
         currentUserInPool={false}
         currentUserLeftOut
         hasActivePairing
-        isAdmin={false}
+        hasManagementAccess={false}
         raceTasks={[]}
         tasks={[]}
       />,
     )
 
     expect(screen.getByText('No pair this round')).toBeInTheDocument()
-    expect(screen.getByText('You were not paired this round. Wait for an admin to reset the pool from the header before the next round begins.')).toBeInTheDocument()
+    expect(screen.getByText('You were not paired this round. Wait for a group manager to reset the pool from the header before the next round begins.')).toBeInTheDocument()
     expect(screen.getByText('Pairs this round')).toBeInTheDocument()
     expect(screen.getByText('Grace Hopper')).toBeInTheDocument()
     expect(screen.getByText('Barbara Liskov')).toBeInTheDocument()
@@ -234,7 +234,7 @@ describe('others tasks empty states', () => {
         currentUserHasTask
         currentUserInPool={false}
         hasActivePairing
-        isAdmin={false}
+        hasManagementAccess={false}
         raceTasks={[
           {
             id: 'task-1',
@@ -274,7 +274,7 @@ describe('others tasks empty states', () => {
         currentUserHasTask
         currentUserInPool={false}
         hasActivePairing
-        isAdmin={false}
+        hasManagementAccess={false}
         raceTasks={[
           {
             id: 'task-1',

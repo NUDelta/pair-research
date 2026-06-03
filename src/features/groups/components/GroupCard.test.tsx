@@ -96,12 +96,14 @@ describe('groupCard', () => {
           groupName: 'Research Collective',
           groupDescription: 'Weekly paper reviews',
           role: 'Member',
-          isAdmin: false,
+          permission: 'member',
           isPending: true,
           joinedAt: '2026-04-10T10:00:00.000Z',
         }}
       />,
     )
+
+    expect(screen.getByText('Invited as Member')).toBeVisible()
 
     const acceptButton = screen.getByRole('button', { name: /accept/i })
     await user.click(acceptButton)
@@ -130,13 +132,15 @@ describe('groupCard', () => {
           groupName: 'Research Collective',
           groupDescription: 'Weekly paper reviews',
           role: 'Member',
-          isAdmin: false,
+          permission: 'member',
           isPending: true,
           joinedAt: '2026-04-10T10:00:00.000Z',
         }}
         onAcceptInvitation={vi.fn().mockRejectedValue(new Error('Network down'))}
       />,
     )
+
+    expect(screen.getByText('Invited as Member')).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: /accept/i }))
 
@@ -156,7 +160,7 @@ describe('groupCard', () => {
           groupName: 'Research Collective',
           groupDescription: 'Weekly paper reviews',
           role: 'Member',
-          isAdmin: true,
+          permission: 'admin',
           isPending: false,
           joinedAt: '2026-04-10T10:00:00.000Z',
         }}
@@ -166,6 +170,7 @@ describe('groupCard', () => {
     const groupLink = screen.getByRole('link', { name: /Research Collective/i })
     const settingsButton = screen.getByRole('button', { name: 'Open settings for Research Collective' })
 
+    expect(screen.getByText('Admin access')).toBeVisible()
     expect(groupLink).toHaveAttribute('href', '/groups/group-1')
     expect(settingsButton.closest('a')).toBeNull()
 

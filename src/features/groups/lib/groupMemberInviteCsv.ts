@@ -8,7 +8,7 @@ export interface ParsedGroupMemberInviteRow {
 
 const emailHeaderAliases = new Set(['email', 'member', 'memberemail', 'member_email'])
 const roleHeaderAliases = new Set(['role', 'roletitle', 'role_title', 'title', 'memberrole', 'member_role'])
-const accessHeaderAliases = new Set(['access', 'admin', 'isadmin', 'is_admin'])
+const accessHeaderAliases = new Set(['access'])
 
 export function parseGroupMemberInviteRows(source: string): ParsedGroupMemberInviteRow[] {
   const rows = source
@@ -76,7 +76,7 @@ function looksLikeEmailList(columns: string[]) {
     const parsedInvite = groupMemberInviteSchema.safeParse({
       email: value.trim().toLowerCase(),
       roleId: '1',
-      isAdmin: false,
+      permission: 'member',
     })
     return parsedInvite.success
   })

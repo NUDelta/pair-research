@@ -22,6 +22,7 @@ const baseSettings: GroupSettingsData = {
     activePairingId: null,
   },
   currentUserId: 'user-1',
+  currentUserPermission: 'owner',
   roles: [
     { id: 'role-1', title: 'Researcher' },
     { id: 'role-2', title: 'Writer' },
@@ -35,7 +36,7 @@ const baseSettings: GroupSettingsData = {
       email: 'ada@example.com',
       roleId: 'role-1',
       roleTitle: 'Researcher',
-      isAdmin: true,
+      permission: 'owner',
       isPending: false,
       joinedAt: '2026-04-17T12:00:00.000Z',
       isCreator: true,
@@ -47,7 +48,7 @@ const baseSettings: GroupSettingsData = {
       email: 'grace@example.com',
       roleId: 'role-2',
       roleTitle: 'Writer',
-      isAdmin: false,
+      permission: 'member',
       isPending: false,
       joinedAt: '2026-04-18T12:00:00.000Z',
       isCreator: false,
@@ -59,7 +60,7 @@ const baseSettings: GroupSettingsData = {
       email: 'invitee@example.com',
       roleId: 'role-2',
       roleTitle: 'Writer',
-      isAdmin: false,
+      permission: 'member',
       isPending: true,
       joinedAt: '2026-04-19T12:00:00.000Z',
       isCreator: false,
@@ -166,13 +167,13 @@ describe('optimisticGroupSettings', () => {
     const updatedMember = createGroupSettingsOptimisticUpdate(baseSettings, (draft) => {
       applyMemberUpdate(draft, {
         userId: 'user-2',
-        isAdmin: true,
+        permission: 'admin',
         roleId: 'role-3',
       })
     }).nextState
 
     expect(updatedMember.members[1]).toMatchObject({
-      isAdmin: true,
+      permission: 'admin',
       roleId: 'role-3',
       roleTitle: 'Editor',
     })
@@ -199,7 +200,7 @@ describe('optimisticGroupSettings', () => {
           {
             email: 'new@example.com',
             roleId: 'role-1',
-            isAdmin: false,
+            permission: 'member',
           },
         ],
         tempMembers: [
@@ -207,7 +208,7 @@ describe('optimisticGroupSettings', () => {
             userId: 'temp-member-1',
             email: 'new@example.com',
             roleId: 'role-1',
-            isAdmin: false,
+            permission: 'member',
             joinedAt: '2026-04-20T12:00:00.000Z',
           },
         ],
@@ -221,7 +222,7 @@ describe('optimisticGroupSettings', () => {
       email: 'new@example.com',
       roleId: 'role-1',
       roleTitle: 'Researcher',
-      isAdmin: false,
+      permission: 'member',
       isPending: true,
       joinedAt: '2026-04-20T12:00:00.000Z',
       isCreator: false,

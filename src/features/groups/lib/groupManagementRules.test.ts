@@ -1,104 +1,104 @@
 import { describe, expect, it } from 'vitest'
 import {
-  countConfirmedAdmins,
-  getAdminUpdateError,
+  countConfirmedOwners,
   getBulkMemberRoleUpdateError,
   getGroupRoleDeleteError,
   getMemberRemovalError,
+  getPermissionUpdateError,
 } from './groupManagementRules'
 
 const baseMembers = [
-  { userId: 'creator', isAdmin: true, isPending: false },
-  { userId: 'admin-2', isAdmin: true, isPending: false },
-  { userId: 'member-1', isAdmin: false, isPending: false },
-  { userId: 'pending-1', isAdmin: false, isPending: true },
+  { userId: 'owner-1', permission: 'owner' as const, isPending: false },
+  { userId: 'admin-2', permission: 'admin' as const, isPending: false },
+  { userId: 'member-1', permission: 'member' as const, isPending: false },
+  { userId: 'pending-1', permission: 'member' as const, isPending: true },
 ]
 
 const baseRoleIds = ['role-a', 'role-b', 'role-c']
 
 describe('groupManagementRules', () => {
-  it('counts only confirmed admins', () => {
-    expect(countConfirmedAdmins(baseMembers)).toBe(2)
-    expect(countConfirmedAdmins([
-      { userId: 'pending-admin', isAdmin: true, isPending: true },
+  it('counts only confirmed owners', () => {
+    expect(countConfirmedOwners(baseMembers)).toBe(1)
+    expect(countConfirmedOwners([
+      { userId: 'pending-owner', permission: 'owner', isPending: true },
     ])).toBe(0)
   })
 
-  it('prevents creator demotion', () => {
-    expect(getAdminUpdateError({
+  it('prevents non-owners from managing privileged access', () => {
+    expect(getPermissionUpdateError({
       actorUserId: 'admin-2',
-      creatorId: 'creator',
+      actorPermission: 'admin',
       members: baseMembers,
-      targetUserId: 'creator',
-      nextIsAdmin: false,
-    })).toBe('The group creator must remain an admin.')
+      targetUserId: 'member-1',
+      nextPermission: 'admin',
+    })).toBe('Only group owners can manage owner or admin access.')
   })
 
-  it('prevents removing the last confirmed admin role', () => {
-    expect(getAdminUpdateError({
-      actorUserId: 'creator',
-      creatorId: 'creator',
+  it('prevents removing the last confirmed owner role', () => {
+    expect(getPermissionUpdateError({
+      actorUserId: 'owner-1',
+      actorPermission: 'owner',
       members: [
-        { userId: 'creator', isAdmin: true, isPending: false },
-        { userId: 'member-1', isAdmin: false, isPending: false },
+        { userId: 'owner-1', permission: 'owner', isPending: false },
+        { userId: 'member-1', permission: 'member', isPending: false },
       ],
-      targetUserId: 'creator',
-      nextIsAdmin: false,
-    })).toBe('The group creator must remain an admin.')
+      targetUserId: 'owner-1',
+      nextPermission: 'admin',
+    })).toBe('At least one confirmed owner must remain in the group.')
 
-    expect(getAdminUpdateError({
-      actorUserId: 'creator',
-      creatorId: 'creator',
+    expect(getPermissionUpdateError({
+      actorUserId: 'owner-1',
+      actorPermission: 'owner',
       members: [
-        { userId: 'creator', isAdmin: true, isPending: false },
-        { userId: 'admin-2', isAdmin: true, isPending: false },
+        { userId: 'owner-1', permission: 'owner', isPending: false },
+        { userId: 'owner-2', permission: 'owner', isPending: false },
       ],
-      targetUserId: 'admin-2',
-      nextIsAdmin: false,
+      targetUserId: 'owner-2',
+      nextPermission: 'admin',
     })).toBeNull()
   })
 
-  it('prevents self-removal, creator removal, and removing the last admin', () => {
+  it('prevents self-removal, non-owner privileged removal, and removing the last owner', () => {
     expect(getMemberRemovalError({
-      actorUserId: 'creator',
-      creatorId: 'creator',
+      actorUserId: 'owner-1',
+      actorPermission: 'owner',
       hasActivePairing: false,
       members: baseMembers,
-      targetUserId: 'creator',
+      targetUserId: 'owner-1',
     })).toBe('You cannot remove yourself from group settings.')
 
     expect(getMemberRemovalError({
       actorUserId: 'admin-2',
-      creatorId: 'creator',
+      actorPermission: 'admin',
       hasActivePairing: false,
       members: baseMembers,
-      targetUserId: 'creator',
-    })).toBe('The group creator cannot be removed.')
+      targetUserId: 'owner-1',
+    })).toBe('Only group owners can remove owners or admins.')
 
     expect(getMemberRemovalError({
-      actorUserId: 'creator',
-      creatorId: 'creator',
+      actorUserId: 'admin-2',
+      actorPermission: 'admin',
       hasActivePairing: false,
       members: [
-        { userId: 'creator', isAdmin: true, isPending: false },
-        { userId: 'member-1', isAdmin: false, isPending: false },
+        { userId: 'owner-1', permission: 'owner', isPending: false },
+        { userId: 'member-1', permission: 'member', isPending: false },
       ],
-      targetUserId: 'creator',
-    })).toBe('You cannot remove yourself from group settings.')
+      targetUserId: 'owner-1',
+    })).toBe('Only group owners can remove owners or admins.')
   })
 
   it('blocks confirmed member removal while a pairing is active', () => {
     expect(getMemberRemovalError({
-      actorUserId: 'creator',
-      creatorId: 'creator',
+      actorUserId: 'owner-1',
+      actorPermission: 'owner',
       hasActivePairing: true,
       members: baseMembers,
       targetUserId: 'member-1',
     })).toBe('Reset the active pairing before removing a confirmed member.')
 
     expect(getMemberRemovalError({
-      actorUserId: 'creator',
-      creatorId: 'creator',
+      actorUserId: 'owner-1',
+      actorPermission: 'owner',
       hasActivePairing: true,
       members: baseMembers,
       targetUserId: 'pending-1',
@@ -107,19 +107,28 @@ describe('groupManagementRules', () => {
 
   it('validates selected members for bulk role updates', () => {
     expect(getBulkMemberRoleUpdateError({
+      actorPermission: 'owner',
       members: baseMembers,
       targetUserIds: [],
     })).toBe('Select at least one member to update.')
 
     expect(getBulkMemberRoleUpdateError({
+      actorPermission: 'owner',
       members: baseMembers,
       targetUserIds: ['member-1', 'missing-user'],
     })).toBe('One or more selected members are no longer in this group.')
 
     expect(getBulkMemberRoleUpdateError({
+      actorPermission: 'owner',
       members: baseMembers,
-      targetUserIds: ['creator', 'member-1'],
+      targetUserIds: ['owner-1', 'member-1'],
     })).toBeNull()
+
+    expect(getBulkMemberRoleUpdateError({
+      actorPermission: 'admin',
+      members: baseMembers,
+      targetUserIds: ['admin-2'],
+    })).toBe('Only group owners can update owners or admins.')
   })
 
   it('requires a safe replacement when deleting an assigned role', () => {

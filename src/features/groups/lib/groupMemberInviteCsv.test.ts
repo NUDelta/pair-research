@@ -15,6 +15,17 @@ describe('parseGroupMemberInviteRows', () => {
     ])
   })
 
+  it('does not treat legacy admin boolean headers as access columns', () => {
+    const rows = parseGroupMemberInviteRows([
+      'email,role,is_admin',
+      'alpha@example.com,Researcher,true',
+    ].join('\n'))
+
+    expect(rows).toEqual([
+      { email: 'alpha@example.com', roleValue: 'Researcher', accessValue: null },
+    ])
+  })
+
   it('treats a single comma-delimited line of emails as separate invite rows', () => {
     const rows = parseGroupMemberInviteRows('alpha@example.com, beta@example.com, gamma@example.com')
 

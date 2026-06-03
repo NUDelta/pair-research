@@ -173,7 +173,7 @@ describe('groups detail controls', () => {
     consoleError.mockRestore()
   })
 
-  it('keeps reset pool available for admins via confirmation dialog', () => {
+  it('keeps reset pool available for managers via confirmation dialog', () => {
     renderWithTooltipProvider(<ResetPoolButton groupId="group-1" />)
 
     expect(screen.getByRole('button', { name: 'Reset Pool' })).toBeEnabled()

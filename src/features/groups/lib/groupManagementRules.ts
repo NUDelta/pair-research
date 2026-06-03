@@ -1,26 +1,30 @@
+import type { GroupPermission } from './groupPermissions'
+import { canManagePrivilegedAccess, isPrivilegedPermission } from './groupPermissions'
+
 interface GroupManagementMember {
   userId: string
-  isAdmin: boolean
+  permission: GroupPermission
   isPending: boolean
 }
 
-interface MemberAdminUpdateRuleInput {
+interface MemberPermissionUpdateRuleInput {
   actorUserId: string
-  creatorId: string
+  actorPermission: GroupPermission
   members: GroupManagementMember[]
   targetUserId: string
-  nextIsAdmin: boolean
+  nextPermission: GroupPermission
 }
 
 interface MemberRemovalRuleInput {
   actorUserId: string
-  creatorId: string
+  actorPermission: GroupPermission
   hasActivePairing: boolean
   members: GroupManagementMember[]
   targetUserId: string
 }
 
 interface BulkMemberRoleUpdateRuleInput {
+  actorPermission: GroupPermission
   members: GroupManagementMember[]
   targetUserIds: string[]
 }
@@ -32,28 +36,34 @@ interface GroupRoleDeleteRuleInput {
   targetRoleId: string
 }
 
-export function countConfirmedAdmins(members: GroupManagementMember[]) {
-  return members.filter(member => member.isAdmin && !member.isPending).length
+export function countConfirmedOwners(members: GroupManagementMember[]) {
+  return members.filter(member => member.permission === 'owner' && !member.isPending).length
 }
 
-export function getAdminUpdateError({
-  creatorId,
+export function getPermissionUpdateError({
+  actorPermission,
   members,
   targetUserId,
-  nextIsAdmin,
-}: MemberAdminUpdateRuleInput): string | null {
+  nextPermission,
+}: MemberPermissionUpdateRuleInput): string | null {
   const targetMember = members.find(member => member.userId === targetUserId)
 
   if (targetMember === undefined) {
     return 'Group member not found.'
   }
 
-  if (targetUserId === creatorId && !nextIsAdmin) {
-    return 'The group creator must remain an admin.'
+  const changesPrivilegedAccess = isPrivilegedPermission(targetMember.permission) || isPrivilegedPermission(nextPermission)
+  if (changesPrivilegedAccess && !canManagePrivilegedAccess(actorPermission)) {
+    return 'Only group owners can manage owner or admin access.'
   }
 
-  if (targetMember.isAdmin && !nextIsAdmin && countConfirmedAdmins(members) <= 1) {
-    return 'At least one confirmed admin must remain in the group.'
+  if (
+    targetMember.permission === 'owner'
+    && nextPermission !== 'owner'
+    && !targetMember.isPending
+    && countConfirmedOwners(members) <= 1
+  ) {
+    return 'At least one confirmed owner must remain in the group.'
   }
 
   return null
@@ -61,7 +71,7 @@ export function getAdminUpdateError({
 
 export function getMemberRemovalError({
   actorUserId,
-  creatorId,
+  actorPermission,
   hasActivePairing,
   members,
   targetUserId,
@@ -76,12 +86,12 @@ export function getMemberRemovalError({
     return 'You cannot remove yourself from group settings.'
   }
 
-  if (targetUserId === creatorId) {
-    return 'The group creator cannot be removed.'
+  if (isPrivilegedPermission(targetMember.permission) && !canManagePrivilegedAccess(actorPermission)) {
+    return 'Only group owners can remove owners or admins.'
   }
 
-  if (targetMember.isAdmin && !targetMember.isPending && countConfirmedAdmins(members) <= 1) {
-    return 'At least one confirmed admin must remain in the group.'
+  if (targetMember.permission === 'owner' && !targetMember.isPending && countConfirmedOwners(members) <= 1) {
+    return 'At least one confirmed owner must remain in the group.'
   }
 
   if (hasActivePairing && !targetMember.isPending) {
@@ -92,6 +102,7 @@ export function getMemberRemovalError({
 }
 
 export function getBulkMemberRoleUpdateError({
+  actorPermission,
   members,
   targetUserIds,
 }: BulkMemberRoleUpdateRuleInput): string | null {
@@ -103,6 +114,16 @@ export function getBulkMemberRoleUpdateError({
 
   if (targetUserIds.some(userId => !memberIds.has(userId))) {
     return 'One or more selected members are no longer in this group.'
+  }
+
+  if (!canManagePrivilegedAccess(actorPermission)) {
+    const privilegedTarget = members.find(member =>
+      targetUserIds.includes(member.userId) && isPrivilegedPermission(member.permission),
+    )
+
+    if (privilegedTarget !== undefined) {
+      return 'Only group owners can update owners or admins.'
+    }
   }
 
   return null

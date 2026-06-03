@@ -1,5 +1,6 @@
 import type { ApplyGroupSettingsOptimisticUpdate } from '../optimisticGroupSettings'
 import type { GroupSettingsRole } from '../types'
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { ShieldPlusIcon, UserPlusIcon } from 'lucide-react'
 import { MAX_GROUP_MEMBER_INVITES } from '@/features/groups/lib/groupMemberInviteBatch'
 import { Spinner } from '@/shared/ui'
@@ -10,6 +11,7 @@ import { useGroupMemberInviteDialog } from './useGroupMemberInviteDialog'
 
 interface AddGroupMemberDialogProps {
   applyOptimisticUpdate: ApplyGroupSettingsOptimisticUpdate
+  currentUserPermission: GroupPermission
   existingMemberEmails?: string[]
   groupId: string
   roles: GroupSettingsRole[]
@@ -18,13 +20,15 @@ interface AddGroupMemberDialogProps {
 
 export default function AddGroupMemberDialog({
   applyOptimisticUpdate,
+  currentUserPermission,
   existingMemberEmails = [],
   groupId,
   roles,
   triggerClassName,
 }: AddGroupMemberDialogProps) {
   const {
-    defaultIsAdmin,
+    availablePermissions,
+    defaultPermission,
     defaultRoleId,
     draftSource,
     fileInputRef,
@@ -37,19 +41,19 @@ export default function AddGroupMemberDialog({
     handleRemoveRow,
     handleSubmit,
     handleUpdateRow,
-    hasAdminInvite,
+    hasPrivilegedInvite,
     inviteRows,
     isPending,
     open,
     rowErrors,
     selectedRowIdSet,
     selectedRowIds,
-    setDefaultIsAdmin,
+    setDefaultPermission,
     setDefaultRoleId,
     setDraftSource,
     setSelectedRowIds,
     toggleRowSelection,
-  } = useGroupMemberInviteDialog({ applyOptimisticUpdate, existingMemberEmails, groupId, roles })
+  } = useGroupMemberInviteDialog({ applyOptimisticUpdate, currentUserPermission, existingMemberEmails, groupId, roles })
 
   return (
     <Dialog open={open} onOpenChange={handleDialogToggle}>
@@ -83,7 +87,7 @@ export default function AddGroupMemberDialog({
             className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
           >
             <MemberInviteBatchEditor
-              defaultIsAdmin={defaultIsAdmin}
+              defaultPermission={defaultPermission}
               defaultRoleId={defaultRoleId}
               draftSource={draftSource}
               inviteRows={inviteRows}
@@ -96,13 +100,14 @@ export default function AddGroupMemberDialog({
               onRemoveRow={handleRemoveRow}
               onSelectAllRows={checked => setSelectedRowIds(checked ? inviteRows.map(row => row.id) : [])}
               onSelectRow={toggleRowSelection}
-              onUpdateDefaultAccess={setDefaultIsAdmin}
+              onUpdateDefaultAccess={setDefaultPermission}
               onUpdateDefaultRole={setDefaultRoleId}
               onUpdateRow={handleUpdateRow}
               roles={roles}
               rowErrors={rowErrors}
               selectedCount={selectedRowIds.length}
               selectedRowIds={selectedRowIdSet}
+              availablePermissions={availablePermissions}
             />
           </div>
           <DialogFooter className="border-t pt-4">
@@ -118,10 +123,10 @@ export default function AddGroupMemberDialog({
                 ? <Spinner text="Adding members..." />
                 : (
                     <>
-                      {hasAdminInvite
+                      {hasPrivilegedInvite
                         ? <ShieldPlusIcon data-icon="inline-start" />
                         : <UserPlusIcon data-icon="inline-start" />}
-                      {hasAdminInvite ? 'Add members with access' : 'Add members'}
+                      {hasPrivilegedInvite ? 'Add members with access' : 'Add members'}
                     </>
                   )}
             </Button>

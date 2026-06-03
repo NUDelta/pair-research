@@ -1,28 +1,38 @@
+import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { LoaderCircleIcon } from 'lucide-react'
+import { getGroupPermissionLabel, groupPermissionValues } from '@/features/groups/lib/groupPermissions'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 
 interface MemberAccessSelectProps {
+  availablePermissions?: readonly GroupPermission[]
   disabled?: boolean
-  isAdmin: boolean
+  disabledReason?: string | null
+  permission: GroupPermission
   isBusy?: boolean
   isPending: boolean
   memberName: string
-  onChange: (nextIsAdmin: boolean) => void
+  onChange: (nextPermission: GroupPermission) => void
 }
 
 export default function MemberAccessSelect({
+  availablePermissions = groupPermissionValues,
   disabled = false,
-  isAdmin,
+  disabledReason = null,
+  permission,
   isBusy = false,
   isPending,
   memberName,
   onChange,
 }: MemberAccessSelectProps) {
+  const permissionOptions = availablePermissions.includes(permission)
+    ? availablePermissions
+    : [permission, ...availablePermissions]
+
   return (
-    <div className="flex min-w-0 items-center gap-2 sm:min-w-[140px]">
+    <div className="flex min-w-0 items-center gap-2 sm:min-w-[140px]" title={disabledReason ?? undefined}>
       <Select
-        value={isAdmin ? 'admin' : 'member'}
-        onValueChange={value => onChange(value === 'admin')}
+        value={permission}
+        onValueChange={value => onChange(value as GroupPermission)}
         disabled={disabled || isBusy}
       >
         <SelectTrigger aria-label={`Access for ${memberName}`} className="w-full">
@@ -30,8 +40,9 @@ export default function MemberAccessSelect({
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectItem value="member">Member</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
+            {permissionOptions.map(value => (
+              <SelectItem key={value} value={value}>{getGroupPermissionLabel(value)}</SelectItem>
+            ))}
           </SelectGroup>
         </SelectContent>
       </Select>

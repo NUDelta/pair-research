@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { groupsResponseSchema } from './group'
 
 describe('groupsResponseSchema', () => {
-  it('accepts admin group payloads with nullable descriptions and profile fields', () => {
+  it('accepts manager group payloads with nullable descriptions and profile fields', () => {
     const result = groupsResponseSchema.parse([
       {
         id: 'group-1',
         groupName: 'Research Group',
         groupDescription: null,
         role: 'Professor',
-        isAdmin: true,
+        permission: 'owner',
         isPending: false,
         joinedAt: '2026-04-12T12:00:00.000Z',
         createdAt: '2026-04-11T12:00:00.000Z',
@@ -20,7 +20,7 @@ describe('groupsResponseSchema', () => {
             avatarUrl: null,
             email: 'invitee@example.com',
             role: 'PhD Student',
-            isAdmin: false,
+            permission: 'member',
             isPending: true,
             joinedAt: '2026-04-12T12:00:00.000Z',
           },

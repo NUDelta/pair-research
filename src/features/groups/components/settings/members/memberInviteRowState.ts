@@ -6,12 +6,12 @@ export interface InviteRow extends GroupMemberInviteDraft {
   id: string
 }
 
-export type InviteRowErrors = Record<string, Partial<Record<'email' | 'roleId', string>>>
+export type InviteRowErrors = Record<string, Partial<Record<'email' | 'permission' | 'roleId', string>>>
 
 export function applySharedAssignmentToInviteRows(
   inviteRows: InviteRow[],
   selectedRowIds: string[],
-  assignment: Pick<GroupMemberInviteDraft, 'isAdmin' | 'roleId'>,
+  assignment: Pick<GroupMemberInviteDraft, 'permission' | 'roleId'>,
 ) {
   const targetRowIds = selectedRowIds.length > 0
     ? new Set(selectedRowIds)
@@ -25,7 +25,7 @@ export function applySharedAssignmentToInviteRows(
     return {
       ...row,
       roleId: assignment.roleId,
-      isAdmin: assignment.isAdmin,
+      permission: assignment.permission,
     }
   })
 }
@@ -34,6 +34,7 @@ export function buildImportSummaryMessage(summary: {
   addedCount: number
   duplicateCount: number
   existingMemberCount: number
+  invalidAccessCount: number
   invalidCount: number
   unresolvedRoleCount: number
   truncatedCount: number
@@ -50,6 +51,10 @@ export function buildImportSummaryMessage(summary: {
 
   if (summary.invalidCount > 0) {
     segments.push(`Skipped ${summary.invalidCount} invalid ${summary.invalidCount === 1 ? 'row' : 'rows'}.`)
+  }
+
+  if (summary.invalidAccessCount > 0) {
+    segments.push(`Skipped ${summary.invalidAccessCount} ${summary.invalidAccessCount === 1 ? 'row' : 'rows'} with invalid access values.`)
   }
 
   if (summary.unresolvedRoleCount > 0) {
@@ -71,7 +76,7 @@ export function buildInviteRowErrors(inviteRows: InviteRow[], issues: ZodIssue[]
     }
 
     const row = inviteRows[rowIndex]
-    if (row === undefined || (field !== 'email' && field !== 'roleId')) {
+    if (row === undefined || (field !== 'email' && field !== 'permission' && field !== 'roleId')) {
       return errors
     }
 

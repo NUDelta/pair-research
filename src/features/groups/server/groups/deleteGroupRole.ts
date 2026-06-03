@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getGroupRoleDeleteError } from '@/features/groups/lib/groupManagementRules'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { deleteGroupRoleSchema } from '../../schemas/groupManagement'
-import { findManagedGroup } from './groupManagement'
+import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
 
 export const deleteGroupRole = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(deleteGroupRoleSchema, data))
@@ -10,75 +10,77 @@ export const deleteGroupRole = createServerFn({ method: 'POST' })
     try {
       const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
-      const adminContext = await findManagedGroup(user.id, data.groupId)
+      const managementContext = await findManagedGroup(user.id, data.groupId)
 
-      if (adminContext === null) {
+      if (managementContext === null) {
         return {
           success: false,
-          message: 'Only group admins can delete roles.',
+          message: 'Only group managers can delete roles.',
         }
       }
 
-      const { prisma } = adminContext
+      const { prisma } = managementContext
       const roleId = BigInt(data.roleId)
       const replacementRoleId = data.replacementRoleId === undefined ? undefined : BigInt(data.replacementRoleId)
 
-      const [roles, members] = await Promise.all([
-        prisma.group_role.findMany({
-          where: {
-            group_id: data.groupId,
-          },
-          select: {
-            id: true,
-          },
-        }),
-        prisma.group_member.findMany({
-          where: {
-            group_id: data.groupId,
-          },
-          select: {
-            role_id: true,
-          },
-        }),
-      ])
+      const assignedMemberCount = await withSerializableRetry(async () =>
+        prisma.$transaction(async (tx) => {
+          await ensureCurrentGroupManager(tx, user.id, data.groupId, 'Only group managers can delete roles.')
 
-      const deleteError = getGroupRoleDeleteError({
-        members: members.map(member => ({
-          roleId: member.role_id.toString(),
-        })),
-        replacementRoleId: replacementRoleId?.toString(),
-        roleIds: roles.map(role => role.id.toString()),
-        targetRoleId: roleId.toString(),
-      })
+          const [roles, members] = await Promise.all([
+            tx.group_role.findMany({
+              where: {
+                group_id: data.groupId,
+              },
+              select: {
+                id: true,
+              },
+            }),
+            tx.group_member.findMany({
+              where: {
+                group_id: data.groupId,
+              },
+              select: {
+                role_id: true,
+              },
+            }),
+          ])
 
-      if (deleteError !== null) {
-        return {
-          success: false,
-          message: deleteError,
-        }
-      }
+          const deleteError = getGroupRoleDeleteError({
+            members: members.map(member => ({
+              roleId: member.role_id.toString(),
+            })),
+            replacementRoleId: replacementRoleId?.toString(),
+            roleIds: roles.map(role => role.id.toString()),
+            targetRoleId: roleId.toString(),
+          })
 
-      const assignedMemberCount = members.filter(member => member.role_id === roleId).length
+          if (deleteError !== null) {
+            throw new Error(deleteError)
+          }
 
-      await prisma.$transaction(async (tx) => {
-        if (replacementRoleId !== undefined && assignedMemberCount > 0) {
-          await tx.group_member.updateMany({
+          const memberCount = members.filter(member => member.role_id === roleId).length
+
+          if (replacementRoleId !== undefined && memberCount > 0) {
+            await tx.group_member.updateMany({
+              where: {
+                group_id: data.groupId,
+                role_id: roleId,
+              },
+              data: {
+                role_id: replacementRoleId,
+              },
+            })
+          }
+
+          await tx.group_role.delete({
             where: {
-              group_id: data.groupId,
-              role_id: roleId,
-            },
-            data: {
-              role_id: replacementRoleId,
+              id: roleId,
             },
           })
-        }
 
-        await tx.group_role.delete({
-          where: {
-            id: roleId,
-          },
-        })
-      })
+          return memberCount
+        }, { isolationLevel: 'Serializable' }))
 
       return {
         success: true,

@@ -1,12 +1,19 @@
 import { createServerFn } from '@tanstack/react-start'
 import { normalizeInviteEmail } from '@/features/groups/lib/groupNormalization'
+import { canManagePrivilegedAccess, hasGroupManagementAccess, isPrivilegedPermission } from '@/features/groups/lib/groupPermissions'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { addGroupMembersSchema } from '../../schemas/groupManagement'
 import {
+  ensureCurrentGroupManager,
   ensureProfileForInvite,
   findManagedGroup,
   inviteCreatedUserByEmail,
+  withSerializableRetry,
 } from './groupManagement'
+
+interface LockedMembershipRow {
+  permission: 'owner' | 'admin' | 'member'
+}
 
 export const addGroupMembers = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(addGroupMembersSchema, data))
@@ -14,21 +21,32 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
     try {
       const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
-      const adminContext = await findManagedGroup(user.id, data.groupId)
+      const managementContext = await findManagedGroup(user.id, data.groupId)
 
-      if (adminContext === null) {
+      if (managementContext === null) {
         return {
           success: false,
-          message: 'Only group admins can add members.',
+          message: 'Only group managers can add members.',
         }
       }
 
-      const { prisma } = adminContext
+      const { prisma } = managementContext
       const normalizedInvites = data.invites.map(invite => ({
         email: normalizeInviteEmail(invite.email),
         roleId: invite.roleId,
-        isAdmin: invite.isAdmin,
+        permission: invite.permission,
       }))
+
+      if (
+        !canManagePrivilegedAccess(managementContext.actorPermission)
+        && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
+      ) {
+        return {
+          success: false,
+          message: 'Only group owners can invite owners or admins.',
+        }
+      }
+
       const seenEmails = new Set<string>()
 
       for (const invite of normalizedInvites) {
@@ -103,22 +121,122 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
         }
       }
 
-      const ensuredProfiles = await Promise.all(
-        normalizedInvites.map(async invite => ({
-          invite,
-          ensuredProfile: await ensureProfileForInvite(invite.email),
-        })),
-      )
+      await withSerializableRetry(async () =>
+        prisma.$transaction(async (tx) => {
+          const currentActorPermission = await ensureCurrentGroupManager(tx, user.id, data.groupId, 'Only group managers can add members.')
 
-      await prisma.group_member.createMany({
-        data: ensuredProfiles.map(({ invite, ensuredProfile }) => ({
-          group_id: data.groupId,
-          user_id: ensuredProfile.profile.id,
-          role_id: BigInt(invite.roleId),
-          is_admin: invite.isAdmin,
-          is_pending: true,
-        })),
-      })
+          if (
+            !canManagePrivilegedAccess(currentActorPermission)
+            && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
+          ) {
+            throw new Error('Only group owners can invite owners or admins.')
+          }
+
+          const currentRoles = await tx.group_role.findMany({
+            where: {
+              group_id: data.groupId,
+              id: { in: uniqueRoleIds },
+            },
+            select: {
+              id: true,
+            },
+          })
+
+          if (currentRoles.length !== uniqueRoleIds.length) {
+            throw new Error('Selected role is no longer available for this group.')
+          }
+        }, { isolationLevel: 'Serializable' }))
+
+      const ensuredProfiles = await withSerializableRetry(async () =>
+        prisma.$transaction(async (tx) => {
+          const [currentActorMembership] = await tx.$queryRaw<LockedMembershipRow[]>`
+            select permission
+            from public.group_member
+            where group_id = ${data.groupId}::uuid
+              and user_id = ${user.id}::uuid
+              and is_pending = false
+            for update
+          `
+
+          if (currentActorMembership === undefined || !hasGroupManagementAccess(currentActorMembership.permission)) {
+            throw new Error('Only group managers can add members.')
+          }
+
+          if (
+            !canManagePrivilegedAccess(currentActorMembership.permission)
+            && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
+          ) {
+            throw new Error('Only group owners can invite owners or admins.')
+          }
+
+          const currentRoles = await tx.group_role.findMany({
+            where: {
+              group_id: data.groupId,
+              id: { in: uniqueRoleIds },
+            },
+            select: {
+              id: true,
+            },
+          })
+
+          if (currentRoles.length !== uniqueRoleIds.length) {
+            throw new Error('Selected role is no longer available for this group.')
+          }
+
+          const ensuredInviteProfiles = await Promise.all(
+            normalizedInvites.map(async invite => ({
+              invite,
+              ensuredProfile: await ensureProfileForInvite(invite.email, tx),
+            })),
+          )
+
+          const currentMemberships = await tx.group_member.findMany({
+            where: {
+              group_id: data.groupId,
+              user_id: {
+                in: ensuredInviteProfiles.map(({ ensuredProfile }) => ensuredProfile.profile.id),
+              },
+            },
+            select: {
+              user_id: true,
+              is_pending: true,
+              profile: {
+                select: {
+                  email: true,
+                },
+              },
+            },
+          })
+
+          const currentMembershipByUserId = new Map(currentMemberships.map(membership => [membership.user_id, membership]))
+          for (const { ensuredProfile } of ensuredInviteProfiles) {
+            const currentMembership = currentMembershipByUserId.get(ensuredProfile.profile.id)
+            if (currentMembership === undefined) {
+              continue
+            }
+
+            throw new Error(currentMembership.is_pending
+              ? `${currentMembership.profile.email} already has a pending invitation to this group.`
+              : `${currentMembership.profile.email} is already a member of this group.`)
+          }
+
+          const createdMemberships = await tx.group_member.createMany({
+            data: ensuredInviteProfiles.map(({ invite, ensuredProfile }) => ({
+              group_id: data.groupId,
+              user_id: ensuredProfile.profile.id,
+              role_id: BigInt(invite.roleId),
+              permission: invite.permission,
+              is_pending: true,
+            })),
+            skipDuplicates: true,
+          })
+
+          if (createdMemberships.count !== ensuredInviteProfiles.length) {
+            throw new Error('One or more invitees already has a group membership. Refresh and try again.')
+          }
+
+          return ensuredInviteProfiles
+        }, { isolationLevel: 'Serializable' }))
 
       await Promise.all(
         ensuredProfiles.map(async ({ invite, ensuredProfile }) => {

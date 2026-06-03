@@ -10,6 +10,7 @@ import {
   UsersIcon,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -46,7 +47,7 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
   }, [])
 
   const confirmedMembers = optimisticSettings.members.filter(member => !member.isPending)
-  const adminMembers = confirmedMembers.filter(member => member.isAdmin)
+  const managerMembers = confirmedMembers.filter(member => hasGroupManagementAccess(member.permission))
   const sections = [
     {
       value: 'general' as const,
@@ -100,9 +101,9 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
         <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1">
           <ShieldCheckIcon className="size-4" aria-hidden="true" />
           <span>
-            {adminMembers.length}
+            {managerMembers.length}
             {' '}
-            admins
+            managers
           </span>
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1">
@@ -166,8 +167,8 @@ export default function GroupSettingsPage({ settings }: GroupSettingsPageProps) 
           <TabsContent value="members" className="mt-0 flex flex-col gap-6">
             <GroupMembersTable
               applyOptimisticUpdate={applyOptimisticUpdate}
-              creatorId={optimisticSettings.group.creatorId}
               currentUserId={optimisticSettings.currentUserId}
+              currentUserPermission={optimisticSettings.currentUserPermission}
               groupId={optimisticSettings.group.id}
               hasActivePairing={optimisticSettings.group.activePairingId !== null}
               members={optimisticSettings.members}

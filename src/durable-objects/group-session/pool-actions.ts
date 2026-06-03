@@ -1,7 +1,10 @@
 import type { GroupSessionRuntime } from './runtime'
 import type { GroupSessionRequest } from './types'
+import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { getMembership, getPrisma } from './database'
 import { clearStoredGroupSession } from './storage'
+
+const RESET_POOL_MANAGER_REQUIRED_MESSAGE = 'Only group managers can reset the pool'
 
 export async function handleResetPool(
   runtime: GroupSessionRuntime,
@@ -18,10 +21,10 @@ export async function handleResetPool(
       }
     }
 
-    if (!membership.is_admin) {
+    if (!hasGroupManagementAccess(membership.permission)) {
       return {
         success: false,
-        message: 'Only group admins can reset the pool',
+        message: RESET_POOL_MANAGER_REQUIRED_MESSAGE,
       }
     }
 
@@ -39,6 +42,25 @@ export async function handleResetPool(
     const activeTaskIds = activeTasks.map(task => task.id)
 
     await prisma.$transaction(async (tx) => {
+      const currentMembership = await tx.group_member.findFirst({
+        where: {
+          group_id: request.groupId,
+          user_id: request.userId,
+          is_pending: false,
+        },
+        select: {
+          permission: true,
+        },
+      })
+
+      if (currentMembership === null) {
+        throw new Error('You are not a member in this group')
+      }
+
+      if (!hasGroupManagementAccess(currentMembership.permission)) {
+        throw new Error(RESET_POOL_MANAGER_REQUIRED_MESSAGE)
+      }
+
       if (activeTaskIds.length > 0) {
         await tx.task_help_capacity.deleteMany({
           where: {
@@ -67,7 +89,7 @@ export async function handleResetPool(
           },
         })
       }
-    })
+    }, { isolationLevel: 'Serializable' })
 
     clearStoredGroupSession(runtime.ctx)
     runtime.broadcast({ type: 'pool:reset' })
@@ -78,6 +100,13 @@ export async function handleResetPool(
     }
   }
   catch (error) {
+    if (
+      error instanceof Error
+      && (error.message === 'You are not a member in this group' || error.message === RESET_POOL_MANAGER_REQUIRED_MESSAGE)
+    ) {
+      return { success: false, message: error.message }
+    }
+
     console.error('Error resetting pool through group session:', error)
     return {
       success: false,

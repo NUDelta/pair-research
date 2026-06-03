@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { normalizeRoleTitle } from '@/features/groups/lib/groupNormalization'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { createGroupRoleSchema } from '../../schemas/groupManagement'
-import { findManagedGroup } from './groupManagement'
+import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
 
 export const createGroupRole = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => parseValidatedInput(createGroupRoleSchema, data))
@@ -10,39 +10,41 @@ export const createGroupRole = createServerFn({ method: 'POST' })
     try {
       const { getUser } = await import('@/shared/supabase/server')
       const user = await getUser()
-      const adminContext = await findManagedGroup(user.id, data.groupId)
+      const managementContext = await findManagedGroup(user.id, data.groupId)
 
-      if (adminContext === null) {
+      if (managementContext === null) {
         return {
           success: false,
-          message: 'Only group admins can create roles.',
+          message: 'Only group managers can create roles.',
         }
       }
 
-      const { prisma } = adminContext
+      const { prisma } = managementContext
       const normalizedTitle = normalizeRoleTitle(data.title)
-      const existingRoles = await prisma.group_role.findMany({
-        where: {
-          group_id: data.groupId,
-        },
-        select: {
-          title: true,
-        },
-      })
+      await withSerializableRetry(async () =>
+        prisma.$transaction(async (tx) => {
+          await ensureCurrentGroupManager(tx, user.id, data.groupId, 'Only group managers can create roles.')
 
-      if (existingRoles.some(role => role.title.trim().toLowerCase() === normalizedTitle.toLowerCase())) {
-        return {
-          success: false,
-          message: 'A role with that title already exists in this group.',
-        }
-      }
+          const existingRoles = await tx.group_role.findMany({
+            where: {
+              group_id: data.groupId,
+            },
+            select: {
+              title: true,
+            },
+          })
 
-      await prisma.group_role.create({
-        data: {
-          group_id: data.groupId,
-          title: normalizedTitle,
-        },
-      })
+          if (existingRoles.some(role => role.title.trim().toLowerCase() === normalizedTitle.toLowerCase())) {
+            throw new Error('A role with that title already exists in this group.')
+          }
+
+          await tx.group_role.create({
+            data: {
+              group_id: data.groupId,
+              title: normalizedTitle,
+            },
+          })
+        }, { isolationLevel: 'Serializable' }))
 
       return {
         success: true,

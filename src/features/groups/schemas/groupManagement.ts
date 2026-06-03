@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { groupPermissionSchema } from './group'
 
 const groupNameRegex = /^[\p{L}\p{N}_\- ]+$/u
 const groupDescriptionRegex = /^[^<>]*$/
@@ -40,13 +41,13 @@ export const addGroupMemberSchema = z.object({
   groupId: groupIdSchema,
   email: emailSchema,
   roleId: roleIdSchema,
-  isAdmin: z.boolean(),
+  permission: groupPermissionSchema,
 })
 
 export const groupMemberInviteSchema = z.object({
   email: emailSchema,
   roleId: roleIdSchema,
-  isAdmin: z.boolean(),
+  permission: groupPermissionSchema,
 })
 
 export const addGroupMembersSchema = z.object({
@@ -58,7 +59,7 @@ export const updateGroupMemberSchema = z.object({
   groupId: groupIdSchema,
   userId: userIdSchema,
   roleId: roleIdSchema,
-  isAdmin: z.boolean(),
+  permission: groupPermissionSchema,
 })
 
 export const bulkUpdateGroupMemberRolesSchema = z.object({

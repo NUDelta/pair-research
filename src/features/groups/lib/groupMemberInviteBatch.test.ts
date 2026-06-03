@@ -11,7 +11,7 @@ const roles = [
 describe('importGroupMemberInvites', () => {
   it('resolves role and access columns while skipping duplicates and invalid emails', () => {
     const result = importGroupMemberInvites({
-      existingInvites: [{ email: 'existing@example.com', roleId: '1', isAdmin: false }],
+      existingInvites: [{ email: 'existing@example.com', roleId: '1', permission: 'member' }],
       existingMemberEmails: ['already-member@example.com'],
       roles,
       source: [
@@ -23,19 +23,20 @@ describe('importGroupMemberInvites', () => {
         'not-an-email,Researcher,admin',
       ].join('\n'),
       defaultRoleId: '2',
-      defaultIsAdmin: false,
+      defaultPermission: 'member',
     })
 
     expect(result.invites).toEqual([
-      { email: 'existing@example.com', roleId: '1', isAdmin: false },
-      { email: 'alpha@example.com', roleId: '3', isAdmin: true },
-      { email: 'beta@example.com', roleId: '2', isAdmin: false },
+      { email: 'existing@example.com', roleId: '1', permission: 'member' },
+      { email: 'alpha@example.com', roleId: '3', permission: 'admin' },
+      { email: 'beta@example.com', roleId: '2', permission: 'member' },
     ])
     expect(result.ignoredExistingEmails).toEqual(['already-member@example.com'])
     expect(result.summary).toEqual({
       addedCount: 2,
       duplicateCount: 1,
       existingMemberCount: 1,
+      invalidAccessCount: 0,
       invalidCount: 1,
       unresolvedRoleCount: 1,
       truncatedCount: 0,
@@ -48,12 +49,31 @@ describe('importGroupMemberInvites', () => {
       roles,
       source: Array.from({ length: MAX_GROUP_MEMBER_INVITES + 2 }, (_, index) => `person-${index + 1}@example.com`).join('\n'),
       defaultRoleId: '2',
-      defaultIsAdmin: false,
+      defaultPermission: 'member',
     })
 
     expect(result.invites).toHaveLength(MAX_GROUP_MEMBER_INVITES)
     expect(result.ignoredExistingEmails).toEqual([])
     expect(result.summary.truncatedCount).toBe(2)
+  })
+
+  it('skips legacy boolean access values instead of falling back to privileged defaults', () => {
+    const result = importGroupMemberInvites({
+      existingInvites: [],
+      roles,
+      source: [
+        'email,role,access',
+        'alpha@example.com,Reviewer,true',
+        'beta@example.com,Unknown role,yes',
+      ].join('\n'),
+      defaultRoleId: '2',
+      defaultPermission: 'admin',
+    })
+
+    expect(result.invites).toEqual([])
+    expect(result.summary.invalidAccessCount).toBe(2)
+    expect(result.summary.unresolvedRoleCount).toBe(0)
+    expect(result.summary.addedCount).toBe(0)
   })
 })
 
@@ -64,7 +84,7 @@ describe('addGroupMembersSchema', () => {
       invites: Array.from({ length: MAX_GROUP_MEMBER_INVITES + 1 }, (_, index) => ({
         email: `person-${index + 1}@example.com`,
         roleId: '2',
-        isAdmin: false,
+        permission: 'member',
       })),
     })
 

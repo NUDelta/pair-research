@@ -48,6 +48,7 @@ describe('useGroupMemberInviteDialog', () => {
     const { result } = renderHook(() =>
       useGroupMemberInviteDialog({
         applyOptimisticUpdate,
+        currentUserPermission: 'owner',
         existingMemberEmails: ['ada@example.com'],
         groupId: 'group-1',
         roles: [{ id: '1', title: 'Researcher' }],
@@ -68,7 +69,7 @@ describe('useGroupMemberInviteDialog', () => {
           id: 'invite-1',
           email: 'grace@example.com',
           roleId: '1',
-          isAdmin: false,
+          permission: 'member',
         },
       ])
     })
@@ -88,6 +89,7 @@ describe('useGroupMemberInviteDialog', () => {
     const { result } = renderHook(() =>
       useGroupMemberInviteDialog({
         applyOptimisticUpdate,
+        currentUserPermission: 'owner',
         existingMemberEmails: ['ada@example.com'],
         groupId: 'group-1',
         roles: [{ id: '1', title: 'Researcher' }],
@@ -112,13 +114,13 @@ describe('useGroupMemberInviteDialog', () => {
           id: 'invite-1',
           email: 'grace@example.com',
           roleId: '1',
-          isAdmin: false,
+          permission: 'member',
         },
         {
           id: 'invite-2',
           email: 'barbara@example.com',
           roleId: '1',
-          isAdmin: false,
+          permission: 'member',
         },
       ])
     })
@@ -143,6 +145,7 @@ describe('useGroupMemberInviteDialog', () => {
     const { result } = renderHook(() =>
       useGroupMemberInviteDialog({
         applyOptimisticUpdate,
+        currentUserPermission: 'owner',
         groupId: 'group-1',
         roles: [{ id: '1', title: 'Researcher' }],
       }),
@@ -175,6 +178,7 @@ describe('useGroupMemberInviteDialog', () => {
         activePairingId: null,
       },
       currentUserId: 'user-1',
+      currentUserPermission: 'owner',
       roles: [{ id: '1', title: 'Researcher' }],
       members: [],
     }
@@ -187,6 +191,7 @@ describe('useGroupMemberInviteDialog', () => {
         activePairingId: null,
       },
       currentUserId: 'user-1',
+      currentUserPermission: 'owner',
       roles: [{ id: '1', title: 'Researcher' }],
       members: [],
     }
@@ -207,5 +212,44 @@ describe('useGroupMemberInviteDialog', () => {
     await waitFor(() => {
       expect(addGroupMembersFn).toHaveBeenCalledTimes(2)
     })
+  })
+
+  it('sanitizes privileged imported access for non-owner managers', async () => {
+    const { result } = renderHook(() =>
+      useGroupMemberInviteDialog({
+        applyOptimisticUpdate,
+        currentUserPermission: 'admin',
+        groupId: 'group-1',
+        roles: [{ id: '1', title: 'Researcher' }],
+      }),
+    )
+
+    expect(result.current.availablePermissions).toEqual(['member'])
+
+    act(() => {
+      result.current.handleImportSource([
+        'email,role,access',
+        'grace@example.com,Researcher,owner',
+        'barbara@example.com,Researcher,admin',
+      ].join('\n'))
+    })
+
+    await waitFor(() => {
+      expect(result.current.inviteRows).toEqual([
+        {
+          id: 'invite-1',
+          email: 'grace@example.com',
+          roleId: '1',
+          permission: 'member',
+        },
+        {
+          id: 'invite-2',
+          email: 'barbara@example.com',
+          roleId: '1',
+          permission: 'member',
+        },
+      ])
+    })
+    expect(result.current.hasPrivilegedInvite).toBe(false)
   })
 })
