@@ -30,7 +30,7 @@ export const useAuthProfile = (
   const updateProfileFn = useServerFn(updateProfile)
   const lastGoogleAvatarSyncUrlRef = useRef<string | null>(null)
 
-  const [loading, setLoading] = useState(!anonymousE2E)
+  const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>(emptyProfile)
 
   const setLoggedOut = useCallback(() => {
