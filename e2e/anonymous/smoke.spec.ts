@@ -47,6 +47,20 @@ test('sign-in page renders the current auth entry surface', async ({ page }) => 
   await expect(page.getByRole('button', { name: /^sign in$/i })).toBeVisible()
 })
 
+test('contact page renders the public support form from the footer link', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByRole('link', { name: /send us a message/i }).click()
+
+  await expect(page).toHaveURL(/\/contact$/)
+  await expect(page.getByRole('heading', { name: 'Contact' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Name' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible()
+  await expect(page.getByText(/complete the security check before sending your message/i)).toBeVisible()
+  await expect(page.getByRole('button', { name: /send message/i })).toBeDisabled()
+})
+
 test('sign-in page preserves the check-email notice state', async ({ page }) => {
   await page.goto('/login?notice=check-email&email=learner%40example.com')
 

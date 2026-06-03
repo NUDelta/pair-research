@@ -14,7 +14,10 @@
   "secrets": {
     "required": [
       "CLOUDFLARE_TURNSTILE_SECRET_KEY",
+      "CONTACT_ADMIN_EMAIL",
+      "CONTACT_FROM_EMAIL",
       "DATABASE_URL",
+      "RESEND_API_KEY",
       "SUPABASE_SECRET_KEY"
     ]
   },

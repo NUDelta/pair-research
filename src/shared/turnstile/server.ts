@@ -7,6 +7,8 @@ import {
 } from './constants'
 
 const secretSchema = z.string().trim().min(1)
+const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+const CANONICAL_ALLOWED_TURNSTILE_HOSTNAMES = ['pairresearch.io', 'www.pairresearch.io'] as const
 
 interface VerifyTurnstileTokenInput {
   action: string
@@ -25,6 +27,18 @@ interface VerifyTurnstileTokenResult {
 function getTurnstileSecretKey() {
   const secret = secretSchema.safeParse(process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY ?? '')
   return secret.success ? secret.data : ''
+}
+
+function getAllowedTurnstileHostnames() {
+  const hostnames = new Set<string>(CANONICAL_ALLOWED_TURNSTILE_HOSTNAMES)
+
+  try {
+    const configuredSiteUrl = new URL(process.env.VITE_SITE_BASE_URL ?? '')
+    hostnames.add(configuredSiteUrl.hostname)
+  }
+  catch {}
+
+  return hostnames
 }
 
 export function createTurnstileErrorResponse(message: string, code: TurnstileAwareActionResponse['code']): TurnstileAwareActionResponse {
@@ -60,7 +74,7 @@ export async function verifyTurnstileToken({
     }
   }
 
-  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+  const response = await fetch(TURNSTILE_VERIFY_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -83,16 +97,22 @@ export async function verifyTurnstileToken({
 
   const payload: TurnstileServerValidationResponse = await response.json()
   const actionMismatch = payload.action !== undefined && payload.action !== action
+  const allowedHostnames = getAllowedTurnstileHostnames()
+  const hostnameMismatch = payload.hostname !== undefined && !allowedHostnames.has(payload.hostname)
 
-  if (!payload.success || actionMismatch) {
+  if (!payload.success || actionMismatch || hostnameMismatch) {
     return {
       success: false,
       interactive: payload.metadata?.interactive ?? true,
-      message: actionMismatch
+      message: actionMismatch || hostnameMismatch
         ? 'Security check expired. Please verify again.'
         : 'Please complete the security check and try again.',
       code: TURNSTILE_ERROR_CODES.failed,
-      errors: actionMismatch ? ['action-mismatch'] : payload['error-codes'],
+      errors: actionMismatch
+        ? ['action-mismatch']
+        : hostnameMismatch
+          ? ['hostname-mismatch']
+          : payload['error-codes'],
     }
   }
 

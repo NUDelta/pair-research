@@ -3,16 +3,19 @@ import { TURNSTILE_ERROR_CODES } from './constants'
 
 describe('verifyTurnstileToken', () => {
   const originalSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY
+  const originalSiteBaseUrl = process.env.VITE_SITE_BASE_URL
   const fetchMock = vi.fn()
 
   beforeEach(() => {
     process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY = 'secret'
+    process.env.VITE_SITE_BASE_URL = 'https://pairresearch.io'
     fetchMock.mockReset()
     vi.stubGlobal('fetch', fetchMock)
   })
 
   afterEach(() => {
     process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY = originalSecret
+    process.env.VITE_SITE_BASE_URL = originalSiteBaseUrl
     vi.unstubAllGlobals()
   })
 
@@ -78,6 +81,33 @@ describe('verifyTurnstileToken', () => {
       success: false,
       code: TURNSTILE_ERROR_CODES.failed,
       errors: ['action-mismatch'],
+    })
+  })
+
+  it('rejects payloads issued for an unexpected hostname', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        'success': true,
+        'action': 'contact',
+        'hostname': 'attacker.example',
+        'metadata': {
+          interactive: false,
+        },
+        'error-codes': [],
+      }),
+    })
+
+    const { verifyTurnstileToken } = await import('./server')
+    const result = await verifyTurnstileToken({
+      action: 'contact',
+      token: 'token',
+    })
+
+    expect(result).toMatchObject({
+      success: false,
+      code: TURNSTILE_ERROR_CODES.failed,
+      errors: ['hostname-mismatch'],
     })
   })
 })

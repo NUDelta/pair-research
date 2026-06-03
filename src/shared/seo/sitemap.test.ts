@@ -6,6 +6,7 @@ describe('sitemap helper', () => {
     const sitemap = buildSitemapXml('https://pairresearch.io')
 
     expect(sitemap).toContain('<loc>https://pairresearch.io/</loc>')
+    expect(sitemap).toContain('<loc>https://pairresearch.io/contact</loc>')
     expect(sitemap).toContain('<loc>https://pairresearch.io/privacy</loc>')
     expect(sitemap).toContain('<loc>https://pairresearch.io/terms</loc>')
     expect(sitemap).not.toContain('/login')
