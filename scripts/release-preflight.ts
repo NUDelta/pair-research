@@ -39,6 +39,18 @@ const REQUIRED_WORKER_SECRETS = [
 ] as const
 
 const REQUIRED_PUBLIC_ROUTES = ['/', '/contact', '/privacy', '/terms'] as const
+const REQUIRED_PR_CHECK_COMMANDS = [
+  'pnpm run release:preflight',
+  'pnpm run lint:ci',
+  'pnpm run test:unit',
+  'pnpm run build',
+] as const
+const REQUIRED_PRODUCTION_DEPLOY_COMMANDS = [
+  'pnpm run release:preflight',
+  'pnpm run lint:ci',
+  'pnpm run test:unit',
+  'pnpm run build',
+] as const
 const ROUTE_FILE_BY_PUBLIC_PATH: Record<string, string> = {
   '/': 'src/routes/index.tsx',
   '/account': 'src/routes/_authed/account.tsx',
@@ -253,10 +265,14 @@ const deployWorkflow = readText('.github/workflows/deploy-production.yml')
 for (const name of REQUIRED_GITHUB_SECRETS) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference secret: ${name}`)
 }
-assert(deployWorkflow.includes('pnpm run release:preflight'), 'Production deploy workflow must run release preflight.')
+for (const command of REQUIRED_PRODUCTION_DEPLOY_COMMANDS) {
+  assert(deployWorkflow.includes(command), `Production deploy workflow must run: ${command}`)
+}
 
 const prChecksWorkflow = readText('.github/workflows/pr-checks.yml')
-assert(prChecksWorkflow.includes('pnpm run release:preflight'), 'PR checks must run release preflight.')
+for (const command of REQUIRED_PR_CHECK_COMMANDS) {
+  assert(prChecksWorkflow.includes(command), `PR checks must run: ${command}`)
+}
 
 const supabaseMigrationsDirectory = path.join(REPO_ROOT, 'supabase', 'migrations')
 assert(fs.existsSync(supabaseMigrationsDirectory), 'No supabase/migrations directory found. Add migration artifacts before public release.')

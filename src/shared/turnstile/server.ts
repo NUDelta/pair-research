@@ -82,9 +82,9 @@ export async function verifyTurnstileToken({
   }
 
   const payload: TurnstileServerValidationResponse = await response.json()
-  const actionMismatch = payload.action !== undefined && payload.action !== action
+  const actionMismatch = payload.action !== action
   const allowedHostnames = getAllowedTurnstileHostnames()
-  const hostnameMismatch = payload.hostname !== undefined && !allowedHostnames.has(payload.hostname)
+  const hostnameMismatch = payload.hostname === undefined || !allowedHostnames.has(payload.hostname)
 
   if (!payload.success || actionMismatch || hostnameMismatch) {
     return {

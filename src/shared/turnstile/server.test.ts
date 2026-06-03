@@ -25,6 +25,7 @@ describe('verifyTurnstileToken', () => {
       json: async () => ({
         'success': true,
         'action': 'signup',
+        'hostname': 'pairresearch.io',
         'metadata': {
           interactive: false,
         },
@@ -72,6 +73,32 @@ describe('verifyTurnstileToken', () => {
     })
   })
 
+  it('rejects payloads missing an action', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        'success': true,
+        'hostname': 'pairresearch.io',
+        'metadata': {
+          interactive: false,
+        },
+        'error-codes': [],
+      }),
+    })
+
+    const { verifyTurnstileToken } = await import('./server')
+    const result = await verifyTurnstileToken({
+      action: 'login',
+      token: 'token',
+    })
+
+    expect(result).toMatchObject({
+      success: false,
+      code: TURNSTILE_ERROR_CODES.failed,
+      errors: ['action-mismatch'],
+    })
+  })
+
   it('rejects payloads issued for an unexpected hostname', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
@@ -79,6 +106,32 @@ describe('verifyTurnstileToken', () => {
         'success': true,
         'action': 'contact',
         'hostname': 'attacker.example',
+        'metadata': {
+          interactive: false,
+        },
+        'error-codes': [],
+      }),
+    })
+
+    const { verifyTurnstileToken } = await import('./server')
+    const result = await verifyTurnstileToken({
+      action: 'contact',
+      token: 'token',
+    })
+
+    expect(result).toMatchObject({
+      success: false,
+      code: TURNSTILE_ERROR_CODES.failed,
+      errors: ['hostname-mismatch'],
+    })
+  })
+
+  it('rejects payloads missing a hostname', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        'success': true,
+        'action': 'contact',
         'metadata': {
           interactive: false,
         },
