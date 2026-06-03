@@ -19,7 +19,7 @@
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:auth": "playwright test --project=setup-auth --project=authenticated-chromium",
-    "test:e2e:headed": "playwright test --project=chromium --headed",
+    "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install --with-deps chromium",
     "release:preflight": "node scripts/release-preflight.ts",
     "prisma:generate": "prisma generate",

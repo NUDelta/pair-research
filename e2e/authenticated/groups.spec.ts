@@ -1,10 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { authStorageStatePath, getPlaywrightAuthCredentials } from '../helpers/auth'
+import { authStorageStatePath, requirePlaywrightAuthCredentials } from '../helpers/auth'
 
-const authCredentials = getPlaywrightAuthCredentials()
+requirePlaywrightAuthCredentials()
 
-test.skip(authCredentials === null, 'Set PLAYWRIGHT_AUTH_EMAIL and PLAYWRIGHT_AUTH_PASSWORD to enable authenticated e2e.')
-test.use({ storageState: authCredentials ? authStorageStatePath : undefined })
+test.use({ storageState: authStorageStatePath })
 
 test('authenticated user can reach the groups dashboard', async ({ page }) => {
   await page.goto('/groups')

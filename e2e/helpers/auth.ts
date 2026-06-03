@@ -19,6 +19,16 @@ export function getPlaywrightAuthCredentials() {
   return { email, password }
 }
 
+export function requirePlaywrightAuthCredentials() {
+  const credentials = getPlaywrightAuthCredentials()
+
+  if (credentials === null) {
+    throw new Error('PLAYWRIGHT_AUTH_EMAIL and PLAYWRIGHT_AUTH_PASSWORD are required for authenticated e2e.')
+  }
+
+  return credentials
+}
+
 export async function enableAnonymousAuthMode(context: BrowserContext, baseURL: string) {
   const cookieUrl = new URL('/', baseURL).toString()
 

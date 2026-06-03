@@ -27,7 +27,7 @@ export default defineConfig({
   webServer: hasExternalBaseURL
     ? undefined
     : {
-        command: 'pnpm dev:e2e',
+        command: `pnpm dev:e2e --port ${port}`,
         url: baseURL,
         reuseExistingServer: !isCI && reuseExistingServer,
         timeout: 120000,

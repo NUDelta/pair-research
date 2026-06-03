@@ -6,10 +6,10 @@ By default Playwright starts its own fresh server instance. If you intentionally
 
 The anonymous suite forces a logged-out state with a test cookie so stable public-route checks do not depend on leftover storage state or Supabase session lookups.
 
-Authenticated coverage is opt-in:
+Authenticated coverage is required for local and CI e2e:
 
 - set `PLAYWRIGHT_AUTH_EMAIL`
 - set `PLAYWRIGHT_AUTH_PASSWORD`
-- run `pnpm test:e2e:auth`
+- run `pnpm test:e2e` or `pnpm test:e2e:auth`
 
 The auth setup project signs in through the real email/password flow and writes storage state to `e2e/.auth/user.json`. Add future authenticated specs under `e2e/authenticated`.
