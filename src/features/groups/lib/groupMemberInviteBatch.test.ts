@@ -36,6 +36,7 @@ describe('importGroupMemberInvites', () => {
       addedCount: 2,
       duplicateCount: 1,
       existingMemberCount: 1,
+      invalidAccessCount: 0,
       invalidCount: 1,
       unresolvedRoleCount: 1,
       truncatedCount: 0,
@@ -56,23 +57,23 @@ describe('importGroupMemberInvites', () => {
     expect(result.summary.truncatedCount).toBe(2)
   })
 
-  it('ignores legacy boolean access values in favor of the default permission', () => {
+  it('skips legacy boolean access values instead of falling back to privileged defaults', () => {
     const result = importGroupMemberInvites({
       existingInvites: [],
       roles,
       source: [
         'email,role,access',
         'alpha@example.com,Reviewer,true',
-        'beta@example.com,Reviewer,yes',
+        'beta@example.com,Unknown role,yes',
       ].join('\n'),
       defaultRoleId: '2',
-      defaultPermission: 'member',
+      defaultPermission: 'admin',
     })
 
-    expect(result.invites).toEqual([
-      { email: 'alpha@example.com', roleId: '3', permission: 'member' },
-      { email: 'beta@example.com', roleId: '3', permission: 'member' },
-    ])
+    expect(result.invites).toEqual([])
+    expect(result.summary.invalidAccessCount).toBe(2)
+    expect(result.summary.unresolvedRoleCount).toBe(0)
+    expect(result.summary.addedCount).toBe(0)
   })
 })
 

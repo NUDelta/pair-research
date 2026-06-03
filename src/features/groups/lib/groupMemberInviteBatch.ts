@@ -15,6 +15,7 @@ export interface GroupMemberInviteImportSummary {
   addedCount: number
   duplicateCount: number
   existingMemberCount: number
+  invalidAccessCount: number
   invalidCount: number
   unresolvedRoleCount: number
   truncatedCount: number
@@ -55,6 +56,7 @@ export function importGroupMemberInvites({
     addedCount: 0,
     duplicateCount: 0,
     existingMemberCount: 0,
+    invalidAccessCount: 0,
     invalidCount: 0,
     unresolvedRoleCount: 0,
     truncatedCount: 0,
@@ -97,6 +99,12 @@ export function importGroupMemberInvites({
       roleValue: row.roleValue,
     })
 
+    const resolvedPermission = resolveAccessValue(row.accessValue, defaultPermission)
+    if (resolvedPermission === null) {
+      summary.invalidAccessCount += 1
+      continue
+    }
+
     if (!resolvedRole.matchedExplicitRole) {
       summary.unresolvedRoleCount += 1
     }
@@ -104,7 +112,7 @@ export function importGroupMemberInvites({
     nextInvites.push({
       email: normalizedEmail,
       roleId: resolvedRole.roleId,
-      permission: resolveAccessValue(row.accessValue, defaultPermission),
+      permission: resolvedPermission,
     })
     existingEmails.add(normalizedEmail)
     summary.addedCount += 1
@@ -148,7 +156,7 @@ function resolveRoleId({
   }
 }
 
-function resolveAccessValue(value: string | null, defaultPermission: GroupPermission): GroupPermission {
+function resolveAccessValue(value: string | null, defaultPermission: GroupPermission): GroupPermission | null {
   if (value === null || value.trim().length === 0) {
     return defaultPermission
   }
@@ -158,7 +166,7 @@ function resolveAccessValue(value: string | null, defaultPermission: GroupPermis
     return normalizedValue as GroupPermission
   }
 
-  return defaultPermission
+  return null
 }
 
 function normalizeInviteEmail(email: string) {

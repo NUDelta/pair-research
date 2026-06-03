@@ -34,6 +34,7 @@ export function buildImportSummaryMessage(summary: {
   addedCount: number
   duplicateCount: number
   existingMemberCount: number
+  invalidAccessCount: number
   invalidCount: number
   unresolvedRoleCount: number
   truncatedCount: number
@@ -50,6 +51,10 @@ export function buildImportSummaryMessage(summary: {
 
   if (summary.invalidCount > 0) {
     segments.push(`Skipped ${summary.invalidCount} invalid ${summary.invalidCount === 1 ? 'row' : 'rows'}.`)
+  }
+
+  if (summary.invalidAccessCount > 0) {
+    segments.push(`Skipped ${summary.invalidAccessCount} ${summary.invalidAccessCount === 1 ? 'row' : 'rows'} with invalid access values.`)
   }
 
   if (summary.unresolvedRoleCount > 0) {

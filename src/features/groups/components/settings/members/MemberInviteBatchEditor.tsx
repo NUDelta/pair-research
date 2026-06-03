@@ -80,6 +80,7 @@ export default function MemberInviteBatchEditor({
   const allRowsSelected = inviteRows.length > 0 && selectedCount === inviteRows.length
   const hasRows = inviteRows.length > 0
   const canAddMoreRows = inviteRows.length < maxInvites
+  const accessValuesLabel = availablePermissions.map(permission => `\`${permission}\``).join(', ')
   const columns = useMemo(() => {
     return [
       columnHelper.display({
@@ -258,7 +259,10 @@ export default function MemberInviteBatchEditor({
             {' '}
             {maxInvites}
             {' '}
-            members at once. CSV supports `email`, `role`, and `access` columns; access accepts `owner`, `admin`, or `member`.
+            members at once. CSV supports `email`, `role`, and `access` columns; access accepts
+            {' '}
+            {accessValuesLabel}
+            .
           </>
         )}
         label="Paste emails or CSV"
