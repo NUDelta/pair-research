@@ -11,6 +11,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  preflight:
+    name: 🔐 Release Preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SITE_BASE_URL: ${{ secrets.VITE_SITE_BASE_URL }}
+      R2_PUBLIC_DOMAIN: ${{ secrets.R2_PUBLIC_DOMAIN }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+      CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+      CONTACT_ADMIN_EMAIL: ${{ secrets.CONTACT_ADMIN_EMAIL }}
+      CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
+      PLAYWRIGHT_AUTH_EMAIL: ${{ secrets.PLAYWRIGHT_AUTH_EMAIL }}
+      PLAYWRIGHT_AUTH_PASSWORD: ${{ secrets.PLAYWRIGHT_AUTH_PASSWORD }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_LOG_PATH: .wrangler/logs
+
+    steps:
+      - name: 📂 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧱 Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: 🔐 Run release preflight
+        run: pnpm run release:preflight
+
   lint:
     name: 🚨 Lint
     runs-on: ubuntu-latest
@@ -175,9 +209,11 @@ jobs:
           fs.appendFileSync(outPath, `failed_e2e_tests=${JSON.stringify(failedTests)}\n`);
           EOF
 
-      - name: ⚠️ Warn if authenticated E2E was skipped
+      - name: ❌ Fail E2E job if tests were skipped
         if: always() && steps.summarize.outputs.e2e_skipped != '0'
-        run: echo "::warning::Some E2E tests were skipped. Authenticated PR coverage requires PLAYWRIGHT_AUTH_EMAIL and PLAYWRIGHT_AUTH_PASSWORD secrets."
+        run: |
+          echo "::error::E2E tests must not be skipped. Configure PLAYWRIGHT_AUTH_EMAIL and PLAYWRIGHT_AUTH_PASSWORD."
+          exit 1
 
       - name: ❌ Fail E2E job if tests failed
         if: steps.run_e2e.outcome == 'failure'
@@ -214,7 +250,7 @@ jobs:
     name: 💬 Report
     runs-on: ubuntu-latest
     if: always()
-    needs: [lint, unit, e2e, build]
+    needs: [preflight, lint, unit, e2e, build]
     permissions:
       contents: read
       pull-requests: write
@@ -225,6 +261,7 @@ jobs:
         shell: bash
         env:
           LINT_RESULT: ${{ needs.lint.result }}
+          PREFLIGHT_RESULT: ${{ needs.preflight.result }}
           UNIT_RESULT: ${{ needs.unit.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
           BUILD_RESULT: ${{ needs.build.result }}
@@ -244,6 +281,7 @@ jobs:
           const icon = (o) => o === 'success' ? '✅' : o === 'failure' ? '❌' : '⏭️';
 
           const lint = process.env.LINT_RESULT || 'skipped';
+          const preflight = process.env.PREFLIGHT_RESULT || 'skipped';
           const unit = process.env.UNIT_RESULT || 'skipped';
           const e2e = process.env.E2E_RESULT || 'skipped';
           const build = process.env.BUILD_RESULT || 'skipped';
@@ -264,6 +302,7 @@ jobs:
           const lines = [];
           lines.push('## 🧪 PR Checks');
           lines.push('');
+          lines.push(`- 🔐 Release preflight: ${icon(preflight)} **${preflight}**`);
           lines.push(`- 🚨 Lint: ${icon(lint)} **${lint}**`);
           lines.push(`- 🧪 Unit tests: ${icon(unit)} **${unit}**`);
           lines.push(`- 🎭 E2E tests: ${icon(e2e)} **${e2e}**`);
@@ -308,6 +347,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           LINT_RESULT: ${{ needs.lint.result }}
+          PREFLIGHT_RESULT: ${{ needs.preflight.result }}
           UNIT_RESULT: ${{ needs.unit.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
           BUILD_RESULT: ${{ needs.build.result }}
@@ -326,6 +366,7 @@ jobs:
             const icon = (o) => (o === "success" ? "✅" : o === "failure" ? "❌" : "⏭️");
 
             const lint = process.env.LINT_RESULT || "skipped";
+            const preflight = process.env.PREFLIGHT_RESULT || "skipped";
             const unit = process.env.UNIT_RESULT || "skipped";
             const e2e = process.env.E2E_RESULT || "skipped";
             const build = process.env.BUILD_RESULT || "skipped";
@@ -346,6 +387,7 @@ jobs:
               marker,
               "### 🧪 Pair Research PR Checks",
               "",
+              `- 🔐 Release preflight: ${icon(preflight)} **${preflight}**`,
               `- 🚨 Lint: ${icon(lint)} **${lint}**`,
               `- 🧪 Unit tests: ${icon(unit)} **${unit}**`,
               `- 🎭 E2E tests: ${icon(e2e)} **${e2e}**`,
@@ -396,11 +438,13 @@ jobs:
         shell: bash
         env:
           LINT_RESULT: ${{ needs.lint.result }}
+          PREFLIGHT_RESULT: ${{ needs.preflight.result }}
           UNIT_RESULT: ${{ needs.unit.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
           BUILD_RESULT: ${{ needs.build.result }}
         run: |
-          if [ "$LINT_RESULT" = "failure" ] || \
+          if [ "$PREFLIGHT_RESULT" = "failure" ] || \
+             [ "$LINT_RESULT" = "failure" ] || \
              [ "$UNIT_RESULT" = "failure" ] || \
              [ "$E2E_RESULT" = "failure" ] || \
              [ "$BUILD_RESULT" = "failure" ]; then

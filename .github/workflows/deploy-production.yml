@@ -28,8 +28,11 @@ jobs:
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
       CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+      CONTACT_ADMIN_EMAIL: ${{ secrets.CONTACT_ADMIN_EMAIL }}
+      CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
       PLAYWRIGHT_AUTH_EMAIL: ${{ secrets.PLAYWRIGHT_AUTH_EMAIL }}
       PLAYWRIGHT_AUTH_PASSWORD: ${{ secrets.PLAYWRIGHT_AUTH_PASSWORD }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       WRANGLER_LOG_PATH: .wrangler/logs
 
     steps:
@@ -42,35 +45,10 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
 
       - name: 🔐 Validate release secrets
-        shell: bash
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          missing=0
-
-          require_env() {
-            local name="$1"
-            if [ -z "${!name:-}" ]; then
-              echo "::error::Missing required production release secret: ${name}"
-              missing=1
-            fi
-          }
-
-          require_env VITE_SUPABASE_URL
-          require_env VITE_SUPABASE_PUBLISHABLE_KEY
-          require_env VITE_SITE_BASE_URL
-          require_env R2_PUBLIC_DOMAIN
-          require_env DATABASE_URL
-          require_env SUPABASE_SECRET_KEY
-          require_env VITE_CLOUDFLARE_TURNSTILE_SITE_KEY
-          require_env CLOUDFLARE_TURNSTILE_SECRET_KEY
-          require_env PLAYWRIGHT_AUTH_EMAIL
-          require_env PLAYWRIGHT_AUTH_PASSWORD
-          require_env CLOUDFLARE_API_TOKEN
-          require_env CLOUDFLARE_ACCOUNT_ID
-
-          exit "$missing"
+        run: pnpm run release:preflight
 
       - name: 🚨 Lint code
         run: pnpm run lint:ci

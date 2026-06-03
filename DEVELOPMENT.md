@@ -193,13 +193,13 @@ pnpm test:e2e
 
 Use this for route-level behavior, public page smoke tests, and user-facing flows.
 
-Authenticated e2e tests require `PLAYWRIGHT_AUTH_EMAIL` and `PLAYWRIGHT_AUTH_PASSWORD`:
+Authenticated e2e tests require `PLAYWRIGHT_AUTH_EMAIL` and `PLAYWRIGHT_AUTH_PASSWORD`. These credentials are required locally and in CI; authenticated e2e must fail instead of skipping when they are missing:
 
 ```bash
 pnpm test:e2e:auth
 ```
 
-The production deployment workflow treats these credentials as required release secrets. Pull request checks run authenticated e2e coverage when the secrets are available, and they warn when authenticated coverage is skipped.
+The production deployment workflow treats these credentials as required release secrets. Pull request checks fail when any e2e test is skipped.
 
 ## 9. Prisma and Generated Files
 
@@ -247,6 +247,14 @@ WRANGLER_LOG_PATH=.wrangler/logs pnpm deploy
 
 The GitHub production workflow sets `WRANGLER_LOG_PATH` automatically.
 
+Run the automated release preflight before public deployment:
+
+```bash
+pnpm run release:preflight
+```
+
+The preflight checks required release environment values, production URL formats, Wrangler vars, Worker secret declarations, R2 and Durable Object bindings, production routes, public route metadata, static production links, migration artifacts, and CI gates.
+
 ### Required Production Secrets
 
 Configure these GitHub Actions secrets before enabling the production deployment workflow:
@@ -259,8 +267,11 @@ Configure these GitHub Actions secrets before enabling the production deployment
 - `SUPABASE_SECRET_KEY`
 - `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`
 - `CLOUDFLARE_TURNSTILE_SECRET_KEY`
+- `CONTACT_ADMIN_EMAIL`
+- `CONTACT_FROM_EMAIL`
 - `PLAYWRIGHT_AUTH_EMAIL`
 - `PLAYWRIGHT_AUTH_PASSWORD`
+- `RESEND_API_KEY`
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
@@ -269,25 +280,24 @@ Also configure the required Cloudflare Worker secrets in the production Cloudfla
 - `DATABASE_URL`
 - `SUPABASE_SECRET_KEY`
 - `CLOUDFLARE_TURNSTILE_SECRET_KEY`
+- `CONTACT_ADMIN_EMAIL`
+- `CONTACT_FROM_EMAIL`
+- `RESEND_API_KEY`
 
 Do not put Cloudflare Worker secrets in `wrangler.jsonc`. The `secrets.required` section is a local declaration aid; it does not prove that the remote production environment already has those secrets.
 
-### Production Release Checklist
+### Production Release Gates
 
-Before deploying publicly, make sure:
+Before deploying publicly, the automated release gates must pass:
 
-- Wrangler is authenticated with the DTR Cloudflare account
-- required variables are defined in `wrangler.jsonc`
-- required secrets are configured in the target Cloudflare environment
-- the `R2_BUCKET` binding exists and points to the correct bucket
-- the `GROUP_SESSIONS` Durable Object binding and its migration are present in `wrangler.jsonc`
-- `pnpm cf-typegen` has been run after any environment changes
-- Supabase database migrations are applied to the production database and match `prisma/schema.prisma`
-- `PLAYWRIGHT_AUTH_EMAIL` and `PLAYWRIGHT_AUTH_PASSWORD` point to a stable production-safe test account
-- preview, staging, and production resources are separated or the shared-resource risk is explicitly accepted
-- `R2_PUBLIC_DOMAIN` resolves to the intended R2 public domain and uploaded avatar URLs are reachable
-- Turnstile site and secret keys match the deployed production hostname
-- public support, legal, SEO, and metadata requirements have been reviewed for the release
+- `pnpm run release:preflight`
+- `pnpm run lint:ci`
+- `pnpm run test:unit`
+- `pnpm run test:e2e`
+- `pnpm run test:e2e:auth`
+- `WRANGLER_LOG_PATH=.wrangler/logs pnpm run build`
+
+If a release gate fails, fix the repository, environment, or deployment resource configuration instead of bypassing the gate.
 
 ## Recommended Before Opening a PR
 

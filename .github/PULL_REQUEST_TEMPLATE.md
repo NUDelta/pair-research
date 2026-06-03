@@ -8,6 +8,7 @@ Describe what changed and why.
 
 ## Validation
 
+- [ ] `pnpm run release:preflight`
 - [ ] `pnpm run lint:ci`
 - [ ] `pnpm run test:unit`
 - [ ] `pnpm run test:e2e`
@@ -30,13 +31,10 @@ List any checks that were intentionally skipped and why:
 ## Release and Data Safety
 
 - [ ] No secrets, cookies, tokens, or private environment values are committed or logged
-- [ ] Database schema or migration impact is documented
-- [ ] Production database migration status was checked before deploy
-- [ ] Cloudflare bindings and required secrets are documented and configured
-- [ ] Preview, staging, and production resources are isolated where applicable
-- [ ] R2 public URL and custom domain behavior were verified when upload behavior changed
+- [ ] Database schema changes include migration artifacts or are intentionally absent
+- [ ] Cloudflare bindings, required secrets, R2, Durable Objects, public routes, and CI gates pass release preflight
 - [ ] Auth, authorization, and redirect behavior were reviewed when touched
-- [ ] Legal, support, SEO, analytics, or public metadata changes were reviewed when public pages changed
+- [ ] Legal, support, SEO, analytics, or public metadata changes pass automated tests or preflight when public pages changed
 
 ## Risks and Follow-Ups
 

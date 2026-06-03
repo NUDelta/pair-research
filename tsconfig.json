@@ -25,6 +25,7 @@
     "tests/**/*.ts",
     "tests/**/*.tsx",
     "e2e/**/*.ts",
+    "scripts/**/*.ts",
     "vite.config.ts",
     "playwright.config.ts",
     "prisma.config.ts",
