@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getMemberRemovalError } from '@/features/groups/lib/groupManagementRules'
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
+import { createUserSafeActionError, getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { removeGroupMemberSchema } from '../../schemas/groupManagement'
 import { findManagedGroup, withSerializableRetry } from './groupManagement'
@@ -66,15 +67,15 @@ export const removeGroupMember = createServerFn({ method: 'POST' })
           ])
 
           if (actorMembership === null || !hasGroupManagementAccess(actorMembership.permission)) {
-            throw new Error('Only group managers can remove members.')
+            throw createUserSafeActionError('Only group managers can remove members.')
           }
 
           if (group === null) {
-            throw new Error('Group not found.')
+            throw createUserSafeActionError('Group not found.')
           }
 
           if (targetMembership === null) {
-            throw new Error('Group member not found.')
+            throw createUserSafeActionError('Group member not found.')
           }
 
           const removalError = getMemberRemovalError({
@@ -90,7 +91,7 @@ export const removeGroupMember = createServerFn({ method: 'POST' })
           })
 
           if (removalError !== null) {
-            throw new Error(removalError)
+            throw createUserSafeActionError(removalError)
           }
 
           const currentPoolTasks = await tx.task.findMany({
@@ -129,7 +130,7 @@ export const removeGroupMember = createServerFn({ method: 'POST' })
           })
 
           if (targetTask?.pairing_id !== null && targetTask?.pairing_id !== undefined) {
-            throw new Error('Reset the active pairing before removing this member.')
+            throw createUserSafeActionError('Reset the active pairing before removing this member.')
           }
 
           if (targetTask !== null) {
@@ -173,7 +174,7 @@ export const removeGroupMember = createServerFn({ method: 'POST' })
       console.error('[REMOVE_GROUP_MEMBER]', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to remove the group member.',
+        message: getActionErrorMessage(error, 'Failed to remove the group member.'),
       }
     }
   })

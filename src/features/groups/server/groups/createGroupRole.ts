@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { normalizeRoleTitle } from '@/features/groups/lib/groupNormalization'
+import { createUserSafeActionError, getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { createGroupRoleSchema } from '../../schemas/groupManagement'
 import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
@@ -35,7 +36,7 @@ export const createGroupRole = createServerFn({ method: 'POST' })
           })
 
           if (existingRoles.some(role => role.title.trim().toLowerCase() === normalizedTitle.toLowerCase())) {
-            throw new Error('A role with that title already exists in this group.')
+            throw createUserSafeActionError('A role with that title already exists in this group.')
           }
 
           await tx.group_role.create({
@@ -55,7 +56,7 @@ export const createGroupRole = createServerFn({ method: 'POST' })
       console.error('[CREATE_GROUP_ROLE]', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to create the role.',
+        message: getActionErrorMessage(error, 'Failed to create the role.'),
       }
     }
   })

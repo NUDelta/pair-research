@@ -1,6 +1,7 @@
 import type { TurnstileAwareActionResponse } from '@/shared/turnstile/constants'
 import { createServerFn } from '@tanstack/react-start'
 import { groupSchema } from '@/features/groups/schemas/groupForm'
+import { createUserSafeActionError, getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
@@ -55,7 +56,7 @@ export const createGroup = createServerFn({ method: 'POST' })
         })
 
       if (!roles.some(role => role.title === assignedRole)) {
-        throw new Error('Assigned role must be one of the roles')
+        throw createUserSafeActionError('Assigned role must be one of the roles')
       }
 
       const memberEmailTitlesMap = normalizedMembers.reduce((acc, member) => {
@@ -163,16 +164,9 @@ export const createGroup = createServerFn({ method: 'POST' })
     }
     catch (error_) {
       console.error(error_)
-      if (error_ instanceof Error) {
-        return {
-          success: false,
-          message: error_.message,
-        }
-      }
-
       return {
         success: false,
-        message: 'Failed to create group. Please try again.',
+        message: getActionErrorMessage(error_, 'Failed to create group. Please try again.'),
       }
     }
   })

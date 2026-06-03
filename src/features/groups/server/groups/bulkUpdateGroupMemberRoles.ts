@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getBulkMemberRoleUpdateError } from '@/features/groups/lib/groupManagementRules'
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
+import { getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { bulkUpdateGroupMemberRolesSchema } from '../../schemas/groupManagement'
 import { findManagedGroup, withSerializableRetry } from './groupManagement'
@@ -134,7 +135,7 @@ export const bulkUpdateGroupMemberRoles = createServerFn({ method: 'POST' })
       console.error('[BULK_UPDATE_GROUP_MEMBER_ROLES]', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to update the selected member roles.',
+        message: getActionErrorMessage(error, 'Failed to update the selected member roles.'),
       }
     }
   })
