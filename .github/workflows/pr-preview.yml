@@ -29,6 +29,7 @@ jobs:
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
       CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+      WRANGLER_LOG_PATH: .wrangler/logs
 
     steps:
       - name: 📂 Checkout
@@ -91,7 +92,6 @@ jobs:
             const previewUrl = process.env.PREVIEW_URL || "";
             const result = process.env.WRANGLER_RESULT || "skipped";
             const icon = result === "success" ? "✅" : result === "failure" ? "❌" : "⏭️";
-
             const body = [
               marker,
               "### 🌐 Pair Research PR Preview",

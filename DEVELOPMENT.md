@@ -199,6 +199,8 @@ Authenticated e2e tests require `PLAYWRIGHT_AUTH_EMAIL` and `PLAYWRIGHT_AUTH_PAS
 pnpm test:e2e:auth
 ```
 
+The production deployment workflow treats these credentials as required release secrets. Pull request checks run authenticated e2e coverage when the secrets are available, and they warn when authenticated coverage is skipped.
+
 ## 9. Prisma and Generated Files
 
 If you change the Prisma schema, regenerate the Prisma client:
@@ -237,7 +239,42 @@ The app deploys to Cloudflare Workers with Wrangler:
 pnpm deploy
 ```
 
-Before deploying, make sure:
+Wrangler should write logs inside the repository instead of a user-level preferences directory:
+
+```bash
+WRANGLER_LOG_PATH=.wrangler/logs pnpm deploy
+```
+
+The GitHub production workflow sets `WRANGLER_LOG_PATH` automatically.
+
+### Required Production Secrets
+
+Configure these GitHub Actions secrets before enabling the production deployment workflow:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SITE_BASE_URL`
+- `R2_PUBLIC_DOMAIN`
+- `DATABASE_URL`
+- `SUPABASE_SECRET_KEY`
+- `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`
+- `CLOUDFLARE_TURNSTILE_SECRET_KEY`
+- `PLAYWRIGHT_AUTH_EMAIL`
+- `PLAYWRIGHT_AUTH_PASSWORD`
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Also configure the required Cloudflare Worker secrets in the production Cloudflare environment:
+
+- `DATABASE_URL`
+- `SUPABASE_SECRET_KEY`
+- `CLOUDFLARE_TURNSTILE_SECRET_KEY`
+
+Do not put Cloudflare Worker secrets in `wrangler.jsonc`. The `secrets.required` section is a local declaration aid; it does not prove that the remote production environment already has those secrets.
+
+### Production Release Checklist
+
+Before deploying publicly, make sure:
 
 - Wrangler is authenticated with the DTR Cloudflare account
 - required variables are defined in `wrangler.jsonc`
@@ -245,6 +282,12 @@ Before deploying, make sure:
 - the `R2_BUCKET` binding exists and points to the correct bucket
 - the `GROUP_SESSIONS` Durable Object binding and its migration are present in `wrangler.jsonc`
 - `pnpm cf-typegen` has been run after any environment changes
+- Supabase database migrations are applied to the production database and match `prisma/schema.prisma`
+- `PLAYWRIGHT_AUTH_EMAIL` and `PLAYWRIGHT_AUTH_PASSWORD` point to a stable production-safe test account
+- preview, staging, and production resources are separated or the shared-resource risk is explicitly accepted
+- `R2_PUBLIC_DOMAIN` resolves to the intended R2 public domain and uploaded avatar URLs are reachable
+- Turnstile site and secret keys match the deployed production hostname
+- public support, legal, SEO, and metadata requirements have been reviewed for the release
 
 ## Recommended Before Opening a PR
 

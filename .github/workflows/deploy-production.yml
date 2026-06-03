@@ -28,6 +28,9 @@ jobs:
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
       CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+      PLAYWRIGHT_AUTH_EMAIL: ${{ secrets.PLAYWRIGHT_AUTH_EMAIL }}
+      PLAYWRIGHT_AUTH_PASSWORD: ${{ secrets.PLAYWRIGHT_AUTH_PASSWORD }}
+      WRANGLER_LOG_PATH: .wrangler/logs
 
     steps:
       - name: 📂 Checkout code
@@ -38,14 +41,51 @@ jobs:
       - name: 🧱 Setup Node and pnpm
         uses: ./.github/actions/setup-node-pnpm
 
-      - name: 🚨 Lint Code
+      - name: 🔐 Validate release secrets
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=0
+
+          require_env() {
+            local name="$1"
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required production release secret: ${name}"
+              missing=1
+            fi
+          }
+
+          require_env VITE_SUPABASE_URL
+          require_env VITE_SUPABASE_PUBLISHABLE_KEY
+          require_env VITE_SITE_BASE_URL
+          require_env R2_PUBLIC_DOMAIN
+          require_env DATABASE_URL
+          require_env SUPABASE_SECRET_KEY
+          require_env VITE_CLOUDFLARE_TURNSTILE_SITE_KEY
+          require_env CLOUDFLARE_TURNSTILE_SECRET_KEY
+          require_env PLAYWRIGHT_AUTH_EMAIL
+          require_env PLAYWRIGHT_AUTH_PASSWORD
+          require_env CLOUDFLARE_API_TOKEN
+          require_env CLOUDFLARE_ACCOUNT_ID
+
+          exit "$missing"
+
+      - name: 🚨 Lint code
         run: pnpm run lint:ci
 
       - name: 🎭 Install Playwright browsers
         run: pnpm run test:e2e:install
 
-      - name: 🧪 Run tests
-        run: pnpm run test
+      - name: 🧪 Run unit tests
+        run: pnpm run test:unit
+
+      - name: 🎭 Run anonymous E2E tests
+        run: pnpm run test:e2e
+
+      - name: 🔐 Run authenticated E2E tests
+        run: pnpm run test:e2e:auth
 
       - name: ✅ Run build
         run: pnpm run build

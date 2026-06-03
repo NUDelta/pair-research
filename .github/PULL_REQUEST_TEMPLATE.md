@@ -1,72 +1,43 @@
-## ✨ Features Updates && 🐛 Bug Fix && 🛠 Code Refactor && 📦 Dependency Update
+## Summary
 
-### 📌 Description
+Describe what changed and why.
 
-<!-- Clearly describe the feature you have added or updated. -->
-<!-- Explain why this feature is necessary. -->
+## Key Changes
 
-### 🔍 Feature Changes
+-
 
-- [ ] New component or page
-- [ ] API update
-- [ ] UI/UX improvement
-- [ ] Other: ...
+## Validation
 
-### 🔄 Refactor Changes
+- [ ] `pnpm run lint:ci`
+- [ ] `pnpm run test:unit`
+- [ ] `pnpm run test:e2e`
+- [ ] `pnpm run test:e2e:auth`
+- [ ] `pnpm run build`
 
-- [ ] Code optimization
-- [ ] Improve maintainability
-- [ ] Remove unnecessary code
-- [ ] Other: ...
+List any checks that were intentionally skipped and why:
 
-### 🛠 Bug Fixes
+-
 
-- [ ] Fixed issue: ...
-- [ ] Improved error handling
-- [ ] Performance fix
-- [ ] Other: ...
+## UI Verification
 
-### ✅ Checklist
+- [ ] Loading state checked
+- [ ] Empty state checked
+- [ ] Error state checked
+- [ ] Keyboard and focus behavior checked
+- [ ] Mobile layout checked
+- [ ] Not applicable
 
-1. Feature Updates:
+## Release and Data Safety
 
-- [ ] Code follows project coding style.
-- [ ] Tested in the TanStack Start + Vite environment.
-- [ ] Relevant documentation is updated.
+- [ ] No secrets, cookies, tokens, or private environment values are committed or logged
+- [ ] Database schema or migration impact is documented
+- [ ] Production database migration status was checked before deploy
+- [ ] Cloudflare bindings and required secrets are documented and configured
+- [ ] Preview, staging, and production resources are isolated where applicable
+- [ ] R2 public URL and custom domain behavior were verified when upload behavior changed
+- [ ] Auth, authorization, and redirect behavior were reviewed when touched
+- [ ] Legal, support, SEO, analytics, or public metadata changes were reviewed when public pages changed
 
-2. Bug Fixes:
+## Risks and Follow-Ups
 
-- [ ] Bug has been reproduced and verified.
-- [ ] Fix does not introduce new issues.
-- [ ] Added necessary tests.
-
-3. Code Refactor:
-
-- [ ] No breaking changes introduced.
-- [ ] Performance improvement validated.
-- [ ] Documentation updated if necessary.
-
-4. Dependency Updates:
-
-- [ ] Verified functionality after update.
-- [ ] Checked for security vulnerabilities using `npm audit` / `pnpm audit`.
-
-### 📜 Dependency Changes
-
-| Dependency Name       | Old Version | New Version | Reason                                    |
-| --------------------- | ----------- | ----------- | ----------------------------------------- |
-| @tanstack/react-start | 1.167.41    | 1.167.42    | Upgrade to latest stable version          |
-| React                 | 19.0.0      | 19.1.0      | Required for Tanstack Start compatibility |
-| Tailwind CSS          | 4.0.0       | 4.0.1       | Performance improvements                  |
-
-### 📝 Steps to Reproduce (before fix)
-
-<!-- Provide steps for reproducing the original issue -->
-
-### 💬 Additional Notes
-
-<!-- Add any extra context -->
-
-### 📸 Screenshots (if applicable)
-
-<!-- Attach screenshots or GIFs here -->
+-

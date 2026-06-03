@@ -60,6 +60,9 @@ jobs:
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
       CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+      PLAYWRIGHT_AUTH_EMAIL: ${{ secrets.PLAYWRIGHT_AUTH_EMAIL }}
+      PLAYWRIGHT_AUTH_PASSWORD: ${{ secrets.PLAYWRIGHT_AUTH_PASSWORD }}
+      WRANGLER_LOG_PATH: .wrangler/logs
 
     outputs:
       e2e_passed: ${{ steps.summarize.outputs.e2e_passed }}
@@ -172,6 +175,10 @@ jobs:
           fs.appendFileSync(outPath, `failed_e2e_tests=${JSON.stringify(failedTests)}\n`);
           EOF
 
+      - name: ⚠️ Warn if authenticated E2E was skipped
+        if: always() && steps.summarize.outputs.e2e_skipped != '0'
+        run: echo "::warning::Some E2E tests were skipped. Authenticated PR coverage requires PLAYWRIGHT_AUTH_EMAIL and PLAYWRIGHT_AUTH_PASSWORD secrets."
+
       - name: ❌ Fail E2E job if tests failed
         if: steps.run_e2e.outcome == 'failure'
         run: exit 1
@@ -191,6 +198,7 @@ jobs:
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
       CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+      WRANGLER_LOG_PATH: .wrangler/logs
 
     steps:
       - name: 📂 Checkout
