@@ -15,9 +15,11 @@ import ErrorPageScaffold from './ErrorPageScaffold'
 
 export default function GlobalErrorPage({
   error,
+  exposeTechnicalDetails = import.meta.env.DEV,
   reset,
 }: {
   error: unknown
+  exposeTechnicalDetails?: boolean
   reset: () => void
 }) {
   const normalizedError = useMemo(() => normalizeError(error), [error])
@@ -28,9 +30,9 @@ export default function GlobalErrorPage({
     ? null
     : normalizedError.message
   const hasDownloadMessage = downloadMessage !== null
-  const hasTechnicalSummary = technicalSummary !== null
-  const hasAdditionalDetails = normalizedError.details !== undefined && normalizedError.details !== ''
-  const hasStack = normalizedError.stack !== undefined && normalizedError.stack !== ''
+  const hasTechnicalSummary = exposeTechnicalDetails && technicalSummary !== null
+  const hasAdditionalDetails = exposeTechnicalDetails && normalizedError.details !== undefined && normalizedError.details !== ''
+  const hasStack = exposeTechnicalDetails && normalizedError.stack !== undefined && normalizedError.stack !== ''
 
   const handleDownload = () => {
     try {
@@ -55,7 +57,7 @@ export default function GlobalErrorPage({
             This screen hit an unexpected problem before it finished loading.
           </p>
           <p>
-            Try again first. If the problem keeps happening, download the support report and share it with the team so they can trace the failure faster.
+            Try again first. If the problem keeps happening, share the support reference with the team so they can trace the failure faster.
           </p>
         </>
       )}
@@ -66,10 +68,14 @@ export default function GlobalErrorPage({
             <RotateCcw aria-hidden="true" />
             Try again
           </Button>
-          <Button type="button" variant="outline" onClick={handleDownload}>
-            <Download aria-hidden="true" />
-            Download report
-          </Button>
+          {exposeTechnicalDetails
+            ? (
+                <Button type="button" variant="outline" onClick={handleDownload}>
+                  <Download aria-hidden="true" />
+                  Download report
+                </Button>
+              )
+            : null}
           <Link
             to="/"
             className={cn(buttonVariants({ variant: 'secondary' }), 'no-underline')}
@@ -92,7 +98,9 @@ export default function GlobalErrorPage({
               {' '}
               <span className="font-mono text-xs font-semibold">{reportId}</span>
             </li>
-            <li>The support report file from the button above.</li>
+            {exposeTechnicalDetails
+              ? <li>The support report file from the button above.</li>
+              : null}
             <li>What you were trying to do when the page failed.</li>
           </ul>
           {hasDownloadMessage
@@ -131,45 +139,51 @@ export default function GlobalErrorPage({
           <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
             <p className="font-medium text-foreground">Recommended next step</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Retry this page first. If it fails again, download the report before you navigate away so the current error details stay attached.
+              {exposeTechnicalDetails
+                ? 'Retry this page first. If it fails again, download the report before you navigate away so the current error details stay attached.'
+                : 'Retry this page first. If it fails again, share the support reference with the team.'}
             </p>
           </div>
 
-          <details className="rounded-2xl border border-border/70 bg-background/80 p-4">
-            <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
-              Technical details
-            </summary>
-            <dl className="mt-4 space-y-3 text-sm text-muted-foreground">
-              <div>
-                <dt className="font-medium text-foreground">Error type</dt>
-                <dd>{normalizedError.name}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-foreground">Thrown value kind</dt>
-                <dd>{normalizedError.thrownType}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-foreground">Message</dt>
-                <dd className="break-words">{normalizedError.message}</dd>
-              </div>
-              {hasAdditionalDetails
-                ? (
+          {exposeTechnicalDetails
+            ? (
+                <details className="rounded-2xl border border-border/70 bg-background/80 p-4">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+                    Technical details
+                  </summary>
+                  <dl className="mt-4 space-y-3 text-sm text-muted-foreground">
                     <div>
-                      <dt className="font-medium text-foreground">Additional context</dt>
-                      <dd className="break-words whitespace-pre-wrap">{normalizedError.details}</dd>
+                      <dt className="font-medium text-foreground">Error type</dt>
+                      <dd>{normalizedError.name}</dd>
                     </div>
-                  )
-                : null}
-            </dl>
+                    <div>
+                      <dt className="font-medium text-foreground">Thrown value kind</dt>
+                      <dd>{normalizedError.thrownType}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium text-foreground">Message</dt>
+                      <dd className="break-words">{normalizedError.message}</dd>
+                    </div>
+                    {hasAdditionalDetails
+                      ? (
+                          <div>
+                            <dt className="font-medium text-foreground">Additional context</dt>
+                            <dd className="break-words whitespace-pre-wrap">{normalizedError.details}</dd>
+                          </div>
+                        )
+                      : null}
+                  </dl>
 
-            {hasStack
-              ? (
-                  <pre className="mt-4 max-h-56 overflow-auto rounded-xl border border-border/70 bg-muted/50 p-3 text-xs leading-5 whitespace-pre-wrap text-muted-foreground">
-                    {normalizedError.stack}
-                  </pre>
-                )
-              : null}
-          </details>
+                  {hasStack
+                    ? (
+                        <pre className="mt-4 max-h-56 overflow-auto rounded-xl border border-border/70 bg-muted/50 p-3 text-xs leading-5 whitespace-pre-wrap text-muted-foreground">
+                          {normalizedError.stack}
+                        </pre>
+                      )
+                    : null}
+                </details>
+              )
+            : null}
         </div>
       )}
     />
