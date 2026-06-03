@@ -10,6 +10,7 @@ export type AccountAvatarSource = z.infer<typeof accountAvatarSourceSchema>
 interface ResolveAvatarUpdateOptions {
   avatarSource: AccountAvatarSource
   contentType?: string
+  currentAvatarUrl?: string | null
   email?: string
   fullName?: string
   imageBuffer?: ArrayBuffer
@@ -24,6 +25,7 @@ interface ResolvedAvatarUpdate {
 export const resolveAvatarUpdate = async ({
   avatarSource,
   contentType,
+  currentAvatarUrl,
   email,
   fullName,
   imageBuffer,
@@ -37,7 +39,7 @@ export const resolveAvatarUpdate = async ({
   }
 
   if (avatarSource === 'none') {
-    await deleteStoredAvatar(userId)
+    await deleteStoredAvatar(userId, { currentAvatarUrl })
     return {
       avatarUrl: null,
       shouldUpdateAvatar: true,
@@ -49,7 +51,7 @@ export const resolveAvatarUpdate = async ({
       throw new Error('Avatar email is required')
     }
 
-    await deleteStoredAvatar(userId)
+    await deleteStoredAvatar(userId, { currentAvatarUrl })
 
     return {
       avatarUrl: await gravatarLink(email, fullName),
@@ -61,8 +63,14 @@ export const resolveAvatarUpdate = async ({
     throw new Error('Avatar image data is required')
   }
 
+  const avatarUrl = await uploadAvatarFromArrayBuffer(userId, imageBuffer, contentType)
+  await deleteStoredAvatar(userId, {
+    currentAvatarUrl,
+    preserveAvatarUrl: avatarUrl,
+  })
+
   return {
-    avatarUrl: await uploadAvatarFromArrayBuffer(userId, imageBuffer, contentType),
+    avatarUrl,
     shouldUpdateAvatar: true,
   }
 }

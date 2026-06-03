@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { deleteStoredAvatar, getStoredAvatarKeys } from './deleteAvatar'
+import { deleteStoredAvatar, getStoredAvatarKeyFromUrl, getStoredAvatarKeys } from './deleteAvatar'
 
 const deleteObject = vi.fn()
 
@@ -19,6 +19,14 @@ describe('deleteStoredAvatar', () => {
     ])
   })
 
+  it('derives the current stored avatar key from owned public URLs', () => {
+    expect(getStoredAvatarKeyFromUrl('user-123', 'https://r2.example.com/images/avatars/user-123-AbCd12.webp')).toBe(
+      'images/avatars/user-123-AbCd12.webp',
+    )
+    expect(getStoredAvatarKeyFromUrl('user-123', 'https://r2.example.com/images/avatars/other-user.webp')).toBeNull()
+    expect(getStoredAvatarKeyFromUrl('user-123', 'not-a-url')).toBeNull()
+  })
+
   it('attempts to delete every stored avatar variant', async () => {
     deleteObject.mockResolvedValue(undefined)
 
@@ -27,6 +35,19 @@ describe('deleteStoredAvatar', () => {
     expect(deleteObject).toHaveBeenCalledTimes(2)
     expect(deleteObject).toHaveBeenNthCalledWith(1, 'images/avatars/user-123.webp')
     expect(deleteObject).toHaveBeenNthCalledWith(2, 'images/avatars/user-123.avif')
+  })
+
+  it('deletes a previous random-key avatar while preserving a new deterministic avatar', async () => {
+    deleteObject.mockResolvedValue(undefined)
+
+    await deleteStoredAvatar('user-123', {
+      currentAvatarUrl: 'https://r2.example.com/images/avatars/user-123-old.webp',
+      preserveAvatarUrl: 'https://r2.example.com/images/avatars/user-123.webp',
+    })
+
+    expect(deleteObject).toHaveBeenCalledTimes(2)
+    expect(deleteObject).toHaveBeenNthCalledWith(1, 'images/avatars/user-123.avif')
+    expect(deleteObject).toHaveBeenNthCalledWith(2, 'images/avatars/user-123-old.webp')
   })
 
   it('swallows delete failures so avatar clearing still completes', async () => {
