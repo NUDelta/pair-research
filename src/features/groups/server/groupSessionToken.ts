@@ -1,15 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
-import { z } from 'zod'
 import { checkMembership } from '@/features/groups/server/checkMembership'
+import { groupIdInputSchema } from '@/features/groups/server/groupActionInputs'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { getRequiredServerEnv } from '@/shared/server/env.server'
 import { getUser } from '@/shared/supabase/server'
 
 const TOKEN_TTL_SECONDS = 5 * 60
-
-const tokenInputSchema = z.object({
-  groupId: z.string(),
-})
 
 interface GroupSessionTokenPayload {
   groupId: string
@@ -117,7 +113,7 @@ export async function verifyGroupSessionTokenValue(
 }
 
 export const createGroupSessionToken = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(tokenInputSchema, data))
+  .inputValidator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
   .handler(async ({ data }) => {
     const user = await getUser()
     const membership = await checkMembership(user.id, data.groupId)

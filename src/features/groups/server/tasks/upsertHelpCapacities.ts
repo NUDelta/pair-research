@@ -1,52 +1,19 @@
 import { createServerFn } from '@tanstack/react-start'
+import { upsertHelpCapacitiesInputSchema } from '@/features/groups/server/groupActionInputs'
+import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 export const upsertHelpCapacities = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => {
-    if (
-      typeof data !== 'object'
-      || data === null
-      || !('groupId' in data)
-      || !('updates' in data)
-      || !Array.isArray(data.updates)
-    ) {
-      throw new Error('Group ID and updates are required')
-    }
-
-    return {
-      groupId: String(data.groupId),
-      updates: data.updates.map(update => ({
-        taskId: String((update as { taskId: unknown }).taskId),
-        capacity:
-          typeof (update as { capacity?: unknown }).capacity === 'number'
-            ? (update as { capacity: number }).capacity
-            : undefined,
-      })),
-    }
-  })
+  .inputValidator((data: unknown) => parseValidatedInput(upsertHelpCapacitiesInputSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')
-      const validUpdates = data.updates.filter(
-        update => update.capacity !== undefined && update.capacity >= 1 && update.capacity <= 5,
-      )
-
-      if (validUpdates.length === 0) {
-        return {
-          success: false,
-          message: 'No valid capacities to update.',
-        }
-      }
-
       const user = await getUser()
       const { getGroupSession } = await import('@/shared/server/cloudflare/bindings.server')
 
       return await getGroupSession(data.groupId).upsertRatings({
         groupId: data.groupId,
         userId: user.id,
-        updates: validUpdates.map(update => ({
-          taskId: update.taskId,
-          capacity: update.capacity as number,
-        })),
+        updates: data.updates,
       })
     }
     catch (error_) {

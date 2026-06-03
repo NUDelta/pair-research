@@ -1,14 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
+import { groupIdInputSchema } from '@/features/groups/server/groupActionInputs'
+import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 export const getSingleGroup = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown) => {
-    if (typeof data !== 'object' || data === null || !('groupId' in data)) {
-      throw new Error('Group ID is required')
-    }
-
-    return { groupId: String(data.groupId) }
-  })
+  .inputValidator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
   .handler(async ({ data }) => {
     const { groupId } = data
 

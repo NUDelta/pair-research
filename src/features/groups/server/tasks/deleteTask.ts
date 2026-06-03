@@ -1,21 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
+import { deleteTaskInputSchema } from '@/features/groups/server/groupActionInputs'
+import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 export const deleteTask = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => {
-    if (
-      typeof data !== 'object'
-      || data === null
-      || !('taskId' in data)
-      || !('groupId' in data)
-    ) {
-      throw new Error('Task ID and group ID are required')
-    }
-
-    return {
-      taskId: String(data.taskId),
-      groupId: String(data.groupId),
-    }
-  })
+  .inputValidator((data: unknown) => parseValidatedInput(deleteTaskInputSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')
