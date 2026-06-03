@@ -19,18 +19,6 @@ describe('verifyTurnstileToken', () => {
     vi.unstubAllGlobals()
   })
 
-  it('bypasses verification when skipVerification is enabled', async () => {
-    const { verifyTurnstileToken } = await import('./server')
-    const result = await verifyTurnstileToken({
-      action: 'login',
-      skipVerification: true,
-      token: 'token',
-    })
-
-    expect(result.success).toBe(true)
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
   it('accepts a valid verification response with a matching action', async () => {
     fetchMock.mockResolvedValue({
       ok: true,

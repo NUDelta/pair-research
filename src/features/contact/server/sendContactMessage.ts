@@ -10,7 +10,6 @@ import { SITE_BASE_URL } from '@/shared/config/constants'
 import { getRequiredServerEnv } from '@/shared/server/env.server'
 import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
-import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
 
 const resendEmailResponseSchema = z.object({
   id: z.string().optional(),
@@ -81,7 +80,6 @@ export const sendContactMessage = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<TurnstileAwareActionResponse> => {
     const turnstile = await verifyTurnstileToken({
       action: 'contact',
-      skipVerification: isTurnstileVerificationBypassed(),
       token: data.turnstileToken,
     })
 

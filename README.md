@@ -23,7 +23,6 @@
 - Cloudflare R2 for avatar storage
 - Cloudflare Turnstile for bot protection
 - Vitest + Testing Library for unit and component tests
-- Playwright for end-to-end tests
 
 ## Project structure
 
@@ -37,7 +36,6 @@ src/
     home/      Public landing page
   shared/      Shared UI, config, server helpers, styles
 prisma/        Prisma schema and generated client
-e2e/           Playwright tests
 tests/         Test setup and mocks
 ```
 

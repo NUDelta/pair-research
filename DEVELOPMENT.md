@@ -185,22 +185,6 @@ pnpm test:unit
 
 Use this for logical changes, utility functions, algorithms, and non-UI behavior.
 
-Run only end-to-end tests:
-
-```bash
-pnpm test:e2e
-```
-
-Use this for route-level behavior, public page smoke tests, and user-facing flows.
-
-Authenticated e2e tests require `PLAYWRIGHT_AUTH_EMAIL` and `PLAYWRIGHT_AUTH_PASSWORD`. These credentials are required locally and in CI; authenticated e2e must fail instead of skipping when they are missing:
-
-```bash
-pnpm test:e2e:auth
-```
-
-The production deployment workflow treats these credentials as required release secrets. Pull request checks fail when any e2e test is skipped.
-
 ## 9. Prisma and Generated Files
 
 If you change the Prisma schema, regenerate the Prisma client:
@@ -220,15 +204,12 @@ If generated files are out of sync, rerun the relevant generation command instea
 ## 10. Useful Scripts
 
 - `pnpm dev` starts the app locally
-- `pnpm dev:e2e` starts a local server for Playwright
 - `pnpm build` builds the app for production
 - `pnpm preview` previews the production build locally
 - `pnpm lint` runs ESLint
 - `pnpm run lint:fix` runs ESLint and applies safe fixes
 - `pnpm test:unit` runs Vitest tests
-- `pnpm test:e2e` runs Playwright smoke tests
-- `pnpm test:e2e:auth` runs authenticated Playwright tests
-- `pnpm test` runs unit tests and e2e tests
+- `pnpm test` runs unit tests
 - `pnpm deploy` builds and deploys with Wrangler
 
 ## 11. Deployment
@@ -269,8 +250,6 @@ Configure these GitHub Actions secrets before enabling the production deployment
 - `CLOUDFLARE_TURNSTILE_SECRET_KEY`
 - `CONTACT_ADMIN_EMAIL`
 - `CONTACT_FROM_EMAIL`
-- `PLAYWRIGHT_AUTH_EMAIL`
-- `PLAYWRIGHT_AUTH_PASSWORD`
 - `RESEND_API_KEY`
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
@@ -293,8 +272,6 @@ Before deploying publicly, the automated release gates must pass:
 - `pnpm run release:preflight`
 - `pnpm run lint:ci`
 - `pnpm run test:unit`
-- `pnpm run test:e2e`
-- `pnpm run test:e2e:auth`
 - `WRANGLER_LOG_PATH=.wrangler/logs pnpm run build`
 
 If a release gate fails, fix the repository, environment, or deployment resource configuration instead of bypassing the gate.

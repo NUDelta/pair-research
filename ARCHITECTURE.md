@@ -26,7 +26,6 @@ src/
   features/    Domain code grouped by product area
   shared/      Cross-feature UI, config, server helpers, styles, and utilities
 prisma/        Prisma schema and generated client
-e2e/           Playwright end-to-end tests
 tests/         Vitest setup and shared test support
 ```
 

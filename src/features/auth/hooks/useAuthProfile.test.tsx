@@ -4,9 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthProfile } from './useAuthProfile'
 
 const {
-  mockGetBrowserE2EAuthMode,
   getOrCreateProfileToken,
-  mockIsE2EAnonymousAuthMode,
   mockGetOrCreateProfileFn,
   mockGetUser,
   mockOnAuthStateChange,
@@ -14,9 +12,7 @@ const {
   mockUpdateProfileFn,
   updateProfileToken,
 } = vi.hoisted(() => ({
-  mockGetBrowserE2EAuthMode: vi.fn(),
   getOrCreateProfileToken: Symbol('getOrCreateProfile'),
-  mockIsE2EAnonymousAuthMode: vi.fn(),
   updateProfileToken: Symbol('updateProfile'),
   mockGetOrCreateProfileFn: vi.fn(),
   mockGetUser: vi.fn(),
@@ -59,9 +55,7 @@ vi.mock('@/shared/supabase/client', () => ({
   }),
 }))
 
-vi.mock('../lib/e2eAuth', () => ({
-  getBrowserE2EAuthMode: mockGetBrowserE2EAuthMode,
-  isE2EAnonymousAuthMode: mockIsE2EAnonymousAuthMode,
+vi.mock('../lib/authErrors', () => ({
   isMissingSupabaseSessionError: () => false,
 }))
 
@@ -98,8 +92,6 @@ describe('useAuthProfile', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     window.history.replaceState(null, '', '/')
-    mockGetBrowserE2EAuthMode.mockReturnValue(null)
-    mockIsE2EAnonymousAuthMode.mockReturnValue(false)
     mockOnAuthStateChange.mockReturnValue({
       data: {
         subscription: {
@@ -197,20 +189,5 @@ describe('useAuthProfile', () => {
     })
 
     expect(mockUpdateProfileFn).not.toHaveBeenCalled()
-  })
-
-  it('starts in a settled logged-out state for anonymous e2e mode', () => {
-    mockGetBrowserE2EAuthMode.mockReturnValue('anonymous')
-    mockIsE2EAnonymousAuthMode.mockReturnValue(true)
-
-    const setUserLoggedIn = vi.fn()
-    const { result } = renderHook(() => useAuthProfile(setUserLoggedIn))
-
-    expect(result.current.loading).toBe(false)
-    expect(result.current.profile).toEqual({
-      full_name: null,
-      avatar_url: null,
-    })
-    expect(setUserLoggedIn).toHaveBeenCalledWith(false)
   })
 })

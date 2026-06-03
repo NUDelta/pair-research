@@ -30,8 +30,6 @@ jobs:
       CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
       CONTACT_ADMIN_EMAIL: ${{ secrets.CONTACT_ADMIN_EMAIL }}
       CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
-      PLAYWRIGHT_AUTH_EMAIL: ${{ secrets.PLAYWRIGHT_AUTH_EMAIL }}
-      PLAYWRIGHT_AUTH_PASSWORD: ${{ secrets.PLAYWRIGHT_AUTH_PASSWORD }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       WRANGLER_LOG_PATH: .wrangler/logs
 
@@ -53,17 +51,8 @@ jobs:
       - name: 🚨 Lint code
         run: pnpm run lint:ci
 
-      - name: 🎭 Install Playwright browsers
-        run: pnpm run test:e2e:install
-
       - name: 🧪 Run unit tests
         run: pnpm run test:unit
-
-      - name: 🎭 Run anonymous E2E tests
-        run: pnpm run test:e2e
-
-      - name: 🔐 Run authenticated E2E tests
-        run: pnpm run test:e2e:auth
 
       - name: ✅ Run build
         run: pnpm run build

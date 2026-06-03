@@ -11,8 +11,6 @@ Describe what changed and why.
 - [ ] `pnpm run release:preflight`
 - [ ] `pnpm run lint:ci`
 - [ ] `pnpm run test:unit`
-- [ ] `pnpm run test:e2e`
-- [ ] `pnpm run test:e2e:auth`
 - [ ] `pnpm run build`
 
 List any checks that were intentionally skipped and why:

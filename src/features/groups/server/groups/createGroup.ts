@@ -5,7 +5,6 @@ import { createUserSafeActionError, getActionErrorMessage } from '@/features/gro
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
-import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
 import { buildCreateGroupData } from './buildCreateGroupData'
 import { ensureAuthUserForInvite, upsertInviteProfile } from './groupManagement'
 
@@ -16,7 +15,6 @@ export const createGroup = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<TurnstileAwareActionResponse> => {
     const turnstile = await verifyTurnstileToken({
       action: 'create-group',
-      skipVerification: isTurnstileVerificationBypassed(),
       token: data.turnstileToken,
     })
 

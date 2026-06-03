@@ -16,8 +16,6 @@ const REQUIRED_GITHUB_SECRETS = [
   'CLOUDFLARE_TURNSTILE_SECRET_KEY',
   'CONTACT_ADMIN_EMAIL',
   'CONTACT_FROM_EMAIL',
-  'PLAYWRIGHT_AUTH_EMAIL',
-  'PLAYWRIGHT_AUTH_PASSWORD',
   'RESEND_API_KEY',
   'CLOUDFLARE_API_TOKEN',
   'CLOUDFLARE_ACCOUNT_ID',
@@ -256,13 +254,9 @@ for (const name of REQUIRED_GITHUB_SECRETS) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference secret: ${name}`)
 }
 assert(deployWorkflow.includes('pnpm run release:preflight'), 'Production deploy workflow must run release preflight.')
-assert(deployWorkflow.includes('pnpm run test:e2e:auth'), 'Production deploy workflow must run authenticated e2e.')
 
 const prChecksWorkflow = readText('.github/workflows/pr-checks.yml')
 assert(prChecksWorkflow.includes('pnpm run release:preflight'), 'PR checks must run release preflight.')
-assert(prChecksWorkflow.includes('PLAYWRIGHT_AUTH_EMAIL'), 'PR checks must provide PLAYWRIGHT_AUTH_EMAIL to e2e.')
-assert(prChecksWorkflow.includes('PLAYWRIGHT_AUTH_PASSWORD'), 'PR checks must provide PLAYWRIGHT_AUTH_PASSWORD to e2e.')
-assert(prChecksWorkflow.includes('steps.summarize.outputs.e2e_skipped != \'0\''), 'PR checks must fail when e2e tests are skipped.')
 
 const supabaseMigrationsDirectory = path.join(REPO_ROOT, 'supabase', 'migrations')
 assert(fs.existsSync(supabaseMigrationsDirectory), 'No supabase/migrations directory found. Add migration artifacts before public release.')

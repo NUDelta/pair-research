@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       setupFiles: ['./tests/setup/vitest.setup.ts'],
       include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.{ts,tsx}'],
-      exclude: ['e2e/**', '.output/**', 'dist/**'],
+      exclude: ['.output/**', 'dist/**'],
       clearMocks: true,
       restoreMocks: true,
     },

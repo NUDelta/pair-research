@@ -8,7 +8,6 @@ import { SITE_BASE_URL } from '@/shared/config/constants'
 import { createClient } from '@/shared/supabase/server'
 import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
-import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
 
 const requestPasswordResetSchema = loginSchema.pick({ email: true })
   .merge(turnstileTokenSchema)
@@ -21,7 +20,6 @@ export const requestPasswordReset = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<TurnstileAwareActionResponse> => {
     const turnstile = await verifyTurnstileToken({
       action: 'forgot-password',
-      skipVerification: isTurnstileVerificationBypassed(),
       token: data.turnstileToken,
     })
 

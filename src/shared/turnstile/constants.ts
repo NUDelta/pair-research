@@ -21,7 +21,4 @@ export interface TurnstileAwareActionResponse extends ActionResponse {
   code?: TurnstileErrorCode
 }
 
-export const TURNSTILE_E2E_BYPASS_COOKIE_NAME = 'pair-research-e2e-turnstile'
-export const TURNSTILE_E2E_BYPASS_COOKIE_VALUE = 'bypass'
-
 export const TURNSTILE_TOKEN_TIMEOUT_MS = 12_000

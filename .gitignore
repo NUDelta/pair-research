@@ -13,8 +13,6 @@
 
 # testing
 /coverage
-/output/playwright
-/.playwright-mcp
 
 # Cloudflare
 /.wrangler

@@ -1,10 +1,7 @@
 import type { TurnstileServerValidationResponse } from '@marsidev/react-turnstile'
 import type { TurnstileAwareActionResponse } from './constants'
 import { z } from 'zod'
-import {
-  TURNSTILE_ERROR_CODES,
-
-} from './constants'
+import { TURNSTILE_ERROR_CODES } from './constants'
 
 const secretSchema = z.string().trim().min(1)
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
@@ -12,7 +9,6 @@ const CANONICAL_ALLOWED_TURNSTILE_HOSTNAMES = ['pairresearch.io', 'www.pairresea
 
 interface VerifyTurnstileTokenInput {
   action: string
-  skipVerification?: boolean
   token: string
 }
 
@@ -51,18 +47,8 @@ export function createTurnstileErrorResponse(message: string, code: TurnstileAwa
 
 export async function verifyTurnstileToken({
   action,
-  skipVerification = false,
   token,
 }: VerifyTurnstileTokenInput): Promise<VerifyTurnstileTokenResult> {
-  if (skipVerification) {
-    return {
-      success: true,
-      interactive: false,
-      message: 'Turnstile bypassed for e2e automation.',
-      errors: [],
-    }
-  }
-
   const secret = getTurnstileSecretKey()
   if (secret === '') {
     return {

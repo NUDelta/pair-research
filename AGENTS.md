@@ -14,7 +14,7 @@ Agents should follow `CONTRIBUTING.md` unless the user explicitly asks for a dif
 ## Repo Overview
 
 - This is a TanStack Start + Vite application, not a Next.js app. Treat older references to `src/app` or Next.js as stale unless the task specifically asks about legacy docs.
-- The app uses React 19, TypeScript, Tailwind CSS v4, shadcn/ui-style components, Prisma, Supabase, Cloudflare Workers, Cloudflare Durable Objects, Cloudflare R2, Vitest, Testing Library, and Playwright.
+- The app uses React 19, TypeScript, Tailwind CSS v4, shadcn/ui-style components, Prisma, Supabase, Cloudflare Workers, Cloudflare Durable Objects, Cloudflare R2, Vitest, and Testing Library.
 - Package manager: `pnpm`.
 
 ## Source Layout
@@ -32,7 +32,6 @@ Agents should follow `CONTRIBUTING.md` unless the user explicitly asks for a dif
   - `ui`: shadcn/ui-style primitives.
   - `components`: layout and branding components.
 - `tests/setup`: Vitest test setup.
-- `e2e`: Playwright coverage.
 - `prisma/schema.prisma`: canonical Prisma schema.
 - `src/routeTree.gen.ts`, `cloudflare-env.d.ts`, and `prisma/generated/client/**`: generated files. Do not hand-edit them unless the task is explicitly about generated output.
 
