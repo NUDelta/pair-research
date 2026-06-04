@@ -6,13 +6,8 @@ import { config as loadDotenv } from 'dotenv'
 loadDotenv({ path: '.env', quiet: true })
 
 const REQUIRED_RELEASE_ENV_VALUES = [
-  'VITE_SUPABASE_URL',
-  'VITE_SUPABASE_PUBLISHABLE_KEY',
-  'VITE_SITE_BASE_URL',
-  'R2_PUBLIC_DOMAIN',
   'DATABASE_URL',
   'SUPABASE_SECRET_KEY',
-  'VITE_CLOUDFLARE_TURNSTILE_SITE_KEY',
   'CLOUDFLARE_TURNSTILE_SECRET_KEY',
   'CONTACT_ADMIN_EMAIL',
   'CONTACT_FROM_EMAIL',
@@ -30,6 +25,7 @@ const REQUIRED_WRANGLER_VARS = [
   'VITE_SITE_BASE_URL',
   'R2_PUBLIC_DOMAIN',
   'VITE_CLOUDFLARE_TURNSTILE_SITE_KEY',
+  'VITE_GOOGLE_CLIENT_ID',
 ] as const
 
 const REQUIRED_WORKER_SECRETS = [
@@ -224,18 +220,33 @@ for (const name of REQUIRED_RELEASE_ENV_VALUES) {
   assert(hasEnvValue(name), `Missing required release environment value: ${name}`)
 }
 
-if (hasEnvValue('VITE_SITE_BASE_URL')) {
-  const siteUrl = parseUrl('VITE_SITE_BASE_URL', process.env.VITE_SITE_BASE_URL)
+const wrangler = readJsonc('wrangler.jsonc')
+
+function getWranglerVarString(name: typeof REQUIRED_WRANGLER_VARS[number]) {
+  const value = wrangler.vars?.[name]
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+assert(wrangler.name === 'pair-research', 'wrangler.jsonc must target the pair-research Worker.')
+assert(wrangler.workers_dev === false, 'wrangler.jsonc must keep workers_dev disabled for production.')
+assert(wrangler.preview_urls === true, 'wrangler.jsonc must keep preview_urls enabled for Worker diagnostics.')
+
+for (const name of REQUIRED_WRANGLER_VARS) {
+  assert(getWranglerVarString(name) !== '', `wrangler.jsonc is missing required var: ${name}`)
+}
+
+if (getWranglerVarString('VITE_SITE_BASE_URL') !== '') {
+  const siteUrl = parseUrl('VITE_SITE_BASE_URL', getWranglerVarString('VITE_SITE_BASE_URL'))
   assert(siteUrl.protocol === 'https:', 'VITE_SITE_BASE_URL must use https for release.')
 }
 
-if (hasEnvValue('R2_PUBLIC_DOMAIN')) {
-  const r2Url = parseUrl('R2_PUBLIC_DOMAIN', process.env.R2_PUBLIC_DOMAIN)
+if (getWranglerVarString('R2_PUBLIC_DOMAIN') !== '') {
+  const r2Url = parseUrl('R2_PUBLIC_DOMAIN', getWranglerVarString('R2_PUBLIC_DOMAIN'))
   assert(r2Url.protocol === 'https:', 'R2_PUBLIC_DOMAIN must use https for release.')
 }
 
-if (hasEnvValue('VITE_SUPABASE_URL')) {
-  const supabaseUrl = parseUrl('VITE_SUPABASE_URL', process.env.VITE_SUPABASE_URL)
+if (getWranglerVarString('VITE_SUPABASE_URL') !== '') {
+  const supabaseUrl = parseUrl('VITE_SUPABASE_URL', getWranglerVarString('VITE_SUPABASE_URL'))
   assert(supabaseUrl.protocol === 'https:', 'VITE_SUPABASE_URL must use https.')
 }
 
@@ -245,15 +256,6 @@ if (hasEnvValue('CONTACT_FROM_EMAIL')) {
 
 if (hasEnvValue('CONTACT_ADMIN_EMAIL')) {
   assert(process.env.CONTACT_ADMIN_EMAIL.includes('@'), 'CONTACT_ADMIN_EMAIL must be an email address.')
-}
-
-const wrangler = readJsonc('wrangler.jsonc')
-assert(wrangler.name === 'pair-research', 'wrangler.jsonc must target the pair-research Worker.')
-assert(wrangler.workers_dev === false, 'wrangler.jsonc must keep workers_dev disabled for production.')
-assert(wrangler.preview_urls === true, 'wrangler.jsonc must keep preview_urls enabled for Worker diagnostics.')
-
-for (const name of REQUIRED_WRANGLER_VARS) {
-  assert(wrangler.vars?.[name] !== undefined, `wrangler.jsonc is missing required var: ${name}`)
 }
 
 for (const name of REQUIRED_WORKER_SECRETS) {

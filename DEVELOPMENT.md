@@ -238,15 +238,21 @@ The preflight checks required release environment values, production URL formats
 
 ### Required Production Secrets
 
-Configure these GitHub Actions secrets before enabling the production deployment workflow. They are passed to the production release gates and Worker runtime:
+Configure the public production values in `wrangler.jsonc` under `vars` before enabling the production deployment workflow. The app reads these client-safe values through `import.meta.env`:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_SITE_BASE_URL`
 - `R2_PUBLIC_DOMAIN`
+- `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`
+- `VITE_GOOGLE_CLIENT_ID`
+
+Keep these public values out of GitHub secrets unless a workflow explicitly needs an override. For local overrides, use Vite's normal `.env` files with the same `VITE_*` names.
+
+Configure these GitHub Actions secrets before enabling the production deployment workflow. They are passed to the production release gates and Worker runtime:
+
 - `DATABASE_URL`
 - `SUPABASE_SECRET_KEY`
-- `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`
 - `CLOUDFLARE_TURNSTILE_SECRET_KEY`
 - `CONTACT_ADMIN_EMAIL`
 - `CONTACT_FROM_EMAIL`
