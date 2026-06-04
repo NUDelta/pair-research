@@ -8,8 +8,22 @@ import { getGoogleOneTapNextPath, shouldShowGoogleOneTap } from '../lib/googleOn
 
 const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services'
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
+const GOOGLE_ONE_TAP_NONCE_BYTES = 32
 
 let googleIdentityScriptPromise: Promise<void> | null = null
+
+function toHex(bytes: ArrayBuffer) {
+  return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
+async function createGoogleOneTapNoncePair() {
+  const bytes = new Uint8Array(GOOGLE_ONE_TAP_NONCE_BYTES)
+  crypto.getRandomValues(bytes)
+  const rawNonce = btoa(String.fromCharCode(...bytes))
+  const hashedNonce = toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawNonce)))
+
+  return { hashedNonce, rawNonce }
+}
 
 async function loadGoogleIdentityScript() {
   if (window.google?.accounts?.id !== undefined) {
@@ -75,11 +89,17 @@ export default function GoogleOneTap() {
           return
         }
 
+        const { hashedNonce, rawNonce } = await createGoogleOneTapNoncePair()
+        if (!mounted) {
+          return
+        }
+
         window.google.accounts.id.initialize({
           client_id: clientId,
           context: 'signin',
           cancel_on_tap_outside: true,
           itp_support: true,
+          nonce: hashedNonce,
           use_fedcm_for_prompt: true,
           callback: async (response) => {
             if (isSigningInRef.current || response.credential === undefined || response.credential === '') {
@@ -87,7 +107,7 @@ export default function GoogleOneTap() {
             }
 
             isSigningInRef.current = true
-            const { error } = await signInWithGoogleIdToken(supabase, response.credential)
+            const { error } = await signInWithGoogleIdToken(supabase, response.credential, rawNonce)
             if (error !== null) {
               isSigningInRef.current = false
               toast.error(error.message)

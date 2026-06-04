@@ -66,6 +66,7 @@ describe('googleOneTap component', () => {
       expect(mockInitialize).toHaveBeenCalledWith(expect.objectContaining({
         client_id: 'google-client-id.apps.googleusercontent.com',
         context: 'signin',
+        nonce: expect.any(String),
         use_fedcm_for_prompt: true,
       }))
       expect(mockPrompt).toHaveBeenCalledTimes(1)

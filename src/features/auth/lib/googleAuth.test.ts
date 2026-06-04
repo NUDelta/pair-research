@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildGoogleAuthCallbackUrl,
   buildPostGoogleAuthRedirectUrl,
+  signInWithGoogleIdToken,
   startGoogleOAuth,
 } from './googleAuth'
 
@@ -38,6 +39,24 @@ describe('googleAuth', () => {
       options: {
         redirectTo: 'https://pairresearch.io/auth/callback?next=%2Fgroups%2Fdemo',
       },
+    })
+  })
+
+  it('passes the One Tap nonce with Google ID token sign-in', async () => {
+    const signInWithIdToken = vi.fn(async () => ({ error: null }))
+    const authClient = {
+      auth: {
+        signInWithOAuth: vi.fn(),
+        signInWithIdToken,
+      },
+    }
+
+    await signInWithGoogleIdToken(authClient, 'id-token', 'raw-nonce')
+
+    expect(signInWithIdToken).toHaveBeenCalledWith({
+      provider: 'google',
+      token: 'id-token',
+      nonce: 'raw-nonce',
     })
   })
 })
