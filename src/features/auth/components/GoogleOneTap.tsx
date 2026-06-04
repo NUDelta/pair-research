@@ -1,3 +1,4 @@
+import { useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { getGooglePublicEnv } from '@/shared/config/env'
@@ -42,16 +43,25 @@ async function loadGoogleIdentityScript() {
 
 export default function GoogleOneTap() {
   const isSigningInRef = useRef(false)
+  const location = useRouterState({
+    select: state => ({
+      pathname: state.location.pathname,
+      searchStr: state.location.searchStr,
+    }),
+  })
 
   useEffect(() => {
     const { clientId } = getGooglePublicEnv()
-    if (clientId === '' || navigator.webdriver || !shouldShowGoogleOneTap(globalThis.location.pathname)) {
+    if (clientId === '' || navigator.webdriver || !shouldShowGoogleOneTap(location.pathname)) {
       return
     }
 
     let mounted = true
     const supabase = createClient()
-    const nextPath = getGoogleOneTapNextPath(globalThis.location)
+    const nextPath = getGoogleOneTapNextPath({
+      pathname: location.pathname,
+      search: location.searchStr,
+    })
 
     async function promptForGoogleAccount() {
       try {
@@ -70,6 +80,7 @@ export default function GoogleOneTap() {
           context: 'signin',
           cancel_on_tap_outside: true,
           itp_support: true,
+          use_fedcm_for_prompt: true,
           callback: async (response) => {
             if (isSigningInRef.current || response.credential === undefined || response.credential === '') {
               return
@@ -101,7 +112,7 @@ export default function GoogleOneTap() {
       mounted = false
       window.google?.accounts.id.cancel()
     }
-  }, [])
+  }, [location.pathname, location.searchStr])
 
   return null
 }

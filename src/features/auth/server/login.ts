@@ -7,6 +7,26 @@ import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
 
 const loginRequestSchema = loginSchema.merge(turnstileTokenSchema)
+const LOGIN_FAILED_MESSAGE = 'Invalid email or password.'
+
+export function getLoginFailureResponse(error: { code?: string, message: string }): LoginResponse {
+  const normalizedMessage = error.message.toLowerCase()
+  const emailNotConfirmed = error.code === 'email_not_confirmed'
+    || normalizedMessage.includes('email not confirmed')
+
+  if (emailNotConfirmed) {
+    return {
+      success: false,
+      message: 'Confirm your email to finish signing in.',
+      code: LOGIN_ERROR_CODES.emailNotConfirmed,
+    }
+  }
+
+  return {
+    success: false,
+    message: LOGIN_FAILED_MESSAGE,
+  }
+}
 
 export const login = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => loginRequestSchema.parse(data))
@@ -30,15 +50,7 @@ export const login = createServerFn({ method: 'POST' })
     })
 
     if (error) {
-      const normalizedMessage = error.message.toLowerCase()
-      const emailNotConfirmed = error.code === 'email_not_confirmed'
-        || normalizedMessage.includes('email not confirmed')
-
-      return {
-        success: false,
-        message: error.message,
-        code: emailNotConfirmed ? LOGIN_ERROR_CODES.emailNotConfirmed : undefined,
-      }
+      return getLoginFailureResponse(error)
     }
 
     return { success: true, message: 'Login successful' }
