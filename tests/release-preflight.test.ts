@@ -14,8 +14,6 @@ const validReleaseEnv = {
   CONTACT_ADMIN_EMAIL: 'admin@example.com',
   CONTACT_FROM_EMAIL: 'Pair Research <support@notify.pairresearch.io>',
   RESEND_API_KEY: 're_test',
-  CLOUDFLARE_API_TOKEN: 'cf-token',
-  CLOUDFLARE_ACCOUNT_ID: 'cf-account',
   FORCE_COLOR: '0',
 }
 

@@ -29,8 +29,6 @@ jobs:
       CONTACT_ADMIN_EMAIL: admin@example.com
       CONTACT_FROM_EMAIL: Pair Research <support@notify.pairresearch.io>
       RESEND_API_KEY: re_ci
-      CLOUDFLARE_API_TOKEN: cf-token-ci
-      CLOUDFLARE_ACCOUNT_ID: cf-account-ci
       WRANGLER_LOG_PATH: .wrangler/logs
 
     steps:

@@ -5,7 +5,7 @@ import { config as loadDotenv } from 'dotenv'
 
 loadDotenv({ path: '.env', quiet: true })
 
-const REQUIRED_GITHUB_SECRETS = [
+const REQUIRED_RELEASE_ENV_VALUES = [
   'VITE_SUPABASE_URL',
   'VITE_SUPABASE_PUBLISHABLE_KEY',
   'VITE_SITE_BASE_URL',
@@ -17,6 +17,9 @@ const REQUIRED_GITHUB_SECRETS = [
   'CONTACT_ADMIN_EMAIL',
   'CONTACT_FROM_EMAIL',
   'RESEND_API_KEY',
+] as const
+
+const REQUIRED_DEPLOYMENT_SECRETS = [
   'CLOUDFLARE_API_TOKEN',
   'CLOUDFLARE_ACCOUNT_ID',
 ] as const
@@ -217,7 +220,7 @@ function assert(condition: boolean, message: string) {
   }
 }
 
-for (const name of REQUIRED_GITHUB_SECRETS) {
+for (const name of REQUIRED_RELEASE_ENV_VALUES) {
   assert(hasEnvValue(name), `Missing required release environment value: ${name}`)
 }
 
@@ -247,7 +250,7 @@ if (hasEnvValue('CONTACT_ADMIN_EMAIL')) {
 const wrangler = readJsonc('wrangler.jsonc')
 assert(wrangler.name === 'pair-research', 'wrangler.jsonc must target the pair-research Worker.')
 assert(wrangler.workers_dev === false, 'wrangler.jsonc must keep workers_dev disabled for production.')
-assert(wrangler.preview_urls === true, 'wrangler.jsonc must keep preview_urls enabled for PR previews.')
+assert(wrangler.preview_urls === true, 'wrangler.jsonc must keep preview_urls enabled for Worker diagnostics.')
 
 for (const name of REQUIRED_WRANGLER_VARS) {
   assert(wrangler.vars?.[name] !== undefined, `wrangler.jsonc is missing required var: ${name}`)
@@ -274,8 +277,11 @@ assert(routePatterns.has('pairresearch.io'), 'wrangler.jsonc must route pairrese
 assert(routePatterns.has('www.pairresearch.io'), 'wrangler.jsonc must route www.pairresearch.io.')
 
 const deployWorkflow = readText('.github/workflows/deploy-production.yml')
-for (const name of REQUIRED_GITHUB_SECRETS) {
+for (const name of REQUIRED_RELEASE_ENV_VALUES) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference secret: ${name}`)
+}
+for (const name of REQUIRED_DEPLOYMENT_SECRETS) {
+  assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference deployment secret: ${name}`)
 }
 for (const command of REQUIRED_PRODUCTION_DEPLOY_COMMANDS) {
   assert(deployWorkflow.includes(command), `Production deploy workflow must run: ${command}`)

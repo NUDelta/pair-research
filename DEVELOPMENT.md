@@ -238,7 +238,7 @@ The preflight checks required release environment values, production URL formats
 
 ### Required Production Secrets
 
-Configure these GitHub Actions secrets before enabling the production deployment workflow:
+Configure these GitHub Actions secrets before enabling the production deployment workflow. They are passed to the production release gates and Worker runtime:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
@@ -251,6 +251,9 @@ Configure these GitHub Actions secrets before enabling the production deployment
 - `CONTACT_ADMIN_EMAIL`
 - `CONTACT_FROM_EMAIL`
 - `RESEND_API_KEY`
+
+Configure these additional GitHub Actions secrets for the production deploy step only. Do not put them in `.env.example`, local `.env` files, or Worker runtime configuration:
+
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
