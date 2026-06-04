@@ -1,6 +1,10 @@
 import { z } from 'zod'
 
 export const accountAvatarSourceSchema = z.enum(['current', 'upload', 'none', 'gravatar'])
+const supportedAvatarContentTypeSchema = z.enum(['image/avif', 'image/webp'], {
+  message: 'Unsupported image format',
+})
+const imageBufferSchema = z.instanceof(ArrayBuffer)
 
 const fullNameSchema = z
   .string()
@@ -13,21 +17,39 @@ export const accountSchema = z.object({
   avatar_source: accountAvatarSourceSchema,
   avatar: z
     .instanceof(File)
-    .or(z.custom<ArrayBuffer>())
+    .or(imageBufferSchema)
     .optional(),
-  content_type: z
-    .string()
-    .optional()
-    .refine(
-      (contentType) => {
-        if (contentType === undefined) {
-          return true
-        }
+  content_type: supportedAvatarContentTypeSchema.optional(),
+})
 
-        return contentType.startsWith('image/')
-      },
-      'Invalid type. Only images types are allowed.',
-    ),
+const updateProfileBaseInputSchema = z.object({
+  avatarSource: accountAvatarSourceSchema.default('current'),
+  fullName: fullNameSchema.optional(),
+  imageBuffer: imageBufferSchema.optional(),
+  contentType: supportedAvatarContentTypeSchema.optional(),
+})
+
+export const updateProfileInputSchema = updateProfileBaseInputSchema.superRefine((payload, context) => {
+  if (payload.avatarSource !== 'upload') {
+    return
+  }
+
+  if (payload.imageBuffer === undefined) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Avatar image data is required',
+      path: ['imageBuffer'],
+    })
+  }
+
+  if (payload.contentType === undefined) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Avatar content type is required',
+      path: ['contentType'],
+    })
+  }
 })
 
 export type AccountFormValues = z.infer<typeof accountSchema>
+export type UpdateProfileInputValues = z.infer<typeof updateProfileInputSchema>
