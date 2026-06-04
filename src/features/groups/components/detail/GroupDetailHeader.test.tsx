@@ -32,7 +32,7 @@ describe('groupDetailHeader', () => {
     )
 
     expect(screen.getByRole('link', { name: 'Back to groups' })).toHaveAttribute('href', '/groups')
-    expect(screen.getByRole('heading', { name: 'Group title' })).toHaveTextContent('Research Collective')
+    expect(screen.getByRole('heading', { name: 'Research Collective' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
   })
 

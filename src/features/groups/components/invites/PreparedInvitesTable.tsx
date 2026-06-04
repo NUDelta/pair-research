@@ -35,6 +35,7 @@ export default function PreparedInvitesTable<TData, TValue>({
       {data.length > 0
         ? (
             <DataTable
+              caption={title}
               columns={columns}
               data={data}
               emptyMessage={emptyTitle}

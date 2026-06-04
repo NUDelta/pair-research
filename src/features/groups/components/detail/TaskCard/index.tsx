@@ -41,6 +41,11 @@ export default function TaskCard({
   poolStatus,
   showUnratedBadge = false,
 }: TaskCardProps) {
+  const trimmedFullName = fullName?.trim()
+  const displayName = trimmedFullName === undefined || trimmedFullName === '' ? null : trimmedFullName
+  const avatarAlt = displayName === null
+    ? 'User avatar'
+    : `${displayName}'s avatar`
   const poolStatusLabel = {
     'in-pool': 'In Pool',
     'not-in-pool': 'Not In Pool',
@@ -104,10 +109,10 @@ export default function TaskCard({
               )}
 
           <div className="flex items-center gap-2 pt-1">
-            <Avatar className="h-5 w-5 hover-scale-soft">
+            <Avatar className="h-5 w-5 hover-scale-soft" role="img" aria-label={avatarAlt}>
               <AvatarImage
                 src={userAvatar ?? undefined}
-                alt={`${fullName}'s avatar`}
+                alt=""
                 loading="lazy"
               />
               <AvatarFallback>
@@ -115,7 +120,7 @@ export default function TaskCard({
               </AvatarFallback>
             </Avatar>
             <span className="text-sm">
-              {fullName ?? 'New User (Name not set)'}
+              {displayName ?? 'New User (Name not set)'}
             </span>
           </div>
         </div>
