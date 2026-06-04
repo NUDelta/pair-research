@@ -163,7 +163,7 @@ const CreateGroupForm = () => {
             You can invite more members later.
           </div>
           <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-end">
-            <div className="sm:w-72">
+            <div className="sm:min-w-[332px]">
               <TurnstileField
                 controllerRef={turnstileRef}
                 action="create-group"
