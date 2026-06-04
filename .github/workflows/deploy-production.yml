@@ -44,7 +44,7 @@ jobs:
         run: pnpm run lint:ci
 
       - name: 🧪 Run unit tests
-        run: pnpm run test:unit
+        run: pnpm run test
 
       - name: ✅ Run build
         run: pnpm run build

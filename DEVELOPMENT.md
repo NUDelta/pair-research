@@ -171,16 +171,10 @@ pnpm run lint:fix
 
 ## 8. Testing
 
-Run all tests:
+Run all unit tests:
 
 ```bash
 pnpm test
-```
-
-Run only unit tests:
-
-```bash
-pnpm test:unit
 ```
 
 Use this for logical changes, utility functions, algorithms, and non-UI behavior.
@@ -208,8 +202,7 @@ If generated files are out of sync, rerun the relevant generation command instea
 - `pnpm preview` previews the production build locally
 - `pnpm lint` runs ESLint
 - `pnpm run lint:fix` runs ESLint and applies safe fixes
-- `pnpm test:unit` runs Vitest tests
-- `pnpm test` runs unit tests
+- `pnpm test` runs Vitest unit tests
 - `pnpm deploy` builds and deploys with Wrangler
 
 ## 11. Deployment
@@ -280,7 +273,7 @@ Before deploying publicly, the automated release gates must pass:
 
 - `pnpm run release:preflight`
 - `pnpm run lint:ci`
-- `pnpm run test:unit`
+- `pnpm run test`
 - `WRANGLER_LOG_PATH=.wrangler/logs pnpm run build`
 
 If a release gate fails, fix the repository, environment, or deployment resource configuration instead of bypassing the gate.

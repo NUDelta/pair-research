@@ -94,14 +94,14 @@ env:
 steps:
   - run: pnpm run release:preflight
   - run: pnpm run lint:ci
-  - run: pnpm run test:unit
+  - run: pnpm run test
   - run: pnpm run build
 `)
   writeFixtureFile(root, '.github/workflows/pr-checks.yml', `
 steps:
   - run: pnpm run release:preflight
   - run: pnpm run lint:ci
-  - run: pnpm run test:unit
+  - run: pnpm run test
   - run: pnpm run build
 `)
   writeFixtureFile(root, 'supabase/migrations/00000000000000_fixture.sql', '-- fixture')
