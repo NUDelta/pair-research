@@ -60,6 +60,12 @@ export const SITEMAP_PUBLIC_ROUTES = [
     priority: 1,
   },
   {
+    path: '/contact',
+    lastModified: '2026-06-03',
+    changeFrequency: 'yearly',
+    priority: 0.5,
+  },
+  {
     path: '/privacy',
     lastModified: '2026-04-14',
     changeFrequency: 'yearly',

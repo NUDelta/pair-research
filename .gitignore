@@ -13,7 +13,6 @@
 
 # testing
 /coverage
-/output/playwright
 
 # Cloudflare
 /.wrangler

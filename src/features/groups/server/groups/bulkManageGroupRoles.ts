@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { resolveBulkRoleActionPlan } from '@/features/groups/lib/groupRoleBulkActions'
+import { createUserSafeActionError, getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { bulkManageGroupRolesSchema } from '../../schemas/groupManagement'
 import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
@@ -46,7 +47,7 @@ export const bulkManageGroupRoles = createServerFn({ method: 'POST' })
           })
 
           if (!plan.success) {
-            throw new Error(plan.message)
+            throw createUserSafeActionError(plan.message)
           }
 
           if (plan.sourceRoleIds.length === 0) {
@@ -129,7 +130,7 @@ export const bulkManageGroupRoles = createServerFn({ method: 'POST' })
       console.error('[BULK_MANAGE_GROUP_ROLES]', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to update the selected roles.',
+        message: getActionErrorMessage(error, 'Failed to update the selected roles.'),
       }
     }
   })

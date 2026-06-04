@@ -185,20 +185,6 @@ pnpm test:unit
 
 Use this for logical changes, utility functions, algorithms, and non-UI behavior.
 
-Run only end-to-end tests:
-
-```bash
-pnpm test:e2e
-```
-
-Use this for route-level behavior, public page smoke tests, and user-facing flows.
-
-Authenticated e2e tests require `PLAYWRIGHT_AUTH_EMAIL` and `PLAYWRIGHT_AUTH_PASSWORD`:
-
-```bash
-pnpm test:e2e:auth
-```
-
 ## 9. Prisma and Generated Files
 
 If you change the Prisma schema, regenerate the Prisma client:
@@ -218,15 +204,12 @@ If generated files are out of sync, rerun the relevant generation command instea
 ## 10. Useful Scripts
 
 - `pnpm dev` starts the app locally
-- `pnpm dev:e2e` starts a local server for Playwright
 - `pnpm build` builds the app for production
 - `pnpm preview` previews the production build locally
 - `pnpm lint` runs ESLint
 - `pnpm run lint:fix` runs ESLint and applies safe fixes
 - `pnpm test:unit` runs Vitest tests
-- `pnpm test:e2e` runs Playwright smoke tests
-- `pnpm test:e2e:auth` runs authenticated Playwright tests
-- `pnpm test` runs unit tests and e2e tests
+- `pnpm test` runs unit tests
 - `pnpm deploy` builds and deploys with Wrangler
 
 ## 11. Deployment
@@ -237,14 +220,64 @@ The app deploys to Cloudflare Workers with Wrangler:
 pnpm deploy
 ```
 
-Before deploying, make sure:
+Wrangler should write logs inside the repository instead of a user-level preferences directory:
 
-- Wrangler is authenticated with the DTR Cloudflare account
-- required variables are defined in `wrangler.jsonc`
-- required secrets are configured in the target Cloudflare environment
-- the `R2_BUCKET` binding exists and points to the correct bucket
-- the `GROUP_SESSIONS` Durable Object binding and its migration are present in `wrangler.jsonc`
-- `pnpm cf-typegen` has been run after any environment changes
+```bash
+WRANGLER_LOG_PATH=.wrangler/logs pnpm deploy
+```
+
+The GitHub production workflow sets `WRANGLER_LOG_PATH` automatically.
+
+Run the automated release preflight before public deployment:
+
+```bash
+pnpm run release:preflight
+```
+
+The preflight checks required release environment values, production URL formats, Wrangler vars, Worker secret declarations, R2 and Durable Object bindings, production routes, public route metadata, static production links, migration artifacts, and CI gates.
+
+### Required Production Secrets
+
+Configure these GitHub Actions secrets before enabling the production deployment workflow. They are passed to the production release gates and Worker runtime:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SITE_BASE_URL`
+- `R2_PUBLIC_DOMAIN`
+- `DATABASE_URL`
+- `SUPABASE_SECRET_KEY`
+- `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`
+- `CLOUDFLARE_TURNSTILE_SECRET_KEY`
+- `CONTACT_ADMIN_EMAIL`
+- `CONTACT_FROM_EMAIL`
+- `RESEND_API_KEY`
+
+Configure these additional GitHub Actions secrets for the production deploy step only. Do not put them in `.env.example`, local `.env` files, or Worker runtime configuration:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Also configure the required Cloudflare Worker secrets in the production Cloudflare environment:
+
+- `DATABASE_URL`
+- `SUPABASE_SECRET_KEY`
+- `CLOUDFLARE_TURNSTILE_SECRET_KEY`
+- `CONTACT_ADMIN_EMAIL`
+- `CONTACT_FROM_EMAIL`
+- `RESEND_API_KEY`
+
+Do not put Cloudflare Worker secrets in `wrangler.jsonc`. The `secrets.required` section is a local declaration aid; it does not prove that the remote production environment already has those secrets.
+
+### Production Release Gates
+
+Before deploying publicly, the automated release gates must pass:
+
+- `pnpm run release:preflight`
+- `pnpm run lint:ci`
+- `pnpm run test:unit`
+- `WRANGLER_LOG_PATH=.wrangler/logs pnpm run build`
+
+If a release gate fails, fix the repository, environment, or deployment resource configuration instead of bypassing the gate.
 
 ## Recommended Before Opening a PR
 

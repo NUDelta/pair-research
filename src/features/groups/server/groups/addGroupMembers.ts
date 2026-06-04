@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { normalizeInviteEmail } from '@/features/groups/lib/groupNormalization'
 import { canManagePrivilegedAccess, hasGroupManagementAccess, isPrivilegedPermission } from '@/features/groups/lib/groupPermissions'
+import { createUserSafeActionError, getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { addGroupMembersSchema } from '../../schemas/groupManagement'
 import {
@@ -129,7 +130,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
             !canManagePrivilegedAccess(currentActorPermission)
             && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
           ) {
-            throw new Error('Only group owners can invite owners or admins.')
+            throw createUserSafeActionError('Only group owners can invite owners or admins.')
           }
 
           const currentRoles = await tx.group_role.findMany({
@@ -143,7 +144,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
           })
 
           if (currentRoles.length !== uniqueRoleIds.length) {
-            throw new Error('Selected role is no longer available for this group.')
+            throw createUserSafeActionError('Selected role is no longer available for this group.')
           }
         }, { isolationLevel: 'Serializable' }))
 
@@ -159,14 +160,14 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
           `
 
           if (currentActorMembership === undefined || !hasGroupManagementAccess(currentActorMembership.permission)) {
-            throw new Error('Only group managers can add members.')
+            throw createUserSafeActionError('Only group managers can add members.')
           }
 
           if (
             !canManagePrivilegedAccess(currentActorMembership.permission)
             && normalizedInvites.some(invite => isPrivilegedPermission(invite.permission))
           ) {
-            throw new Error('Only group owners can invite owners or admins.')
+            throw createUserSafeActionError('Only group owners can invite owners or admins.')
           }
 
           const currentRoles = await tx.group_role.findMany({
@@ -180,7 +181,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
           })
 
           if (currentRoles.length !== uniqueRoleIds.length) {
-            throw new Error('Selected role is no longer available for this group.')
+            throw createUserSafeActionError('Selected role is no longer available for this group.')
           }
 
           const ensuredInviteProfiles = await Promise.all(
@@ -215,7 +216,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
               continue
             }
 
-            throw new Error(currentMembership.is_pending
+            throw createUserSafeActionError(currentMembership.is_pending
               ? `${currentMembership.profile.email} already has a pending invitation to this group.`
               : `${currentMembership.profile.email} is already a member of this group.`)
           }
@@ -232,7 +233,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
           })
 
           if (createdMemberships.count !== ensuredInviteProfiles.length) {
-            throw new Error('One or more invitees already has a group membership. Refresh and try again.')
+            throw createUserSafeActionError('One or more invitees already has a group membership. Refresh and try again.')
           }
 
           return ensuredInviteProfiles
@@ -259,7 +260,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
       console.error('[ADD_GROUP_MEMBERS]', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to add group members.',
+        message: getActionErrorMessage(error, 'Failed to add group members.'),
       }
     }
   })

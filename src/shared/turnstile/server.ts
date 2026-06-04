@@ -1,16 +1,14 @@
 import type { TurnstileServerValidationResponse } from '@marsidev/react-turnstile'
 import type { TurnstileAwareActionResponse } from './constants'
 import { z } from 'zod'
-import {
-  TURNSTILE_ERROR_CODES,
-
-} from './constants'
+import { TURNSTILE_ERROR_CODES } from './constants'
 
 const secretSchema = z.string().trim().min(1)
+const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+const CANONICAL_ALLOWED_TURNSTILE_HOSTNAMES = ['pairresearch.io', 'www.pairresearch.io'] as const
 
 interface VerifyTurnstileTokenInput {
   action: string
-  skipVerification?: boolean
   token: string
 }
 
@@ -27,6 +25,18 @@ function getTurnstileSecretKey() {
   return secret.success ? secret.data : ''
 }
 
+function getAllowedTurnstileHostnames() {
+  const hostnames = new Set<string>(CANONICAL_ALLOWED_TURNSTILE_HOSTNAMES)
+
+  try {
+    const configuredSiteUrl = new URL(process.env.VITE_SITE_BASE_URL ?? '')
+    hostnames.add(configuredSiteUrl.hostname)
+  }
+  catch {}
+
+  return hostnames
+}
+
 export function createTurnstileErrorResponse(message: string, code: TurnstileAwareActionResponse['code']): TurnstileAwareActionResponse {
   return {
     success: false,
@@ -37,18 +47,8 @@ export function createTurnstileErrorResponse(message: string, code: TurnstileAwa
 
 export async function verifyTurnstileToken({
   action,
-  skipVerification = false,
   token,
 }: VerifyTurnstileTokenInput): Promise<VerifyTurnstileTokenResult> {
-  if (skipVerification) {
-    return {
-      success: true,
-      interactive: false,
-      message: 'Turnstile bypassed for e2e automation.',
-      errors: [],
-    }
-  }
-
   const secret = getTurnstileSecretKey()
   if (secret === '') {
     return {
@@ -60,16 +60,29 @@ export async function verifyTurnstileToken({
     }
   }
 
-  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      secret,
-      response: token,
-    }),
-  })
+  let response: Response
+  try {
+    response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        secret,
+        response: token,
+      }),
+    })
+  }
+  catch (error) {
+    console.error('[TURNSTILE_VERIFY_REQUEST_FAILED]', error)
+    return {
+      success: false,
+      interactive: true,
+      message: 'We could not confirm the security check. Please try again.',
+      code: TURNSTILE_ERROR_CODES.failed,
+      errors: ['request-failed'],
+    }
+  }
 
   if (!response.ok) {
     return {
@@ -81,18 +94,37 @@ export async function verifyTurnstileToken({
     }
   }
 
-  const payload: TurnstileServerValidationResponse = await response.json()
-  const actionMismatch = payload.action !== undefined && payload.action !== action
+  let payload: TurnstileServerValidationResponse
+  try {
+    payload = await response.json()
+  }
+  catch (error) {
+    console.error('[TURNSTILE_VERIFY_RESPONSE_INVALID]', error)
+    return {
+      success: false,
+      interactive: true,
+      message: 'We could not confirm the security check. Please try again.',
+      code: TURNSTILE_ERROR_CODES.failed,
+      errors: ['invalid-response'],
+    }
+  }
+  const actionMismatch = payload.action !== action
+  const allowedHostnames = getAllowedTurnstileHostnames()
+  const hostnameMismatch = payload.hostname === undefined || !allowedHostnames.has(payload.hostname)
 
-  if (!payload.success || actionMismatch) {
+  if (!payload.success || actionMismatch || hostnameMismatch) {
     return {
       success: false,
       interactive: payload.metadata?.interactive ?? true,
-      message: actionMismatch
+      message: actionMismatch || hostnameMismatch
         ? 'Security check expired. Please verify again.'
         : 'Please complete the security check and try again.',
       code: TURNSTILE_ERROR_CODES.failed,
-      errors: actionMismatch ? ['action-mismatch'] : payload['error-codes'],
+      errors: actionMismatch
+        ? ['action-mismatch']
+        : hostnameMismatch
+          ? ['hostname-mismatch']
+          : payload['error-codes'],
     }
   }
 

@@ -5,7 +5,6 @@ import { loginSchema } from '@/features/auth/schemas/auth'
 import { createClient } from '@/shared/supabase/server'
 import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
-import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
 
 const loginRequestSchema = loginSchema.merge(turnstileTokenSchema)
 
@@ -14,7 +13,6 @@ export const login = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<LoginResponse> => {
     const turnstile = await verifyTurnstileToken({
       action: 'login',
-      skipVerification: isTurnstileVerificationBypassed(),
       token: data.turnstileToken,
     })
 

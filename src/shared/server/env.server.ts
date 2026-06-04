@@ -6,7 +6,10 @@ const nonEmptyStringSchema = z.string().trim().min(1)
 
 type ServerEnvKey
   = | 'CLOUDFLARE_TURNSTILE_SECRET_KEY'
+    | 'CONTACT_ADMIN_EMAIL'
+    | 'CONTACT_FROM_EMAIL'
     | 'DATABASE_URL'
+    | 'RESEND_API_KEY'
     | 'SUPABASE_SECRET_KEY'
 
 function readServerEnvValue(name: ServerEnvKey): string | undefined {

@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { z } from 'zod'
+import { groupIdInputSchema } from '@/features/groups/server/groupActionInputs'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 interface MakePairsResponse {
@@ -15,12 +15,8 @@ interface MakePairsResponse {
   }
 }
 
-const makePairsInputSchema = z.object({
-  groupId: z.string(),
-})
-
 export const makePairs = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(makePairsInputSchema, data))
+  .inputValidator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
   .handler(async ({ data }): Promise<MakePairsResponse> => {
     const { groupId } = data
 

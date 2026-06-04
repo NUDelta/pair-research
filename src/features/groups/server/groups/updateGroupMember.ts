@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getPermissionUpdateError } from '@/features/groups/lib/groupManagementRules'
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
+import { getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { updateGroupMemberSchema } from '../../schemas/groupManagement'
 import { findManagedGroup, withSerializableRetry } from './groupManagement'
@@ -144,7 +145,7 @@ export const updateGroupMember = createServerFn({ method: 'POST' })
       console.error('[UPDATE_GROUP_MEMBER]', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to update the group member.',
+        message: getActionErrorMessage(error, 'Failed to update the group member.'),
       }
     }
   })

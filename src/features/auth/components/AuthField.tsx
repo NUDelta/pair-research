@@ -35,6 +35,7 @@ const AuthField = ({
   const Icon = FIELD_ICONS[id]
   const isPassword = type === 'password'
   const inputType = isPassword && showPassword ? 'text' : type
+  const errorId = `${id}-error`
 
   return (
     <div className="group grid gap-2">
@@ -49,6 +50,8 @@ const AuthField = ({
           id={id}
           type={inputType}
           autoComplete={autocomplete}
+          aria-describedby={error ? errorId : undefined}
+          aria-invalid={error !== undefined}
           placeholder={placeholder ?? `Enter your ${label.toLowerCase()}`}
           className={`
             h-12 rounded-xl border-slate-200 bg-white transition-all duration-200 focus:ring-2
@@ -78,7 +81,7 @@ const AuthField = ({
         )}
       </div>
       {error && (
-        <p className="animate-subtle-rise text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-2">
+        <p id={errorId} className="animate-subtle-rise text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-2">
           {error.message}
         </p>
       )}

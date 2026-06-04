@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js'
 import type { GroupPermission } from '@/features/groups/lib/groupPermissions'
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
+import { createUserSafeActionError } from '../actionErrors'
 
 const SERIALIZABLE_RETRY_LIMIT = 3
 const AUTH_USER_LIST_PAGE_SIZE = 1000
@@ -175,7 +176,7 @@ export async function ensureCurrentGroupManager(
   })
 
   if (currentMembership === null || !hasGroupManagementAccess(currentMembership.permission)) {
-    throw new Error(message)
+    throw createUserSafeActionError(message)
   }
 
   return currentMembership.permission
@@ -249,7 +250,7 @@ export async function ensureAuthUserForInvite(email: string): Promise<EnsuredInv
     }
   }
 
-  throw new Error(error?.message ?? 'Failed to create the invited user account.')
+  throw new Error('Failed to create the invited user account.')
 }
 
 export async function upsertInviteProfile(db: InviteProfileWriter, profile: { id: string, email: string }) {

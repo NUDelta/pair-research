@@ -12,8 +12,8 @@ import { updateProfile } from '@/features/account/server'
 import { getOrCreateProfile } from '@/features/account/server/getOrCreateProfile'
 import { getAuthProfileSnapshot } from '@/features/auth/lib/authProfile'
 import { createClient } from '@/shared/supabase/client'
-import { isAuthFeedbackSource } from '../lib/authFeedback'
-import { getBrowserE2EAuthMode, isE2EAnonymousAuthMode, isMissingSupabaseSessionError } from '../lib/e2eAuth'
+import { isMissingSupabaseSessionError } from '../lib/authErrors'
+import { getAuthErrorMessage, isAuthFeedbackSource } from '../lib/authFeedback'
 
 const emptyProfile = {
   full_name: null,
@@ -23,21 +23,17 @@ const emptyProfile = {
 export const useAuthProfile = (
   setUserLoggedIn: (value: boolean) => void,
 ) => {
-  const e2eAuthMode = getBrowserE2EAuthMode()
-  const anonymousE2E = isE2EAnonymousAuthMode(e2eAuthMode)
-  const supabaseAuth = anonymousE2E ? undefined : createClient().auth
+  const supabaseAuth = createClient().auth
   const getOrCreateProfileFn = useServerFn(getOrCreateProfile)
   const updateProfileFn = useServerFn(updateProfile)
   const lastGoogleAvatarSyncUrlRef = useRef<string | null>(null)
 
-  const [loading, setLoading] = useState(!anonymousE2E)
+  const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>(emptyProfile)
 
   const setLoggedOut = useCallback(() => {
     setUserLoggedIn(false)
-    // eslint-disable-next-line react/set-state-in-effect
     setProfile(emptyProfile)
-    // eslint-disable-next-line react/set-state-in-effect
     setLoading(false)
   }, [setUserLoggedIn])
 
@@ -89,11 +85,6 @@ export const useAuthProfile = (
   }, [getOrCreateProfileFn, updateProfileFn])
 
   const fetchProfile = useCallback(async () => {
-    if (!supabaseAuth) {
-      setLoggedOut()
-      return
-    }
-
     setLoading(true)
     try {
       const url = new URL(globalThis.location.href)
@@ -111,7 +102,7 @@ export const useAuthProfile = (
       }
 
       if (error !== null && error.trim() !== '') {
-        toast.error(error)
+        toast.error(getAuthErrorMessage(error))
       }
 
       if (from === 'auth-callback') {
@@ -160,23 +151,10 @@ export const useAuthProfile = (
   }, [getOrCreateProfileFn, setLoggedOut, setUserLoggedIn, supabaseAuth, syncGoogleAvatar])
 
   useEffect(() => {
-    if (anonymousE2E) {
-      setLoggedOut()
-      return
-    }
-
-    if (!supabaseAuth) {
-      return
-    }
-
     void fetchProfile()
-  }, [anonymousE2E, fetchProfile, setLoggedOut, supabaseAuth])
+  }, [fetchProfile])
 
   useEffect(() => {
-    if (!supabaseAuth) {
-      return
-    }
-
     const {
       data: { subscription },
     } = supabaseAuth.onAuthStateChange(() => {

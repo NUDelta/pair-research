@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { normalizeNullableDescription } from '@/features/groups/lib/groupNormalization'
+import { getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { updateGroupBasicsSchema } from '../../schemas/groupManagement'
 import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
@@ -45,7 +46,7 @@ export const updateGroupBasics = createServerFn({ method: 'POST' })
       console.error('[UPDATE_GROUP_BASICS]', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to update group information.',
+        message: getActionErrorMessage(error, 'Failed to update group information.'),
       }
     }
   })

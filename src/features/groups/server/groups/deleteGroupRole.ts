@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getGroupRoleDeleteError } from '@/features/groups/lib/groupManagementRules'
+import { createUserSafeActionError, getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { deleteGroupRoleSchema } from '../../schemas/groupManagement'
 import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
@@ -56,7 +57,7 @@ export const deleteGroupRole = createServerFn({ method: 'POST' })
           })
 
           if (deleteError !== null) {
-            throw new Error(deleteError)
+            throw createUserSafeActionError(deleteError)
           }
 
           const memberCount = members.filter(member => member.role_id === roleId).length
@@ -93,7 +94,7 @@ export const deleteGroupRole = createServerFn({ method: 'POST' })
       console.error('[DELETE_GROUP_ROLE]', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to delete the role.',
+        message: getActionErrorMessage(error, 'Failed to delete the role.'),
       }
     }
   })

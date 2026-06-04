@@ -8,7 +8,6 @@ import { SITE_BASE_URL } from '@/shared/config/constants'
 import { createClient } from '@/shared/supabase/server'
 import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
-import { isTurnstileVerificationBypassed } from '@/shared/turnstile/serverBypass'
 
 const signupRequestSchema = signupSchema
   .merge(turnstileTokenSchema)
@@ -25,7 +24,6 @@ export const signup = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<SignupResponse> => {
     const turnstile = await verifyTurnstileToken({
       action: 'signup',
-      skipVerification: isTurnstileVerificationBypassed(),
       token: data.turnstileToken,
     })
 

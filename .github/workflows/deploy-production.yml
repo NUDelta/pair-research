@@ -28,6 +28,10 @@ jobs:
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
       CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+      CONTACT_ADMIN_EMAIL: ${{ secrets.CONTACT_ADMIN_EMAIL }}
+      CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      WRANGLER_LOG_PATH: .wrangler/logs
 
     steps:
       - name: 📂 Checkout code
@@ -38,14 +42,14 @@ jobs:
       - name: 🧱 Setup Node and pnpm
         uses: ./.github/actions/setup-node-pnpm
 
-      - name: 🚨 Lint Code
+      - name: 🔐 Validate release secrets
+        run: pnpm run release:preflight
+
+      - name: 🚨 Lint code
         run: pnpm run lint:ci
 
-      - name: 🎭 Install Playwright browsers
-        run: pnpm run test:e2e:install
-
-      - name: 🧪 Run tests
-        run: pnpm run test
+      - name: 🧪 Run unit tests
+        run: pnpm run test:unit
 
       - name: ✅ Run build
         run: pnpm run build

@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { normalizeRoleTitle } from '@/features/groups/lib/groupNormalization'
+import { createUserSafeActionError, getActionErrorMessage } from '@/features/groups/server/actionErrors'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { updateGroupRoleSchema } from '../../schemas/groupManagement'
 import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
@@ -49,7 +50,7 @@ export const updateGroupRole = createServerFn({ method: 'POST' })
           ])
 
           if (role === null) {
-            throw new Error('Role not found.')
+            throw createUserSafeActionError('Role not found.')
           }
 
           const duplicateRole = existingRoles.find(existingRole =>
@@ -58,7 +59,7 @@ export const updateGroupRole = createServerFn({ method: 'POST' })
           )
 
           if (duplicateRole !== undefined) {
-            throw new Error('A role with that title already exists in this group.')
+            throw createUserSafeActionError('A role with that title already exists in this group.')
           }
 
           if (role.title.trim() === normalizedTitle) {
@@ -93,7 +94,7 @@ export const updateGroupRole = createServerFn({ method: 'POST' })
       console.error('[UPDATE_GROUP_ROLE]', error)
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to update the role.',
+        message: getActionErrorMessage(error, 'Failed to update the role.'),
       }
     }
   })

@@ -38,6 +38,7 @@ export const updateProfile = createServerFn({ method: 'POST' })
       const existingProfile = await prisma.profile.findUnique({
         where: { id },
         select: {
+          avatar_url: true,
           full_name: true,
         },
       })
@@ -49,6 +50,7 @@ export const updateProfile = createServerFn({ method: 'POST' })
         fullName: data.fullName ?? existingProfile?.full_name ?? undefined,
         imageBuffer: data.imageBuffer,
         contentType: data.contentType,
+        currentAvatarUrl: existingProfile?.avatar_url ?? undefined,
       })
 
       const updateData: Record<string, unknown> = {}

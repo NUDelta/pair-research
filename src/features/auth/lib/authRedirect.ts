@@ -1,3 +1,5 @@
+import { SITE_BASE_URL } from '@/shared/config/constants'
+
 export function sanitizeRedirectPath(next: string | null | undefined, fallback = '/') {
   if (next === null || next === undefined) {
     return fallback
@@ -23,20 +25,33 @@ export function sanitizeRedirectPath(next: string | null | undefined, fallback =
   }
 }
 
-export function getRequestOrigin(request: Request) {
+export function getRequestOrigin(request: Request, siteBaseUrl = SITE_BASE_URL) {
   const url = new URL(request.url)
-  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim()
-  const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
+  const configuredOrigin = getConfiguredSiteOrigin(siteBaseUrl)
 
-  if (forwardedHost === undefined || forwardedHost === '') {
+  if (isLocalRequestHost(url.hostname)) {
     return url.origin
   }
 
-  const protocol = forwardedProto !== undefined && forwardedProto !== ''
-    ? forwardedProto
-    : url.protocol.replace(':', '')
+  return configuredOrigin ?? url.origin
+}
 
-  return `${protocol}://${forwardedHost}`
+function getConfiguredSiteOrigin(siteBaseUrl: string) {
+  const trimmedSiteBaseUrl = siteBaseUrl.trim()
+  if (trimmedSiteBaseUrl === '') {
+    return null
+  }
+
+  try {
+    return new URL(trimmedSiteBaseUrl).origin
+  }
+  catch {
+    return null
+  }
+}
+
+function isLocalRequestHost(hostname: string) {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
 }
 
 export function createRedirectResponse(location: string | URL, status = 302) {

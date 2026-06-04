@@ -1,5 +1,6 @@
 import startHandler, { createServerEntry } from '@tanstack/react-start/server-entry'
 import { GROUP_SESSION_WEBSOCKET_PROTOCOL } from '@/features/groups/lib/groupSessionProtocol'
+import { groupIdSchema } from '@/features/groups/schemas/groupManagement'
 import { verifyGroupSessionTokenValue } from '@/features/groups/server/groupSessionToken'
 
 export { GroupSessionDO } from './durable-objects/group-session-do'
@@ -46,7 +47,12 @@ export default {
     const routeMatch = GROUP_SESSION_REALTIME_ROUTE.exec(url.pathname)
 
     if (routeMatch !== null) {
-      const groupId = routeMatch[1]
+      const groupIdParse = groupIdSchema.safeParse(routeMatch[1])
+      if (!groupIdParse.success) {
+        return new Response('Invalid group session', { status: 400 })
+      }
+
+      const groupId = groupIdParse.data
       const token = getGroupSessionTokenFromProtocolHeader(request)
 
       if (token === null || !isWebSocketUpgrade(request)) {

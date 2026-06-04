@@ -22,7 +22,7 @@ export const Route = createFileRoute('/auth/callback')({
 
           console.error('[AUTH CALLBACK] Error occurred:', error instanceof Error ? error.message : error)
           const errorRedirectUrl = new URL('/', targetOrigin)
-          errorRedirectUrl.searchParams.set('error', error.message)
+          errorRedirectUrl.searchParams.set('error', 'auth-callback-failed')
           return createRedirectResponse(errorRedirectUrl)
         }
 

@@ -41,11 +41,11 @@ describe('global error page', () => {
   it('renders clear recovery actions and lets the user retry', () => {
     const reset = vi.fn()
 
-    render(<GlobalErrorPage error={new Error('Failed to load group details')} reset={reset} />)
+    render(<GlobalErrorPage error={new Error('Failed to load group details')} exposeTechnicalDetails reset={reset} />)
 
     expect(screen.getByRole('heading', { name: /we couldn't load this page/i })).toBeInTheDocument()
     expect(screen.getAllByText(/Failed to load group details/i).length).toBeGreaterThan(0)
-    expect(screen.getByText(/support reference/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/support reference/i).length).toBeGreaterThan(0)
 
     fireEvent.click(screen.getByRole('button', { name: /try again/i }))
 
@@ -70,7 +70,7 @@ describe('global error page', () => {
       value: revokeObjectURL,
     })
 
-    render(<GlobalErrorPage error={new Error('Database timed out')} reset={() => {}} />)
+    render(<GlobalErrorPage error={new Error('Database timed out')} exposeTechnicalDetails reset={() => {}} />)
 
     fireEvent.click(screen.getByRole('button', { name: /download report/i }))
 
@@ -94,9 +94,19 @@ describe('global error page', () => {
   })
 
   it('handles non-Error thrown values without crashing', () => {
-    render(<GlobalErrorPage error="Something strange happened" reset={() => {}} />)
+    render(<GlobalErrorPage error="Something strange happened" exposeTechnicalDetails reset={() => {}} />)
 
     expect(screen.getAllByText(/Something strange happened/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/Thrown string/i)).toBeInTheDocument()
+  })
+
+  it('hides technical details and report downloads when disclosure is disabled', () => {
+    render(<GlobalErrorPage error={new Error('DATABASE_URL is missing')} exposeTechnicalDetails={false} reset={() => {}} />)
+
+    expect(screen.getAllByText(/support reference/i).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/DATABASE_URL is missing/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/download the report/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/technical details/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /download report/i })).not.toBeInTheDocument()
   })
 })

@@ -12,15 +12,26 @@ describe('sanitizeRedirectPath', () => {
 })
 
 describe('getRequestOrigin', () => {
-  it('prefers forwarded host and protocol headers when present', () => {
+  it('ignores forwarded host and protocol headers when a site origin is configured', () => {
     const request = new Request('http://internal.test/auth/callback', {
       headers: {
-        'x-forwarded-host': 'localhost:3000',
+        'x-forwarded-host': 'evil.example',
         'x-forwarded-proto': 'http',
       },
     })
 
-    expect(getRequestOrigin(request)).toBe('http://localhost:3000')
+    expect(getRequestOrigin(request, 'https://pairresearch.io')).toBe('https://pairresearch.io')
+  })
+
+  it('keeps the request origin for local development requests', () => {
+    const request = new Request('http://127.0.0.1:3001/auth/callback', {
+      headers: {
+        'x-forwarded-host': 'evil.example',
+        'x-forwarded-proto': 'https',
+      },
+    })
+
+    expect(getRequestOrigin(request, 'https://pairresearch.io')).toBe('http://127.0.0.1:3001')
   })
 })
 
