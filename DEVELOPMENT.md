@@ -171,16 +171,10 @@ pnpm run lint:fix
 
 ## 8. Testing
 
-Run all tests:
+Run all unit tests:
 
 ```bash
 pnpm test
-```
-
-Run only unit tests:
-
-```bash
-pnpm test:unit
 ```
 
 Use this for logical changes, utility functions, algorithms, and non-UI behavior.
@@ -208,8 +202,7 @@ If generated files are out of sync, rerun the relevant generation command instea
 - `pnpm preview` previews the production build locally
 - `pnpm lint` runs ESLint
 - `pnpm run lint:fix` runs ESLint and applies safe fixes
-- `pnpm test:unit` runs Vitest tests
-- `pnpm test` runs unit tests
+- `pnpm test` runs Vitest unit tests
 - `pnpm deploy` builds and deploys with Wrangler
 
 ## 11. Deployment
@@ -238,15 +231,21 @@ The preflight checks required release environment values, production URL formats
 
 ### Required Production Secrets
 
-Configure these GitHub Actions secrets before enabling the production deployment workflow. They are passed to the production release gates and Worker runtime:
+Configure the public production values in `wrangler.jsonc` under `vars` before enabling the production deployment workflow. The app reads these client-safe values through `import.meta.env`:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_SITE_BASE_URL`
 - `R2_PUBLIC_DOMAIN`
+- `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`
+- `VITE_GOOGLE_CLIENT_ID`
+
+Keep these public values out of GitHub secrets unless a workflow explicitly needs an override. For local overrides, use Vite's normal `.env` files with the same `VITE_*` names.
+
+Configure these GitHub Actions secrets before enabling the production deployment workflow. They are passed to the production release gates and Worker runtime:
+
 - `DATABASE_URL`
 - `SUPABASE_SECRET_KEY`
-- `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`
 - `CLOUDFLARE_TURNSTILE_SECRET_KEY`
 - `CONTACT_ADMIN_EMAIL`
 - `CONTACT_FROM_EMAIL`
@@ -274,7 +273,7 @@ Before deploying publicly, the automated release gates must pass:
 
 - `pnpm run release:preflight`
 - `pnpm run lint:ci`
-- `pnpm run test:unit`
+- `pnpm run test`
 - `WRANGLER_LOG_PATH=.wrangler/logs pnpm run build`
 
 If a release gate fails, fix the repository, environment, or deployment resource configuration instead of bypassing the gate.

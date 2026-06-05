@@ -18,13 +18,8 @@ jobs:
     permissions:
       contents: read
     env:
-      VITE_SUPABASE_URL: https://example.supabase.co
-      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
-      VITE_SITE_BASE_URL: https://pairresearch.io
-      R2_PUBLIC_DOMAIN: https://r2.pairresearch.io
       DATABASE_URL: postgresql://user:pass@example.com:5432/db
       SUPABASE_SECRET_KEY: sb_secret_ci
-      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: turnstile-site
       CLOUDFLARE_TURNSTILE_SECRET_KEY: turnstile-secret
       CONTACT_ADMIN_EMAIL: admin@example.com
       CONTACT_FROM_EMAIL: Pair Research <support@notify.pairresearch.io>
@@ -73,7 +68,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
 
       - name: 🧪 Run unit tests
-        run: pnpm run test:unit
+        run: pnpm run test
 
   build:
     name: 🏗️ Build
@@ -82,13 +77,8 @@ jobs:
     permissions:
       contents: read
     env:
-      VITE_SUPABASE_URL: https://example.supabase.co
-      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
-      VITE_SITE_BASE_URL: https://pairresearch.io
-      R2_PUBLIC_DOMAIN: https://r2.pairresearch.io
       DATABASE_URL: postgresql://user:pass@example.com:5432/db
       SUPABASE_SECRET_KEY: sb_secret_ci
-      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: turnstile-site
       CLOUDFLARE_TURNSTILE_SECRET_KEY: turnstile-secret
       WRANGLER_LOG_PATH: .wrangler/logs
 

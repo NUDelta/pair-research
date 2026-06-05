@@ -48,6 +48,8 @@ interface GoogleOneTapInitializeOptions {
   cancel_on_tap_outside?: boolean
   context?: 'signin' | 'signup' | 'use'
   itp_support?: boolean
+  nonce?: string
+  use_fedcm_for_prompt?: boolean
 }
 
 interface Window {

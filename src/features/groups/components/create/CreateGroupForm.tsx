@@ -151,29 +151,32 @@ const CreateGroupForm = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <TurnstileField
-            controllerRef={turnstileRef}
-            action="create-group"
-            mode="adaptive"
-            description="Complete the security check before creating the group."
-          />
-
           {errors.root && (
             <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
               {errors.root.message}
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <CardFooter className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle2Icon className="size-4" />
             You can invite more members later.
           </div>
-          <Button type="submit" disabled={!isValid || isPending}>
-            {isPending
-              ? <Spinner text="Creating group..." />
-              : 'Create group'}
-          </Button>
+          <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-end">
+            <div className="sm:min-w-[332px]">
+              <TurnstileField
+                controllerRef={turnstileRef}
+                action="create-group"
+                mode="visible"
+                description="Complete the security check before creating the group."
+              />
+            </div>
+            <Button type="submit" disabled={!isValid || isPending} className="sm:mb-1">
+              {isPending
+                ? <Spinner text="Creating group..." />
+                : 'Create group'}
+            </Button>
+          </div>
         </CardFooter>
       </Card>
     </form>

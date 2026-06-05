@@ -38,6 +38,7 @@ export default function GroupRolesSection({
       </CardHeader>
       <CardContent className="px-0 pb-0">
         <DataTable
+          caption="Group roles"
           columns={columns}
           data={data}
           emptyMessage="No roles found for this group."

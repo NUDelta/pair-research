@@ -14,6 +14,11 @@ export default function HomePage() {
         <img
           src="/images/example.png"
           alt="Illustration of Pair Research features"
+          width={1776}
+          height={1170}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           className="h-auto w-full rounded-lg shadow-md hover-lift-md hover:shadow-xl"
         />
       </section>
@@ -50,6 +55,10 @@ export default function HomePage() {
         <img
           src="/images/delta.jpg"
           alt="Delta Lab logo"
+          width={239}
+          height={40}
+          loading="lazy"
+          decoding="async"
           className="mx-auto h-6 w-auto hover-scale-soft"
         />
         <p className="text-sm">

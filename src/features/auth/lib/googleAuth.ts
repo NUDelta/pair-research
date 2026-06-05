@@ -11,6 +11,7 @@ interface GoogleOAuthClient {
     signInWithIdToken: (args: {
       provider: 'google'
       token: string
+      nonce?: string
     }) => Promise<{ error: { message: string } | null }>
   }
 }
@@ -47,9 +48,11 @@ export async function startGoogleOAuth(
 export async function signInWithGoogleIdToken(
   authClient: GoogleOAuthClient,
   credential: string,
+  nonce?: string,
 ) {
   return authClient.auth.signInWithIdToken({
     provider: 'google',
     token: credential,
+    ...(nonce === undefined ? {} : { nonce }),
   })
 }

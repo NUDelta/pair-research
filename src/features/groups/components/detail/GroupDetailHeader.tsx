@@ -29,7 +29,7 @@ export default function GroupDetailHeader({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight" aria-label="Group title">
+            <h1 className="text-3xl font-semibold tracking-tight">
               {groupName}
             </h1>
             {roundStatusLabel !== undefined && (

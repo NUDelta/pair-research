@@ -20,13 +20,8 @@ jobs:
       deployments: write
 
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      VITE_SITE_BASE_URL: ${{ secrets.VITE_SITE_BASE_URL }}
-      R2_PUBLIC_DOMAIN: ${{ secrets.R2_PUBLIC_DOMAIN }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
       CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
       CONTACT_ADMIN_EMAIL: ${{ secrets.CONTACT_ADMIN_EMAIL }}
       CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
@@ -49,7 +44,7 @@ jobs:
         run: pnpm run lint:ci
 
       - name: 🧪 Run unit tests
-        run: pnpm run test:unit
+        run: pnpm run test
 
       - name: ✅ Run build
         run: pnpm run build

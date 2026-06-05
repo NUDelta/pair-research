@@ -219,6 +219,7 @@ export default function GroupMembersTable({
             </div>
           )}
           <DataTable
+            caption="Group members"
             columns={columns}
             data={data}
             emptyMessage="No members found for this group."

@@ -5,35 +5,46 @@ Describe what changed and why.
 ## Key Changes
 
 -
+-
+-
 
 ## Validation
 
+Commands run:
+
 - [ ] `pnpm run release:preflight`
-- [ ] `pnpm run lint:ci`
-- [ ] `pnpm run test:unit`
+- [ ] `pnpm run lint:fix`
+- [ ] `pnpm run test`
 - [ ] `pnpm run build`
 
-List any checks that were intentionally skipped and why:
+Skipped checks:
 
--
+- N/A
 
 ## UI Verification
+
+Only complete this section if the PR touches UI behavior or layout.
 
 - [ ] Loading state checked
 - [ ] Empty state checked
 - [ ] Error state checked
 - [ ] Keyboard and focus behavior checked
 - [ ] Mobile layout checked
-- [ ] Not applicable
+- [ ] Screenshots or screen recording attached
+- [ ] N/A — no UI changes
 
 ## Release and Data Safety
 
 - [ ] No secrets, cookies, tokens, or private environment values are committed or logged
-- [ ] Database schema changes include migration artifacts or are intentionally absent
+- [ ] Database schema changes include migration artifacts, or no schema changes were made
 - [ ] Cloudflare bindings, required secrets, R2, Durable Objects, public routes, and CI gates pass release preflight
-- [ ] Auth, authorization, and redirect behavior were reviewed when touched
-- [ ] Legal, support, SEO, analytics, or public metadata changes pass automated tests or preflight when public pages changed
+- [ ] Auth, authorization, and redirect behavior were reviewed if touched
+- [ ] Legal, support, SEO, analytics, or public metadata changes were reviewed if public pages changed
 
-## Risks and Follow-Ups
+## Risks
 
--
+- N/A
+
+## Follow-Ups
+
+- N/A

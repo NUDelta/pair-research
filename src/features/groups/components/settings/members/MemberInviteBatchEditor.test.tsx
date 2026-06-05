@@ -56,6 +56,7 @@ describe('memberInviteBatchEditor', () => {
     )
 
     expect(screen.getByPlaceholderText(/filter invites/i)).toBeVisible()
+    expect(screen.getByRole('table', { name: /prepared invites/i })).toBeVisible()
     expect(screen.getByDisplayValue('member@example.com')).toBeVisible()
 
     await user.click(screen.getByRole('checkbox', { name: /select all invites/i }))

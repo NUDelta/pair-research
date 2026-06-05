@@ -1,28 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
-import { accountAvatarSourceSchema } from '@/features/account/schemas/account'
+import { updateProfileInputSchema } from '@/features/account/schemas/account'
 import { resolveAvatarUpdate } from '@/features/account/server/avatar/resolveAvatarUpdate'
 import { getUser } from '@/shared/supabase/server'
 
 export const updateProfile = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => {
-    if (typeof data !== 'object' || data === null) {
-      throw new Error('Profile payload is required')
-    }
-
-    const payload = data as {
-      avatarSource?: string
-      fullName?: string
-      imageBuffer?: ArrayBuffer
-      contentType?: string
-    }
-
-    return {
-      avatarSource: accountAvatarSourceSchema.parse(payload.avatarSource ?? 'current'),
-      fullName: payload.fullName,
-      imageBuffer: payload.imageBuffer,
-      contentType: payload.contentType,
-    }
-  })
+  .inputValidator((data: unknown) => updateProfileInputSchema.parse(data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getPrismaClient } = await import('@/shared/server/prisma')

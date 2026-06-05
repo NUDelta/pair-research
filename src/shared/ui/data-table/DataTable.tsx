@@ -19,10 +19,11 @@ import {
 } from '@tanstack/react-table'
 import { useState } from 'react'
 import { Input } from '@/shared/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { DataTablePagination } from './DataTablePagination'
 
 interface DataTableProps<TData, TValue> {
+  caption: string
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   emptyMessage: string
@@ -34,6 +35,7 @@ interface DataTableProps<TData, TValue> {
 }
 
 export function DataTable<TData, TValue>({
+  caption,
   columns,
   data,
   emptyMessage,
@@ -98,6 +100,7 @@ export function DataTable<TData, TValue>({
       </div>
       <div className="border-y">
         <Table>
+          <TableCaption className="sr-only">{caption}</TableCaption>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
