@@ -105,7 +105,7 @@ Then open `.env` and fill in the required values. The comments in `.env.example`
 
 This project uses both **variables** and **secrets**.
 
-- **Public Vite build values** use `VITE_*` names and are read through `import.meta.env`. For local development, add them to `.env`. For production builds, configure them as GitHub Actions variables.
+- **Public Vite build values** use `VITE_*` names and are read through `import.meta.env`. For local development, add them to `.env`. For production builds, configure them as GitHub Actions secrets.
 - **Worker runtime variables** are non-sensitive values available to the Cloudflare Worker at runtime. Keep production runtime variables in the Cloudflare dashboard and deploy with `wrangler deploy --keep-vars` so Wrangler does not clear them.
 - **Secrets** are sensitive values and must not be stored in `wrangler.jsonc`. For local development, add them to `.env`. For deployed Cloudflare environments, add any missing remote secrets with:
 
@@ -234,7 +234,7 @@ The preflight checks required release environment values, production URL formats
 
 ### Required Production Secrets
 
-Configure these GitHub Actions variables before enabling the production deployment workflow. The app reads these client-safe values through `import.meta.env` during the Vite build:
+Configure these GitHub Actions secrets before enabling the production deployment workflow. The app reads these client-safe values through `import.meta.env` during the Vite build:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
@@ -244,7 +244,7 @@ Configure these GitHub Actions variables before enabling the production deployme
 
 For local overrides, use Vite's normal `.env` files with the same `VITE_*` names.
 
-Configure this public runtime variable in both GitHub Actions variables and the production Cloudflare Worker environment. It is server-only and is not read through Vite:
+Configure this public runtime value in both GitHub Actions secrets and the production Cloudflare Worker environment. It is server-only and is not read through Vite:
 
 - `R2_PUBLIC_DOMAIN`
 
