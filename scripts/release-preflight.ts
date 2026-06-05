@@ -1,15 +1,17 @@
-import type { WranglerPublicVarName } from './wrangler-public-vars.ts'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { config as loadDotenv } from 'dotenv'
-import {
-  readWranglerPublicVarsConfig,
-  REQUIRED_WRANGLER_PUBLIC_VARS,
-  stripJsonComments,
-} from './wrangler-public-vars.ts'
 
 loadDotenv({ path: '.env', quiet: true })
+
+const REQUIRED_PUBLIC_BUILD_ENV_VALUES = [
+  'VITE_SUPABASE_URL',
+  'VITE_SUPABASE_PUBLISHABLE_KEY',
+  'VITE_SITE_BASE_URL',
+  'VITE_CLOUDFLARE_TURNSTILE_SITE_KEY',
+  'VITE_GOOGLE_CLIENT_ID',
+] as const
 
 const REQUIRED_RELEASE_ENV_VALUES = [
   'DATABASE_URL',
@@ -96,6 +98,61 @@ function readText(relativePath: string) {
   return fs.readFileSync(path.join(REPO_ROOT, relativePath), 'utf8')
 }
 
+function stripJsonComments(source: string) {
+  let result = ''
+  let inString = false
+  let quote = ''
+  let escaped = false
+
+  for (let index = 0; index < source.length; index += 1) {
+    const current = source[index]
+    const next = source[index + 1]
+
+    if (inString) {
+      result += current
+      if (escaped) {
+        escaped = false
+      }
+      else if (current === '\\') {
+        escaped = true
+      }
+      else if (current === quote) {
+        inString = false
+        quote = ''
+      }
+      continue
+    }
+
+    if (current === '"' || current === '\'') {
+      inString = true
+      quote = current
+      result += current
+      continue
+    }
+
+    if (current === '/' && next === '/') {
+      while (index < source.length && source[index] !== '\n') {
+        index += 1
+      }
+      result += '\n'
+      continue
+    }
+
+    if (current === '/' && next === '*') {
+      index += 2
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
+        index += 1
+      }
+      index += 1
+      continue
+    }
+
+    result += current
+  }
+
+  return result
+}
+
 function readJsonc(relativePath: string): WranglerConfig {
   return JSON.parse(stripJsonComments(readText(relativePath))) as WranglerConfig
 }
@@ -162,34 +219,27 @@ for (const name of REQUIRED_RELEASE_ENV_VALUES) {
   assert(hasEnvValue(name), `Missing required release environment value: ${name}`)
 }
 
-const wrangler = readJsonc('wrangler.jsonc')
-const wranglerPublicVars = readWranglerPublicVarsConfig(REPO_ROOT)
-
-function getWranglerVarString(name: WranglerPublicVarName) {
-  const value = wranglerPublicVars.vars?.[name]
-  return typeof value === 'string' ? value.trim() : ''
+for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
+  assert(hasEnvValue(name), `Missing required public build environment value: ${name}`)
 }
+
+const wrangler = readJsonc('wrangler.jsonc')
 
 assert(wrangler.name === 'pair-research', 'wrangler.jsonc must target the pair-research Worker.')
 assert(wrangler.workers_dev === false, 'wrangler.jsonc must keep workers_dev disabled for production.')
 assert(wrangler.preview_urls === true, 'wrangler.jsonc must keep preview_urls enabled for Worker diagnostics.')
+assert(
+  wrangler.vars === undefined || Object.keys(wrangler.vars).length === 0,
+  'wrangler.jsonc must not define vars; configure public build values through Vite environment variables.',
+)
 
-for (const name of REQUIRED_WRANGLER_PUBLIC_VARS) {
-  assert(getWranglerVarString(name) !== '', `wrangler.jsonc is missing required var: ${name}`)
-}
-
-if (getWranglerVarString('VITE_SITE_BASE_URL') !== '') {
-  const siteUrl = parseUrl('VITE_SITE_BASE_URL', getWranglerVarString('VITE_SITE_BASE_URL'))
+if (hasEnvValue('VITE_SITE_BASE_URL')) {
+  const siteUrl = parseUrl('VITE_SITE_BASE_URL', process.env.VITE_SITE_BASE_URL ?? '')
   assert(siteUrl.protocol === 'https:', 'VITE_SITE_BASE_URL must use https for release.')
 }
 
-if (getWranglerVarString('R2_PUBLIC_DOMAIN') !== '') {
-  const r2Url = parseUrl('R2_PUBLIC_DOMAIN', getWranglerVarString('R2_PUBLIC_DOMAIN'))
-  assert(r2Url.protocol === 'https:', 'R2_PUBLIC_DOMAIN must use https for release.')
-}
-
-if (getWranglerVarString('VITE_SUPABASE_URL') !== '') {
-  const supabaseUrl = parseUrl('VITE_SUPABASE_URL', getWranglerVarString('VITE_SUPABASE_URL'))
+if (hasEnvValue('VITE_SUPABASE_URL')) {
+  const supabaseUrl = parseUrl('VITE_SUPABASE_URL', process.env.VITE_SUPABASE_URL ?? '')
   assert(supabaseUrl.protocol === 'https:', 'VITE_SUPABASE_URL must use https.')
 }
 
@@ -225,23 +275,27 @@ const deployWorkflow = readText('.github/workflows/deploy-production.yml')
 for (const name of REQUIRED_RELEASE_ENV_VALUES) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference secret: ${name}`)
 }
+for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
+  assert(deployWorkflow.includes(`vars.${name}`), `Production deploy workflow must reference public variable: ${name}`)
+}
 for (const name of REQUIRED_DEPLOYMENT_SECRETS) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference deployment secret: ${name}`)
 }
 for (const command of REQUIRED_PRODUCTION_DEPLOY_COMMANDS) {
   assert(deployWorkflow.includes(command), `Production deploy workflow must run: ${command}`)
 }
+assert(
+  deployWorkflow.includes('deploy --keep-vars'),
+  'Production deploy workflow must use wrangler deploy --keep-vars to preserve dashboard runtime variables.',
+)
 
 const prChecksWorkflow = readText('.github/workflows/pr-checks.yml')
 for (const command of REQUIRED_PR_CHECK_COMMANDS) {
   assert(prChecksWorkflow.includes(command), `PR checks must run: ${command}`)
 }
-
-const viteConfig = readText('vite.config.ts')
-assert(
-  viteConfig.includes('loadWranglerPublicVarsIntoEnv()'),
-  'vite.config.ts must load wrangler.jsonc public vars before Vite resolves import.meta.env.',
-)
+for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
+  assert(prChecksWorkflow.includes(name), `PR checks must define public build environment value: ${name}`)
+}
 
 const supabaseMigrationsDirectory = path.join(REPO_ROOT, 'supabase', 'migrations')
 assert(fs.existsSync(supabaseMigrationsDirectory), 'No supabase/migrations directory found. Add migration artifacts before public release.')

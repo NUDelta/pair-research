@@ -105,7 +105,8 @@ Then open `.env` and fill in the required values. The comments in `.env.example`
 
 This project uses both **variables** and **secrets**.
 
-- **Variables** are non-sensitive values stored in the `"vars"` section of `wrangler.jsonc`. These values are committed to the repository and are available to the Cloudflare Worker runtime.
+- **Public Vite build values** use `VITE_*` names and are read through `import.meta.env`. For local development, add them to `.env`. For production builds, configure them as GitHub Actions variables.
+- **Worker runtime variables** are non-sensitive values available to the Cloudflare Worker at runtime. Keep production runtime variables in the Cloudflare dashboard and deploy with `wrangler deploy --keep-vars` so Wrangler does not clear them.
 - **Secrets** are sensitive values and must not be stored in `wrangler.jsonc`. For local development, add them to `.env`. For deployed Cloudflare environments, add any missing remote secrets with:
 
 ```bash
@@ -227,20 +228,23 @@ Run the automated release preflight before public deployment:
 pnpm run release:preflight
 ```
 
-The preflight checks required release environment values, production URL formats, Wrangler vars, Worker secret declarations, R2 and Durable Object bindings, production routes, public route metadata, static production links, migration artifacts, and CI gates.
+The preflight checks required release environment values, production URL formats, Worker secret declarations, R2 and Durable Object bindings, production routes, public route metadata, static production links, migration artifacts, and CI gates.
 
 ### Required Production Secrets
 
-Configure the public production values in `wrangler.jsonc` under `vars` before enabling the production deployment workflow. The app reads these client-safe values through `import.meta.env`:
+Configure these GitHub Actions variables before enabling the production deployment workflow. The app reads these client-safe values through `import.meta.env` during the Vite build:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_SITE_BASE_URL`
-- `R2_PUBLIC_DOMAIN`
 - `VITE_CLOUDFLARE_TURNSTILE_SITE_KEY`
 - `VITE_GOOGLE_CLIENT_ID`
 
-Keep these public values out of GitHub secrets unless a workflow explicitly needs an override. For local overrides, use Vite's normal `.env` files with the same `VITE_*` names.
+For local overrides, use Vite's normal `.env` files with the same `VITE_*` names.
+
+Configure this public runtime variable in the production Cloudflare Worker environment. It is server-only and is not read through Vite:
+
+- `R2_PUBLIC_DOMAIN`
 
 Configure these GitHub Actions secrets before enabling the production deployment workflow. They are passed to the production release gates and Worker runtime:
 
