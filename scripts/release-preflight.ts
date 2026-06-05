@@ -289,10 +289,10 @@ for (const name of REQUIRED_RELEASE_ENV_VALUES) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference secret: ${name}`)
 }
 for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
-  assert(deployWorkflow.includes(`vars.${name}`), `Production deploy workflow must reference public variable: ${name}`)
+  assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference public build secret: ${name}`)
 }
 for (const name of REQUIRED_PUBLIC_RUNTIME_ENV_VALUES) {
-  assert(deployWorkflow.includes(`vars.${name}`), `Production deploy workflow must reference public runtime variable: ${name}`)
+  assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference public runtime secret: ${name}`)
 }
 for (const name of REQUIRED_DEPLOYMENT_SECRETS) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference deployment secret: ${name}`)
