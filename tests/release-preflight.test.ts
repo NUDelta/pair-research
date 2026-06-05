@@ -10,6 +10,12 @@ import { describe, expect, it } from 'vitest'
 
 const validReleaseEnv = {
   ...process.env,
+  VITE_SUPABASE_URL: 'https://example.supabase.co',
+  VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+  VITE_SITE_BASE_URL: 'https://pairresearch.io',
+  VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: 'turnstile-site',
+  VITE_GOOGLE_CLIENT_ID: 'google-client-id',
+  R2_PUBLIC_DOMAIN: 'https://r2.pairresearch.io',
   DATABASE_URL: 'postgresql://user:pass@example.com:5432/db',
   SUPABASE_SECRET_KEY: 'sb_secret_test',
   CLOUDFLARE_TURNSTILE_SECRET_KEY: 'turnstile-secret',
@@ -36,21 +42,13 @@ function writeFixtureFile(root: string, relativePath: string, contents: string) 
   writeFileSync(absolutePath, contents)
 }
 
-function createReleasePreflightFixture({ googleClientId }: { googleClientId: string }) {
+function createReleasePreflightFixture() {
   const root = mkdtempSync(path.join(tmpdir(), 'pair-release-preflight-'))
 
   writeFixtureFile(root, 'wrangler.jsonc', JSON.stringify({
     name: 'pair-research',
     workers_dev: false,
     preview_urls: true,
-    vars: {
-      VITE_SUPABASE_URL: 'https://example.supabase.co',
-      VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
-      VITE_SITE_BASE_URL: 'https://pairresearch.io',
-      R2_PUBLIC_DOMAIN: 'https://r2.pairresearch.io',
-      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: 'turnstile-site',
-      VITE_GOOGLE_CLIENT_ID: googleClientId,
-    },
     secrets: {
       required: [
         'CLOUDFLARE_TURNSTILE_SECRET_KEY',
@@ -83,6 +81,12 @@ function createReleasePreflightFixture({ googleClientId }: { googleClientId: str
 
   writeFixtureFile(root, '.github/workflows/deploy-production.yml', `
 env:
+  VITE_SUPABASE_URL: \${{ vars.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_PUBLISHABLE_KEY: \${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  VITE_SITE_BASE_URL: \${{ vars.VITE_SITE_BASE_URL }}
+  VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: \${{ vars.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+  VITE_GOOGLE_CLIENT_ID: \${{ vars.VITE_GOOGLE_CLIENT_ID }}
+  R2_PUBLIC_DOMAIN: \${{ vars.R2_PUBLIC_DOMAIN }}
   DATABASE_URL: \${{ secrets.DATABASE_URL }}
   SUPABASE_SECRET_KEY: \${{ secrets.SUPABASE_SECRET_KEY }}
   CLOUDFLARE_TURNSTILE_SECRET_KEY: \${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
@@ -96,8 +100,16 @@ steps:
   - run: pnpm run lint:ci
   - run: pnpm run test
   - run: pnpm run build
+  - run: wrangler deploy --keep-vars
 `)
   writeFixtureFile(root, '.github/workflows/pr-checks.yml', `
+env:
+  VITE_SUPABASE_URL: https://example.supabase.co
+  VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
+  VITE_SITE_BASE_URL: https://pairresearch.io
+  VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: turnstile-site
+  VITE_GOOGLE_CLIENT_ID: google-client-id
+  R2_PUBLIC_DOMAIN: https://r2.pairresearch.io
 steps:
   - run: pnpm run release:preflight
   - run: pnpm run lint:ci
@@ -151,11 +163,69 @@ describe('release preflight', () => {
     expect(result.stderr).toContain('CONTACT_FROM_EMAIL must use the notify.pairresearch.io sending domain.')
   })
 
-  it('rejects missing public Wrangler values required by the client build', () => {
-    const fixtureRoot = createReleasePreflightFixture({ googleClientId: '' })
+  it('rejects missing public build values required by the client build', () => {
+    const fixtureRoot = createReleasePreflightFixture()
+    const result = runReleasePreflight({
+      ...validReleaseEnv,
+      VITE_GOOGLE_CLIENT_ID: '',
+    }, fixtureRoot)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Missing required public build environment value: VITE_GOOGLE_CLIENT_ID')
+  })
+
+  it('rejects missing public runtime values required by server code', () => {
+    const fixtureRoot = createReleasePreflightFixture()
+    const result = runReleasePreflight({
+      ...validReleaseEnv,
+      R2_PUBLIC_DOMAIN: '',
+    }, fixtureRoot)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Missing required public runtime environment value: R2_PUBLIC_DOMAIN')
+  })
+
+  it('rejects committed Wrangler vars', () => {
+    const fixtureRoot = createReleasePreflightFixture()
+    writeFixtureFile(fixtureRoot, 'wrangler.jsonc', JSON.stringify({
+      name: 'pair-research',
+      workers_dev: false,
+      preview_urls: true,
+      vars: {
+        VITE_SUPABASE_URL: 'https://example.supabase.co',
+      },
+      secrets: {
+        required: [
+          'CLOUDFLARE_TURNSTILE_SECRET_KEY',
+          'CONTACT_ADMIN_EMAIL',
+          'CONTACT_FROM_EMAIL',
+          'DATABASE_URL',
+          'RESEND_API_KEY',
+          'SUPABASE_SECRET_KEY',
+        ],
+      },
+      r2_buckets: [{
+        binding: 'R2_BUCKET',
+        bucket_name: 'pair-research',
+        remote: true,
+      }],
+      durable_objects: {
+        bindings: [{
+          name: 'GROUP_SESSIONS',
+          class_name: 'GroupSessionDO',
+        }],
+      },
+      migrations: [{
+        new_sqlite_classes: ['GroupSessionDO'],
+      }],
+      routes: [
+        { pattern: 'pairresearch.io' },
+        { pattern: 'www.pairresearch.io' },
+      ],
+    }))
     const result = runReleasePreflight(validReleaseEnv, fixtureRoot)
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('wrangler.jsonc is missing required var: VITE_GOOGLE_CLIENT_ID')
+    expect(result.stderr).toContain('wrangler.jsonc must not define vars; configure public build values through Vite environment variables.')
   })
 })

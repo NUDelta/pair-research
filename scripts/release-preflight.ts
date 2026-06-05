@@ -5,6 +5,18 @@ import { config as loadDotenv } from 'dotenv'
 
 loadDotenv({ path: '.env', quiet: true })
 
+const REQUIRED_PUBLIC_BUILD_ENV_VALUES = [
+  'VITE_SUPABASE_URL',
+  'VITE_SUPABASE_PUBLISHABLE_KEY',
+  'VITE_SITE_BASE_URL',
+  'VITE_CLOUDFLARE_TURNSTILE_SITE_KEY',
+  'VITE_GOOGLE_CLIENT_ID',
+] as const
+
+const REQUIRED_PUBLIC_RUNTIME_ENV_VALUES = [
+  'R2_PUBLIC_DOMAIN',
+] as const
+
 const REQUIRED_RELEASE_ENV_VALUES = [
   'DATABASE_URL',
   'SUPABASE_SECRET_KEY',
@@ -17,15 +29,6 @@ const REQUIRED_RELEASE_ENV_VALUES = [
 const REQUIRED_DEPLOYMENT_SECRETS = [
   'CLOUDFLARE_API_TOKEN',
   'CLOUDFLARE_ACCOUNT_ID',
-] as const
-
-const REQUIRED_WRANGLER_VARS = [
-  'VITE_SUPABASE_URL',
-  'VITE_SUPABASE_PUBLISHABLE_KEY',
-  'VITE_SITE_BASE_URL',
-  'R2_PUBLIC_DOMAIN',
-  'VITE_CLOUDFLARE_TURNSTILE_SITE_KEY',
-  'VITE_GOOGLE_CLIENT_ID',
 ] as const
 
 const REQUIRED_WORKER_SECRETS = [
@@ -95,6 +98,10 @@ interface WranglerConfig {
   }>
 }
 
+function readText(relativePath: string) {
+  return fs.readFileSync(path.join(REPO_ROOT, relativePath), 'utf8')
+}
+
 function stripJsonComments(source: string) {
   let result = ''
   let inString = false
@@ -148,10 +155,6 @@ function stripJsonComments(source: string) {
   }
 
   return result
-}
-
-function readText(relativePath: string) {
-  return fs.readFileSync(path.join(REPO_ROOT, relativePath), 'utf8')
 }
 
 function readJsonc(relativePath: string): WranglerConfig {
@@ -220,34 +223,37 @@ for (const name of REQUIRED_RELEASE_ENV_VALUES) {
   assert(hasEnvValue(name), `Missing required release environment value: ${name}`)
 }
 
-const wrangler = readJsonc('wrangler.jsonc')
-
-function getWranglerVarString(name: typeof REQUIRED_WRANGLER_VARS[number]) {
-  const value = wrangler.vars?.[name]
-  return typeof value === 'string' ? value.trim() : ''
+for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
+  assert(hasEnvValue(name), `Missing required public build environment value: ${name}`)
 }
+
+for (const name of REQUIRED_PUBLIC_RUNTIME_ENV_VALUES) {
+  assert(hasEnvValue(name), `Missing required public runtime environment value: ${name}`)
+}
+
+const wrangler = readJsonc('wrangler.jsonc')
 
 assert(wrangler.name === 'pair-research', 'wrangler.jsonc must target the pair-research Worker.')
 assert(wrangler.workers_dev === false, 'wrangler.jsonc must keep workers_dev disabled for production.')
 assert(wrangler.preview_urls === true, 'wrangler.jsonc must keep preview_urls enabled for Worker diagnostics.')
+assert(
+  wrangler.vars === undefined || Object.keys(wrangler.vars).length === 0,
+  'wrangler.jsonc must not define vars; configure public build values through Vite environment variables.',
+)
 
-for (const name of REQUIRED_WRANGLER_VARS) {
-  assert(getWranglerVarString(name) !== '', `wrangler.jsonc is missing required var: ${name}`)
-}
-
-if (getWranglerVarString('VITE_SITE_BASE_URL') !== '') {
-  const siteUrl = parseUrl('VITE_SITE_BASE_URL', getWranglerVarString('VITE_SITE_BASE_URL'))
+if (hasEnvValue('VITE_SITE_BASE_URL')) {
+  const siteUrl = parseUrl('VITE_SITE_BASE_URL', process.env.VITE_SITE_BASE_URL ?? '')
   assert(siteUrl.protocol === 'https:', 'VITE_SITE_BASE_URL must use https for release.')
 }
 
-if (getWranglerVarString('R2_PUBLIC_DOMAIN') !== '') {
-  const r2Url = parseUrl('R2_PUBLIC_DOMAIN', getWranglerVarString('R2_PUBLIC_DOMAIN'))
-  assert(r2Url.protocol === 'https:', 'R2_PUBLIC_DOMAIN must use https for release.')
+if (hasEnvValue('VITE_SUPABASE_URL')) {
+  const supabaseUrl = parseUrl('VITE_SUPABASE_URL', process.env.VITE_SUPABASE_URL ?? '')
+  assert(supabaseUrl.protocol === 'https:', 'VITE_SUPABASE_URL must use https.')
 }
 
-if (getWranglerVarString('VITE_SUPABASE_URL') !== '') {
-  const supabaseUrl = parseUrl('VITE_SUPABASE_URL', getWranglerVarString('VITE_SUPABASE_URL'))
-  assert(supabaseUrl.protocol === 'https:', 'VITE_SUPABASE_URL must use https.')
+if (hasEnvValue('R2_PUBLIC_DOMAIN')) {
+  const r2Url = parseUrl('R2_PUBLIC_DOMAIN', process.env.R2_PUBLIC_DOMAIN ?? '')
+  assert(r2Url.protocol === 'https:', 'R2_PUBLIC_DOMAIN must use https for release.')
 }
 
 if (hasEnvValue('CONTACT_FROM_EMAIL')) {
@@ -282,16 +288,32 @@ const deployWorkflow = readText('.github/workflows/deploy-production.yml')
 for (const name of REQUIRED_RELEASE_ENV_VALUES) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference secret: ${name}`)
 }
+for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
+  assert(deployWorkflow.includes(`vars.${name}`), `Production deploy workflow must reference public variable: ${name}`)
+}
+for (const name of REQUIRED_PUBLIC_RUNTIME_ENV_VALUES) {
+  assert(deployWorkflow.includes(`vars.${name}`), `Production deploy workflow must reference public runtime variable: ${name}`)
+}
 for (const name of REQUIRED_DEPLOYMENT_SECRETS) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference deployment secret: ${name}`)
 }
 for (const command of REQUIRED_PRODUCTION_DEPLOY_COMMANDS) {
   assert(deployWorkflow.includes(command), `Production deploy workflow must run: ${command}`)
 }
+assert(
+  deployWorkflow.includes('deploy --keep-vars'),
+  'Production deploy workflow must use wrangler deploy --keep-vars to preserve dashboard runtime variables.',
+)
 
 const prChecksWorkflow = readText('.github/workflows/pr-checks.yml')
 for (const command of REQUIRED_PR_CHECK_COMMANDS) {
   assert(prChecksWorkflow.includes(command), `PR checks must run: ${command}`)
+}
+for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
+  assert(prChecksWorkflow.includes(name), `PR checks must define public build environment value: ${name}`)
+}
+for (const name of REQUIRED_PUBLIC_RUNTIME_ENV_VALUES) {
+  assert(prChecksWorkflow.includes(name), `PR checks must define public runtime environment value: ${name}`)
 }
 
 const supabaseMigrationsDirectory = path.join(REPO_ROOT, 'supabase', 'migrations')

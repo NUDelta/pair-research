@@ -8,7 +8,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview --port 4000",
-    "deploy": "pnpm run build && wrangler deploy",
+    "deploy": "pnpm run build && wrangler deploy --keep-vars",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings ./cloudflare-env.d.ts",
     "lint": "eslint .",
     "lint:ci": "eslint . --max-warnings=0",

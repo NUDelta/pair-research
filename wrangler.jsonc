@@ -4,14 +4,6 @@
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
-  "vars": {
-    "VITE_SUPABASE_URL": "https://twnurskjzrelsaptkblt.supabase.co",
-    "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_SdAHR6xx66f-XLPo1qrSQA_baDxzVx7",
-    "VITE_SITE_BASE_URL": "https://pairresearch.io",
-    "R2_PUBLIC_DOMAIN": "https://r2.pairresearch.io",
-    "VITE_CLOUDFLARE_TURNSTILE_SITE_KEY": "0x4AAAAAAC9k1bsuMhNHCEY9",
-    "VITE_GOOGLE_CLIENT_ID": "537921643887-a1c0b39jav50ekikd2rm7a11fu5v7eke.apps.googleusercontent.com"
-  },
   "secrets": {
     "required": [
       "CLOUDFLARE_TURNSTILE_SECRET_KEY",
