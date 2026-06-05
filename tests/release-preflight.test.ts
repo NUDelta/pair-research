@@ -15,6 +15,7 @@ const validReleaseEnv = {
   VITE_SITE_BASE_URL: 'https://pairresearch.io',
   VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: 'turnstile-site',
   VITE_GOOGLE_CLIENT_ID: 'google-client-id',
+  R2_PUBLIC_DOMAIN: 'https://r2.pairresearch.io',
   DATABASE_URL: 'postgresql://user:pass@example.com:5432/db',
   SUPABASE_SECRET_KEY: 'sb_secret_test',
   CLOUDFLARE_TURNSTILE_SECRET_KEY: 'turnstile-secret',
@@ -85,6 +86,7 @@ env:
   VITE_SITE_BASE_URL: \${{ vars.VITE_SITE_BASE_URL }}
   VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: \${{ vars.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
   VITE_GOOGLE_CLIENT_ID: \${{ vars.VITE_GOOGLE_CLIENT_ID }}
+  R2_PUBLIC_DOMAIN: \${{ vars.R2_PUBLIC_DOMAIN }}
   DATABASE_URL: \${{ secrets.DATABASE_URL }}
   SUPABASE_SECRET_KEY: \${{ secrets.SUPABASE_SECRET_KEY }}
   CLOUDFLARE_TURNSTILE_SECRET_KEY: \${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
@@ -107,6 +109,7 @@ env:
   VITE_SITE_BASE_URL: https://pairresearch.io
   VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: turnstile-site
   VITE_GOOGLE_CLIENT_ID: google-client-id
+  R2_PUBLIC_DOMAIN: https://r2.pairresearch.io
 steps:
   - run: pnpm run release:preflight
   - run: pnpm run lint:ci
@@ -169,6 +172,17 @@ describe('release preflight', () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('Missing required public build environment value: VITE_GOOGLE_CLIENT_ID')
+  })
+
+  it('rejects missing public runtime values required by server code', () => {
+    const fixtureRoot = createReleasePreflightFixture()
+    const result = runReleasePreflight({
+      ...validReleaseEnv,
+      R2_PUBLIC_DOMAIN: '',
+    }, fixtureRoot)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Missing required public runtime environment value: R2_PUBLIC_DOMAIN')
   })
 
   it('rejects committed Wrangler vars', () => {

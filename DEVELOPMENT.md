@@ -214,6 +214,8 @@ The app deploys to Cloudflare Workers with Wrangler:
 pnpm deploy
 ```
 
+The deploy script uses `wrangler deploy --keep-vars` so dashboard-managed runtime variables are preserved when `wrangler.jsonc` does not define `vars`.
+
 Wrangler should write logs inside the repository instead of a user-level preferences directory:
 
 ```bash
@@ -242,7 +244,7 @@ Configure these GitHub Actions variables before enabling the production deployme
 
 For local overrides, use Vite's normal `.env` files with the same `VITE_*` names.
 
-Configure this public runtime variable in the production Cloudflare Worker environment. It is server-only and is not read through Vite:
+Configure this public runtime variable in both GitHub Actions variables and the production Cloudflare Worker environment. It is server-only and is not read through Vite:
 
 - `R2_PUBLIC_DOMAIN`
 

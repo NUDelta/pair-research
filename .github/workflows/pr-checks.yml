@@ -23,6 +23,7 @@ jobs:
       VITE_SITE_BASE_URL: https://pairresearch.io
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: turnstile-site
       VITE_GOOGLE_CLIENT_ID: google-client-id
+      R2_PUBLIC_DOMAIN: https://r2.pairresearch.io
       DATABASE_URL: postgresql://user:pass@example.com:5432/db
       SUPABASE_SECRET_KEY: sb_secret_ci
       CLOUDFLARE_TURNSTILE_SECRET_KEY: turnstile-secret
@@ -87,6 +88,7 @@ jobs:
       VITE_SITE_BASE_URL: https://pairresearch.io
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: turnstile-site
       VITE_GOOGLE_CLIENT_ID: google-client-id
+      R2_PUBLIC_DOMAIN: https://r2.pairresearch.io
       DATABASE_URL: postgresql://user:pass@example.com:5432/db
       SUPABASE_SECRET_KEY: sb_secret_ci
       CLOUDFLARE_TURNSTILE_SECRET_KEY: turnstile-secret
