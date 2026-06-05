@@ -1,7 +1,13 @@
+import type { WranglerPublicVarName } from './wrangler-public-vars.ts'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { config as loadDotenv } from 'dotenv'
+import {
+  readWranglerPublicVarsConfig,
+  REQUIRED_WRANGLER_PUBLIC_VARS,
+  stripJsonComments,
+} from './wrangler-public-vars.ts'
 
 loadDotenv({ path: '.env', quiet: true })
 
@@ -17,15 +23,6 @@ const REQUIRED_RELEASE_ENV_VALUES = [
 const REQUIRED_DEPLOYMENT_SECRETS = [
   'CLOUDFLARE_API_TOKEN',
   'CLOUDFLARE_ACCOUNT_ID',
-] as const
-
-const REQUIRED_WRANGLER_VARS = [
-  'VITE_SUPABASE_URL',
-  'VITE_SUPABASE_PUBLISHABLE_KEY',
-  'VITE_SITE_BASE_URL',
-  'R2_PUBLIC_DOMAIN',
-  'VITE_CLOUDFLARE_TURNSTILE_SITE_KEY',
-  'VITE_GOOGLE_CLIENT_ID',
 ] as const
 
 const REQUIRED_WORKER_SECRETS = [
@@ -93,61 +90,6 @@ interface WranglerConfig {
   routes?: Array<{
     pattern?: string
   }>
-}
-
-function stripJsonComments(source: string) {
-  let result = ''
-  let inString = false
-  let quote = ''
-  let escaped = false
-
-  for (let index = 0; index < source.length; index += 1) {
-    const current = source[index]
-    const next = source[index + 1]
-
-    if (inString) {
-      result += current
-      if (escaped) {
-        escaped = false
-      }
-      else if (current === '\\') {
-        escaped = true
-      }
-      else if (current === quote) {
-        inString = false
-        quote = ''
-      }
-      continue
-    }
-
-    if (current === '"' || current === '\'') {
-      inString = true
-      quote = current
-      result += current
-      continue
-    }
-
-    if (current === '/' && next === '/') {
-      while (index < source.length && source[index] !== '\n') {
-        index += 1
-      }
-      result += '\n'
-      continue
-    }
-
-    if (current === '/' && next === '*') {
-      index += 2
-      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
-        index += 1
-      }
-      index += 1
-      continue
-    }
-
-    result += current
-  }
-
-  return result
 }
 
 function readText(relativePath: string) {
@@ -221,9 +163,10 @@ for (const name of REQUIRED_RELEASE_ENV_VALUES) {
 }
 
 const wrangler = readJsonc('wrangler.jsonc')
+const wranglerPublicVars = readWranglerPublicVarsConfig(REPO_ROOT)
 
-function getWranglerVarString(name: typeof REQUIRED_WRANGLER_VARS[number]) {
-  const value = wrangler.vars?.[name]
+function getWranglerVarString(name: WranglerPublicVarName) {
+  const value = wranglerPublicVars.vars?.[name]
   return typeof value === 'string' ? value.trim() : ''
 }
 
@@ -231,7 +174,7 @@ assert(wrangler.name === 'pair-research', 'wrangler.jsonc must target the pair-r
 assert(wrangler.workers_dev === false, 'wrangler.jsonc must keep workers_dev disabled for production.')
 assert(wrangler.preview_urls === true, 'wrangler.jsonc must keep preview_urls enabled for Worker diagnostics.')
 
-for (const name of REQUIRED_WRANGLER_VARS) {
+for (const name of REQUIRED_WRANGLER_PUBLIC_VARS) {
   assert(getWranglerVarString(name) !== '', `wrangler.jsonc is missing required var: ${name}`)
 }
 
@@ -293,6 +236,12 @@ const prChecksWorkflow = readText('.github/workflows/pr-checks.yml')
 for (const command of REQUIRED_PR_CHECK_COMMANDS) {
   assert(prChecksWorkflow.includes(command), `PR checks must run: ${command}`)
 }
+
+const viteConfig = readText('vite.config.ts')
+assert(
+  viteConfig.includes('loadWranglerPublicVarsIntoEnv()'),
+  'vite.config.ts must load wrangler.jsonc public vars before Vite resolves import.meta.env.',
+)
 
 const supabaseMigrationsDirectory = path.join(REPO_ROOT, 'supabase', 'migrations')
 assert(fs.existsSync(supabaseMigrationsDirectory), 'No supabase/migrations directory found. Add migration artifacts before public release.')

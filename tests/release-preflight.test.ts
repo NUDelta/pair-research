@@ -113,6 +113,14 @@ export const routes = [
   { path: '/terms' },
 ]
 `)
+  writeFixtureFile(root, 'vite.config.ts', `
+import { defineConfig } from 'vite'
+import { loadWranglerPublicVarsIntoEnv } from './scripts/wrangler-public-vars.ts'
+
+loadWranglerPublicVarsIntoEnv()
+
+export default defineConfig({})
+`)
 
   for (const routeFile of [
     'src/routes/index.tsx',
@@ -157,5 +165,14 @@ describe('release preflight', () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('wrangler.jsonc is missing required var: VITE_GOOGLE_CLIENT_ID')
+  })
+
+  it('rejects configs that do not load Wrangler public vars for Vite builds', () => {
+    const fixtureRoot = createReleasePreflightFixture({ googleClientId: 'google-client-id' })
+    writeFixtureFile(fixtureRoot, 'vite.config.ts', 'export default {}')
+    const result = runReleasePreflight(validReleaseEnv, fixtureRoot)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('vite.config.ts must load wrangler.jsonc public vars before Vite resolves import.meta.env.')
   })
 })
