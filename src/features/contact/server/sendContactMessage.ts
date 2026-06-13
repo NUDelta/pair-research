@@ -130,7 +130,7 @@ export async function handleSendContactMessage(
 }
 
 export const sendContactMessage = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => sendContactMessageSchema.parse(data))
+  .validator((data: unknown) => sendContactMessageSchema.parse(data))
   .handler(async ({ data }): Promise<TurnstileAwareActionResponse> => {
     const { sendResendEmail } = await import('./sendResendEmail.server')
     return handleSendContactMessage(data, { sendEmail: sendResendEmail })

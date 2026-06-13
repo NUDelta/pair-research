@@ -6,7 +6,7 @@ import { deleteGroupRoleSchema } from '../../schemas/groupManagement'
 import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
 
 export const deleteGroupRole = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(deleteGroupRoleSchema, data))
+  .validator((data: unknown) => parseValidatedInput(deleteGroupRoleSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')

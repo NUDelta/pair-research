@@ -4,7 +4,7 @@ import { groupSettingsParamsSchema } from '../../schemas/groupManagement'
 import { findManagedGroup } from './groupManagement'
 
 export const getGroupSettings = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown) => parseValidatedInput(groupSettingsParamsSchema, data))
+  .validator((data: unknown) => parseValidatedInput(groupSettingsParamsSchema, data))
   .handler(async ({ data }) => {
     try {
       const { getUser } = await import('@/shared/supabase/server')

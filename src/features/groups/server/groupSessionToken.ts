@@ -113,7 +113,7 @@ export async function verifyGroupSessionTokenValue(
 }
 
 export const createGroupSessionToken = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
+  .validator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
   .handler(async ({ data }) => {
     const user = await getUser()
     const membership = await checkMembership(user.id, data.groupId)

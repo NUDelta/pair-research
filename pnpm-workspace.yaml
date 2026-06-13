@@ -13,4 +13,3 @@ allowBuilds:
   workerd: true
 overrides:
   '@hono/node-server': ^1.19.14
-  zod: ^3.25.76
