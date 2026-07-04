@@ -16,7 +16,7 @@ interface MakePairsResponse {
 }
 
 export const makePairs = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
+  .validator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
   .handler(async ({ data }): Promise<MakePairsResponse> => {
     const { groupId } = data
 

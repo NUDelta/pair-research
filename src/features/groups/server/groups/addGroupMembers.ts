@@ -17,7 +17,7 @@ interface LockedMembershipRow {
 }
 
 export const addGroupMembers = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(addGroupMembersSchema, data))
+  .validator((data: unknown) => parseValidatedInput(addGroupMembersSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')

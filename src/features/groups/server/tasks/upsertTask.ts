@@ -3,7 +3,7 @@ import { taskSchema } from '@/features/groups/schemas/taskForm'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 export const upsertTask = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(taskSchema, data))
+  .validator((data: unknown) => parseValidatedInput(taskSchema, data))
   .handler(async ({ data }) => {
     try {
       const { groupId, description } = data

@@ -11,7 +11,7 @@ import { ensureAuthUserForInvite, upsertInviteProfile } from './groupManagement'
 const createGroupRequestSchema = groupSchema.merge(turnstileTokenSchema)
 
 export const createGroup = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(createGroupRequestSchema, data))
+  .validator((data: unknown) => parseValidatedInput(createGroupRequestSchema, data))
   .handler(async ({ data }): Promise<TurnstileAwareActionResponse> => {
     const turnstile = await verifyTurnstileToken({
       action: 'create-group',

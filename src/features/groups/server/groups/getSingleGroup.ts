@@ -4,7 +4,7 @@ import { groupIdInputSchema } from '@/features/groups/server/groupActionInputs'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 export const getSingleGroup = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
+  .validator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
   .handler(async ({ data }) => {
     const { groupId } = data
 
