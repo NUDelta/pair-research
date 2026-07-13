@@ -1,3 +1,20 @@
+minimumReleaseAgeExclude:
+  - nanoid@6.0.0
+  - '@cloudflare/workers-types@5.20260713.1'
+  - '@eslint-react/ast@5.14.6'
+  - '@eslint-react/core@5.14.6'
+  - '@eslint-react/eslint-plugin@5.14.6'
+  - '@eslint-react/eslint@5.14.6'
+  - '@eslint-react/jsx@5.14.6'
+  - '@eslint-react/shared@5.14.6'
+  - '@eslint-react/var@5.14.6'
+  - eslint-plugin-react-dom@5.14.6
+  - eslint-plugin-react-jsx@5.14.6
+  - eslint-plugin-react-naming-convention@5.14.6
+  - eslint-plugin-react-rsc@5.14.6
+  - eslint-plugin-react-web-api@5.14.6
+  - eslint-plugin-react-x@5.14.6
+  - hono@4.12.30
 shellEmulator: true
 
 trustPolicy: no-downgrade
@@ -12,5 +29,7 @@ allowBuilds:
   sharp: true
   workerd: true
 overrides:
+  '@babel/core': ^7.29.1
   '@hono/node-server': ^1.19.14
-  zod: ^3.25.76
+  hono: ^4.12.30
+  undici: ^7.28.0
