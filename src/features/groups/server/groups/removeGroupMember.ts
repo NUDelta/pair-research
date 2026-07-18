@@ -7,7 +7,7 @@ import { removeGroupMemberSchema } from '../../schemas/groupManagement'
 import { findManagedGroup, withSerializableRetry } from './groupManagement'
 
 export const removeGroupMember = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(removeGroupMemberSchema, data))
+  .validator((data: unknown) => parseValidatedInput(removeGroupMemberSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')

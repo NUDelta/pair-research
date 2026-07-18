@@ -29,7 +29,7 @@ export function getLoginFailureResponse(error: { code?: string, message: string 
 }
 
 export const login = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => loginRequestSchema.parse(data))
+  .validator((data: unknown) => loginRequestSchema.parse(data))
   .handler(async ({ data }): Promise<LoginResponse> => {
     const turnstile = await verifyTurnstileToken({
       action: 'login',
