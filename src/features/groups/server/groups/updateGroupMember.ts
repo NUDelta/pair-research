@@ -11,7 +11,7 @@ interface UpdateGroupMemberResponse extends ActionResponse {
 }
 
 export const updateGroupMember = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(updateGroupMemberSchema, data))
+  .validator((data: unknown) => parseValidatedInput(updateGroupMemberSchema, data))
   .handler(async ({ data }): Promise<UpdateGroupMemberResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')

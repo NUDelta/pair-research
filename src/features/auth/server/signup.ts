@@ -20,7 +20,7 @@ type SignupResponse = TurnstileAwareActionResponse & {
 }
 
 export const signup = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => signupRequestSchema.parse(data))
+  .validator((data: unknown) => signupRequestSchema.parse(data))
   .handler(async ({ data }): Promise<SignupResponse> => {
     const turnstile = await verifyTurnstileToken({
       action: 'signup',

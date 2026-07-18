@@ -16,7 +16,7 @@ const requestPasswordResetSchema = loginSchema.pick({ email: true })
   })
 
 export const requestPasswordReset = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => requestPasswordResetSchema.parse(data))
+  .validator((data: unknown) => requestPasswordResetSchema.parse(data))
   .handler(async ({ data }): Promise<TurnstileAwareActionResponse> => {
     const turnstile = await verifyTurnstileToken({
       action: 'forgot-password',
