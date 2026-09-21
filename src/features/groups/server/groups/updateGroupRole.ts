@@ -6,7 +6,7 @@ import { updateGroupRoleSchema } from '../../schemas/groupManagement'
 import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
 
 export const updateGroupRole = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(updateGroupRoleSchema, data))
+  .validator((data: unknown) => parseValidatedInput(updateGroupRoleSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')

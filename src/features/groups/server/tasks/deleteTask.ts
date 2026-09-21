@@ -3,7 +3,7 @@ import { deleteTaskInputSchema } from '@/features/groups/server/groupActionInput
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 export const deleteTask = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(deleteTaskInputSchema, data))
+  .validator((data: unknown) => parseValidatedInput(deleteTaskInputSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')

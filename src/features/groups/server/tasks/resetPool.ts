@@ -3,7 +3,7 @@ import { groupIdInputSchema } from '@/features/groups/server/groupActionInputs'
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 export const resetPool = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
+  .validator((data: unknown) => parseValidatedInput(groupIdInputSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')

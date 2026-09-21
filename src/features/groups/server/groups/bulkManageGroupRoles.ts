@@ -6,7 +6,7 @@ import { bulkManageGroupRolesSchema } from '../../schemas/groupManagement'
 import { ensureCurrentGroupManager, findManagedGroup, withSerializableRetry } from './groupManagement'
 
 export const bulkManageGroupRoles = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(bulkManageGroupRolesSchema, data))
+  .validator((data: unknown) => parseValidatedInput(bulkManageGroupRolesSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')
