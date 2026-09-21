@@ -1,9 +1,15 @@
-shellEmulator: true
+minimumReleaseAgeExcludePrune: true
 
 trustPolicy: no-downgrade
 trustPolicyExclude:
+  - prisma@7.10.0
   - semver@6.3.1
   - undici-types@6.21.0
+
+shellEmulator: true
+
+overrides:
+  '@hono/node-server': ^1.19.14
 
 allowBuilds:
   '@prisma/engines': true
@@ -11,6 +17,3 @@ allowBuilds:
   prisma: true
   sharp: true
   workerd: true
-overrides:
-  '@hono/node-server': ^1.19.14
-  zod: ^3.25.76

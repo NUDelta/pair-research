@@ -9,64 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthConfirmRouteImport } from './routes/auth/confirm'
-import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as AuthConfirmRouteImport } from './routes/auth/confirm'
 import { Route as AuthedGroupsIndexRouteImport } from './routes/_authed/groups/index'
-import { Route as AuthedGroupsCreateRouteImport } from './routes/_authed/groups/create'
 import { Route as AuthedGroupsSlugRouteImport } from './routes/_authed/groups/$slug'
+import { Route as AuthedGroupsCreateRouteImport } from './routes/_authed/groups/create'
 import { Route as AuthedGroupsSlugIndexRouteImport } from './routes/_authed/groups/$slug/index'
 import { Route as AuthedGroupsSlugSettingsRouteImport } from './routes/_authed/groups/$slug/settings'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
-  id: '/robots.txt',
-  path: '/robots.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -74,23 +43,44 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedRoute = AuthedRouteImport.update({
-  id: '/_authed',
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthConfirmRoute = AuthConfirmRouteImport.update({
-  id: '/auth/confirm',
-  path: '/auth/confirm',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedAccountRoute = AuthedAccountRouteImport.update({
@@ -98,19 +88,29 @@ const AuthedAccountRoute = AuthedAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthConfirmRoute = AuthConfirmRouteImport.update({
+  id: '/auth/confirm',
+  path: '/auth/confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedGroupsIndexRoute = AuthedGroupsIndexRouteImport.update({
   id: '/groups/',
   path: '/groups/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedGroupsCreateRoute = AuthedGroupsCreateRouteImport.update({
-  id: '/groups/create',
-  path: '/groups/create',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedGroupsSlugRoute = AuthedGroupsSlugRouteImport.update({
   id: '/groups/$slug',
   path: '/groups/$slug',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedGroupsCreateRoute = AuthedGroupsCreateRouteImport.update({
+  id: '/groups/create',
+  path: '/groups/create',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedGroupsSlugIndexRoute = AuthedGroupsSlugIndexRouteImport.update({
@@ -267,67 +267,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots.txt': {
-      id: '/robots.txt'
-      path: '/robots.txt'
-      fullPath: '/robots.txt'
-      preLoaderRoute: typeof RobotsDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed': {
@@ -337,25 +281,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/confirm': {
-      id: '/auth/confirm'
-      path: '/auth/confirm'
-      fullPath: '/auth/confirm'
-      preLoaderRoute: typeof AuthConfirmRouteImport
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/account': {
@@ -365,6 +351,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAccountRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/confirm': {
+      id: '/auth/confirm'
+      path: '/auth/confirm'
+      fullPath: '/auth/confirm'
+      preLoaderRoute: typeof AuthConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/groups/': {
       id: '/_authed/groups/'
       path: '/groups'
@@ -372,18 +372,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedGroupsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/groups/create': {
-      id: '/_authed/groups/create'
-      path: '/groups/create'
-      fullPath: '/groups/create'
-      preLoaderRoute: typeof AuthedGroupsCreateRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/groups/$slug': {
       id: '/_authed/groups/$slug'
       path: '/groups/$slug'
       fullPath: '/groups/$slug'
       preLoaderRoute: typeof AuthedGroupsSlugRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/groups/create': {
+      id: '/_authed/groups/create'
+      path: '/groups/create'
+      fullPath: '/groups/create'
+      preLoaderRoute: typeof AuthedGroupsCreateRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/groups/$slug/': {
