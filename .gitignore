@@ -57,3 +57,27 @@ next-env.d.ts
 #
 node-compile-cache
 !.env.example
+
+# Database backups and migration exports must stay outside the repository.
+/backups/
+/migration-backups/
+/database-exports/
+/migration-exports/
+/restore-previews/
+/restore-preview.sql
+*.archive
+*.dump
+*.backup.sql
+*.backup.sql.gz
+*.mongodump.archive
+*.mongodump.archive.gz
+*.mongodump.archive.gz.partial
+*.pgdump
+*.pgdump.partial
+*.bson
+*.sqlite
+*.sqlite3
+backup-manifest*.txt
+backup-manifest*.json
+backup-manifest*.yaml
+backup-checksums*.sha256
