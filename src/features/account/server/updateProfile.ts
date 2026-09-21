@@ -4,7 +4,7 @@ import { resolveAvatarUpdate } from '@/features/account/server/avatar/resolveAva
 import { getUser } from '@/shared/supabase/server'
 
 export const updateProfile = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => updateProfileInputSchema.parse(data))
+  .validator((data: unknown) => updateProfileInputSchema.parse(data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getPrismaClient } = await import('@/shared/server/prisma')

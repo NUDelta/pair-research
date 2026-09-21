@@ -3,7 +3,7 @@ import { upsertHelpCapacitiesInputSchema } from '@/features/groups/server/groupA
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 
 export const upsertHelpCapacities = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => parseValidatedInput(upsertHelpCapacitiesInputSchema, data))
+  .validator((data: unknown) => parseValidatedInput(upsertHelpCapacitiesInputSchema, data))
   .handler(async ({ data }): Promise<ActionResponse> => {
     try {
       const { getUser } = await import('@/shared/supabase/server')
