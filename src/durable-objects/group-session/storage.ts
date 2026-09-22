@@ -35,6 +35,43 @@ export function initializeGroupSessionStorage(ctx: DurableObjectState): void {
       PRIMARY KEY (task_id, user_id)
     )
   `)
+  ctx.storage.sql.exec(`
+    CREATE TABLE IF NOT EXISTS security_rate_events (
+      user_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )
+  `)
+  ctx.storage.sql.exec(`
+    CREATE INDEX IF NOT EXISTS security_rate_events_lookup
+    ON security_rate_events (user_id, action, created_at)
+  `)
+}
+
+export function consumeStoredActionRateLimit(
+  ctx: DurableObjectState,
+  input: { action: string, limit: number, userId: string, windowMs: number },
+  nowMs = Date.now(),
+): boolean {
+  const cutoff = nowMs - input.windowMs
+  ctx.storage.sql.exec('DELETE FROM security_rate_events WHERE created_at < ?', cutoff)
+  const count = ctx.storage.sql.exec<CountRow>(
+    'SELECT COUNT(*) as count FROM security_rate_events WHERE user_id = ? AND action = ? AND created_at >= ?',
+    input.userId,
+    input.action,
+    cutoff,
+  ).one().count
+  if (count >= input.limit) {
+    return false
+  }
+
+  ctx.storage.sql.exec(
+    'INSERT INTO security_rate_events (user_id, action, created_at) VALUES (?, ?, ?)',
+    input.userId,
+    input.action,
+    nowMs,
+  )
+  return true
 }
 
 export function toStoredTask(
@@ -90,6 +127,49 @@ export function upsertStoredTask(ctx: DurableObjectState, task: StoredTaskInput)
 export function deleteStoredTaskAndRatings(ctx: DurableObjectState, taskId: string, userId: string): void {
   ctx.storage.sql.exec('DELETE FROM ratings WHERE task_id = ? OR user_id = ?', taskId, userId)
   ctx.storage.sql.exec('DELETE FROM active_tasks WHERE id = ?', taskId)
+}
+
+export function removeStoredMemberState(ctx: DurableObjectState, userId: string): string[] {
+  const taskIds = ctx.storage.sql.exec<StoredTaskIdRow>(
+    'SELECT id FROM active_tasks WHERE user_id = ?',
+    userId,
+  ).toArray().map(row => row.id)
+
+  ctx.storage.sql.exec(
+    `DELETE FROM ratings
+     WHERE user_id = ?
+        OR task_id IN (SELECT id FROM active_tasks WHERE user_id = ?)`,
+    userId,
+    userId,
+  )
+  ctx.storage.sql.exec('DELETE FROM active_tasks WHERE user_id = ?', userId)
+
+  return taskIds
+}
+
+export function retainStoredMembers(ctx: DurableObjectState, confirmedUserIds: Set<string>): string[] {
+  const removedUserIds = [...new Set(
+    getStoredTasks(ctx)
+      .map(task => task.user_id)
+      .filter(userId => !confirmedUserIds.has(userId)),
+  )]
+
+  for (const userId of removedUserIds) {
+    removeStoredMemberState(ctx, userId)
+  }
+
+  ctx.storage.sql.exec(
+    `DELETE FROM ratings
+     WHERE task_id NOT IN (SELECT id FROM active_tasks)`,
+  )
+
+  for (const rating of getStoredRatings(ctx)) {
+    if (!confirmedUserIds.has(rating.user_id)) {
+      ctx.storage.sql.exec('DELETE FROM ratings WHERE user_id = ?', rating.user_id)
+    }
+  }
+
+  return removedUserIds
 }
 
 export function upsertStoredRatings(
@@ -244,9 +324,22 @@ export async function hydrateGroupSessionStorage(
   groupId: string,
   prisma: PrismaClient,
 ): Promise<void> {
+  const confirmedMemberships = await prisma.group_member.findMany({
+    where: {
+      group_id: groupId,
+      is_pending: false,
+    },
+    select: {
+      user_id: true,
+    },
+  })
+  const confirmedUserIds = confirmedMemberships.map(membership => membership.user_id)
   const tasks = await prisma.task.findMany({
     where: {
       group_id: groupId,
+      user_id: {
+        in: confirmedUserIds,
+      },
       pairing_id: null,
       delete_pending: {
         not: true,
@@ -272,6 +365,9 @@ export async function hydrateGroupSessionStorage(
         where: {
           task_id: {
             in: activeTaskIds,
+          },
+          user_id: {
+            in: confirmedUserIds,
           },
         },
         select: {

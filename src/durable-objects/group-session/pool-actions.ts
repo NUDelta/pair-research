@@ -92,7 +92,7 @@ export async function handleResetPool(
     }, { isolationLevel: 'Serializable' })
 
     clearStoredGroupSession(runtime.ctx)
-    runtime.broadcast({ type: 'pool:reset' })
+    await runtime.broadcast(request.groupId, { type: 'pool:reset' })
 
     return {
       success: true,

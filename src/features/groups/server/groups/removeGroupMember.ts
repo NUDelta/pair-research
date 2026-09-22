@@ -163,6 +163,22 @@ export const removeGroupMember = createServerFn({ method: 'POST' })
           return targetMembership.is_pending
         }, { isolationLevel: 'Serializable' }))
 
+      const { getGroupSession } = await import('@/shared/server/cloudflare/bindings.server')
+      const reconciliation = await getGroupSession(data.groupId).reconcileRemovedMember({
+        groupId: data.groupId,
+        userId: data.userId,
+      })
+      if (!reconciliation.success) {
+        console.error('[REMOVE_GROUP_MEMBER_SESSION_RECONCILIATION]', {
+          groupId: data.groupId,
+          userId: data.userId,
+        })
+        return {
+          success: false,
+          message: 'The member was removed, but realtime cleanup must be retried before pairing.',
+        }
+      }
+
       return {
         success: true,
         message: targetWasPending

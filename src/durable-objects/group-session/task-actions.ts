@@ -61,7 +61,7 @@ export async function handleUpsertTask(
     }
     upsertStoredTask(runtime.ctx, storedTask)
 
-    runtime.broadcast({
+    await runtime.broadcast(request.groupId, {
       type: 'task:upserted',
       task: toStoredTask(storedTask, new Map(), getRatingProgressByUserId(runtime.ctx)),
     })
@@ -126,7 +126,7 @@ export async function handleDeleteTask(
     }
 
     deleteStoredTaskAndRatings(runtime.ctx, request.taskId, request.userId)
-    runtime.broadcast({
+    await runtime.broadcast(request.groupId, {
       type: 'task:deleted',
       taskId: request.taskId,
       userId: request.userId,

@@ -17,5 +17,11 @@ export const helpCapacityUpdateSchema = z.object({
 })
 
 export const upsertHelpCapacitiesInputSchema = groupIdInputSchema.extend({
-  updates: z.array(helpCapacityUpdateSchema).min(1, 'Add at least one capacity update'),
+  updates: z.array(helpCapacityUpdateSchema)
+    .min(1, 'Add at least one capacity update')
+    .max(100, 'Update at most 100 capacities at a time')
+    .refine(
+      updates => new Set(updates.map(update => update.taskId)).size === updates.length,
+      'Each task can only be updated once per request',
+    ),
 })

@@ -9,6 +9,7 @@ import {
   getStoredTasks,
   pruneRatingsToActiveTasks,
   removeStoredTasks,
+  retainStoredMembers,
 } from './storage'
 import {
   ACTIVE_PAIRING_EXISTS_MESSAGE,
@@ -61,6 +62,16 @@ export async function handleMakePairs(
     }
 
     await runtime.ensureHydrated(request.groupId, prisma)
+    const confirmedMemberships = await prisma.group_member.findMany({
+      where: {
+        group_id: request.groupId,
+        is_pending: false,
+      },
+      select: {
+        user_id: true,
+      },
+    })
+    retainStoredMembers(runtime.ctx, new Set(confirmedMemberships.map(member => member.user_id)))
     const tasks = getStoredTasks(runtime.ctx)
 
     if (tasks.length === 0) {
@@ -137,6 +148,23 @@ export async function handleMakePairs(
 
       if (!hasGroupManagementAccess(currentMembership.permission)) {
         throw new Error(MAKE_PAIRS_MANAGER_REQUIRED_MESSAGE)
+      }
+
+      const currentParticipants = await tx.group_member.findMany({
+        where: {
+          group_id: request.groupId,
+          is_pending: false,
+          user_id: {
+            in: tasks.map(task => task.user_id),
+          },
+        },
+        select: {
+          user_id: true,
+        },
+      })
+
+      if (new Set(currentParticipants.map(member => member.user_id)).size !== new Set(tasks.map(task => task.user_id)).size) {
+        throw new Error(POOL_CHANGED_MESSAGE)
       }
 
       const nextPairing = await tx.pairing.create({
@@ -258,7 +286,7 @@ export async function handleMakePairs(
 
     removeStoredTasks(runtime.ctx, pairedTaskIds)
     pruneRatingsToActiveTasks(runtime.ctx)
-    runtime.broadcast({
+    await runtime.broadcast(request.groupId, {
       type: 'pairing:created',
       pairingId: pairing.id,
     })

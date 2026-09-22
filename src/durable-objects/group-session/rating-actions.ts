@@ -52,7 +52,7 @@ export async function handleUpsertRatings(
     }
 
     const progress = upsertStoredRatingUpdates(runtime.ctx, request.userId, scopedUpdates)
-    runtime.broadcast({
+    await runtime.broadcast(request.groupId, {
       type: 'ratings:updated',
       taskIds: scopedUpdates.map(update => update.taskId),
       userId: request.userId,
