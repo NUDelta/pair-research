@@ -23,14 +23,6 @@ jobs:
       VITE_SITE_BASE_URL: https://pairresearch.io
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: turnstile-site
       VITE_GOOGLE_CLIENT_ID: google-client-id
-      R2_PUBLIC_DOMAIN: https://r2.pairresearch.io
-      DATABASE_URL: postgresql://user:pass@example.com:5432/db
-      SUPABASE_SECRET_KEY: sb_secret_ci
-      CLOUDFLARE_TURNSTILE_SECRET_KEY: turnstile-secret
-      CONTACT_ADMIN_EMAIL: admin@example.com
-      CONTACT_FROM_EMAIL: Pair Research <support@notify.pairresearch.io>
-      RESEND_API_KEY: re_ci
-      WRANGLER_LOG_PATH: .wrangler/logs
 
     steps:
       - name: 📂 Checkout
@@ -88,11 +80,7 @@ jobs:
       VITE_SITE_BASE_URL: https://pairresearch.io
       VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: turnstile-site
       VITE_GOOGLE_CLIENT_ID: google-client-id
-      R2_PUBLIC_DOMAIN: https://r2.pairresearch.io
-      DATABASE_URL: postgresql://user:pass@example.com:5432/db
-      SUPABASE_SECRET_KEY: sb_secret_ci
-      CLOUDFLARE_TURNSTILE_SECRET_KEY: turnstile-secret
-      WRANGLER_LOG_PATH: .wrangler/logs
+      BUILD_SECRET_SCAN_CANARIES: pair-research-runtime-secret-canary
 
     steps:
       - name: 📂 Checkout

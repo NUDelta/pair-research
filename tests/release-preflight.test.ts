@@ -8,31 +8,25 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const validReleaseEnv = {
-  ...process.env,
+const validReleaseEnv: Record<string, string | undefined> = {
+  PATH: process.env.PATH,
+  TMPDIR: process.env.TMPDIR,
   VITE_SUPABASE_URL: 'https://example.supabase.co',
   VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
   VITE_SITE_BASE_URL: 'https://pairresearch.io',
   VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: 'turnstile-site',
   VITE_GOOGLE_CLIENT_ID: 'google-client-id',
-  R2_PUBLIC_DOMAIN: 'https://r2.pairresearch.io',
-  DATABASE_URL: 'postgresql://user:pass@example.com:5432/db',
-  SUPABASE_SECRET_KEY: 'sb_secret_test',
-  CLOUDFLARE_TURNSTILE_SECRET_KEY: 'turnstile-secret',
-  CONTACT_ADMIN_EMAIL: 'admin@example.com',
-  CONTACT_FROM_EMAIL: 'Pair Research <support@notify.pairresearch.io>',
-  RESEND_API_KEY: 're_test',
   FORCE_COLOR: '0',
 }
 
 const repoRoot = process.cwd()
 const releasePreflightScript = path.join(repoRoot, 'scripts/release-preflight.ts')
 
-function runReleasePreflight(env: NodeJS.ProcessEnv = validReleaseEnv, cwd = repoRoot) {
+function runReleasePreflight(env: Record<string, string | undefined> = validReleaseEnv, cwd = repoRoot) {
   return spawnSync(process.execPath, [releasePreflightScript], {
     cwd,
     encoding: 'utf8',
-    env,
+    env: env as NodeJS.ProcessEnv,
   })
 }
 
@@ -55,6 +49,7 @@ function createReleasePreflightFixture() {
         'CONTACT_ADMIN_EMAIL',
         'CONTACT_FROM_EMAIL',
         'DATABASE_URL',
+        'GROUP_SESSION_SIGNING_SECRET',
         'RESEND_API_KEY',
         'SUPABASE_SECRET_KEY',
       ],
@@ -86,13 +81,6 @@ env:
   VITE_SITE_BASE_URL: \${{ secrets.VITE_SITE_BASE_URL }}
   VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: \${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
   VITE_GOOGLE_CLIENT_ID: \${{ secrets.VITE_GOOGLE_CLIENT_ID }}
-  R2_PUBLIC_DOMAIN: \${{ secrets.R2_PUBLIC_DOMAIN }}
-  DATABASE_URL: \${{ secrets.DATABASE_URL }}
-  SUPABASE_SECRET_KEY: \${{ secrets.SUPABASE_SECRET_KEY }}
-  CLOUDFLARE_TURNSTILE_SECRET_KEY: \${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
-  CONTACT_ADMIN_EMAIL: \${{ secrets.CONTACT_ADMIN_EMAIL }}
-  CONTACT_FROM_EMAIL: \${{ secrets.CONTACT_FROM_EMAIL }}
-  RESEND_API_KEY: \${{ secrets.RESEND_API_KEY }}
   CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
   CLOUDFLARE_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 steps:
@@ -100,6 +88,7 @@ steps:
   - run: pnpm run lint:ci
   - run: pnpm run test
   - run: pnpm run build
+  - run: BUILD_SECRET_SCAN_CANARIES=runtime-secret-canary pnpm run build
   - run: wrangler deploy --keep-vars
 `)
   writeFixtureFile(root, '.github/workflows/pr-checks.yml', `
@@ -109,7 +98,6 @@ env:
   VITE_SITE_BASE_URL: https://pairresearch.io
   VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: turnstile-site
   VITE_GOOGLE_CLIENT_ID: google-client-id
-  R2_PUBLIC_DOMAIN: https://r2.pairresearch.io
 steps:
   - run: pnpm run release:preflight
   - run: pnpm run lint:ci
@@ -146,21 +134,99 @@ export const routes = [
 }
 
 describe('release preflight', () => {
-  it('passes with a sender on the notify.pairresearch.io domain', () => {
+  it('passes without exposing Worker runtime secrets to CI', () => {
     const result = runReleasePreflight()
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('Release preflight passed.')
   })
 
-  it('rejects contact sender domains that only contain the required domain as a substring', () => {
-    const result = runReleasePreflight({
-      ...validReleaseEnv,
-      CONTACT_FROM_EMAIL: 'Pair Research <support@notify.pairresearch.io.evil>',
-    })
+  it.each([
+    'DATABASE_URL',
+    'SUPABASE_SECRET_KEY',
+    'GROUP_SESSION_SIGNING_SECRET',
+    'CLOUDFLARE_TURNSTILE_SECRET_KEY',
+    'CONTACT_ADMIN_EMAIL',
+    'CONTACT_FROM_EMAIL',
+    'RESEND_API_KEY',
+  ])('rejects %s exposure in the production workflow', (secretName) => {
+    const fixtureRoot = createReleasePreflightFixture()
+    writeFixtureFile(fixtureRoot, '.github/workflows/deploy-production.yml', `
+env:
+  ${secretName}: \${{ secrets.${secretName} }}
+  VITE_SUPABASE_URL: \${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_PUBLISHABLE_KEY: \${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  VITE_SITE_BASE_URL: \${{ secrets.VITE_SITE_BASE_URL }}
+  VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: \${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+  VITE_GOOGLE_CLIENT_ID: \${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+  CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+steps:
+  - run: pnpm run release:preflight
+  - run: pnpm run lint:ci
+  - run: pnpm run test
+  - run: BUILD_SECRET_SCAN_CANARIES=runtime-secret-canary pnpm run build
+  - run: wrangler deploy --keep-vars
+`)
+
+    const result = runReleasePreflight(validReleaseEnv, fixtureRoot)
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('CONTACT_FROM_EMAIL must use the notify.pairresearch.io sending domain.')
+    expect(result.stderr).toContain(`Production deploy workflow must not expose Worker runtime secret to CI: ${secretName}`)
+  })
+
+  it('rejects runtime secret exposure through an aliased GitHub secret', () => {
+    const fixtureRoot = createReleasePreflightFixture()
+    writeFixtureFile(fixtureRoot, '.github/workflows/deploy-production.yml', `
+env:
+  DATABASE_URL: \${{ secrets.PAIR_RESEARCH_DATABASE }}
+  VITE_SUPABASE_URL: \${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_PUBLISHABLE_KEY: \${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  VITE_SITE_BASE_URL: \${{ secrets.VITE_SITE_BASE_URL }}
+  VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: \${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+  VITE_GOOGLE_CLIENT_ID: \${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+  CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+steps:
+  - run: pnpm run release:preflight
+  - run: pnpm run lint:ci
+  - run: pnpm run test
+  - run: BUILD_SECRET_SCAN_CANARIES=runtime-secret-canary pnpm run build
+  - run: wrangler deploy --keep-vars
+`)
+
+    const result = runReleasePreflight(validReleaseEnv, fixtureRoot)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Production deploy workflow must not expose Worker runtime secret to CI: DATABASE_URL')
+  })
+
+  it('rejects a runtime secret injected directly into a production step', () => {
+    const fixtureRoot = createReleasePreflightFixture()
+    writeFixtureFile(fixtureRoot, '.github/workflows/deploy-production.yml', `
+env:
+  VITE_SUPABASE_URL: \${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_PUBLISHABLE_KEY: \${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  VITE_SITE_BASE_URL: \${{ secrets.VITE_SITE_BASE_URL }}
+  VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: \${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+  VITE_GOOGLE_CLIENT_ID: \${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+  CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+steps:
+  - run: pnpm run release:preflight
+  - run: pnpm run lint:ci
+  - run: pnpm run test
+  - run: pnpm run build
+    env:
+      SUPABASE_SECRET_KEY: \${{ secrets.RUNTIME_ADMIN_KEY }}
+  - run: BUILD_SECRET_SCAN_CANARIES=runtime-secret-canary pnpm run build
+  - run: wrangler deploy --keep-vars
+`)
+
+    const result = runReleasePreflight(validReleaseEnv, fixtureRoot)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Production deploy workflow must not expose Worker runtime secret to CI: SUPABASE_SECRET_KEY')
   })
 
   it('rejects missing public build values required by the client build', () => {
@@ -172,17 +238,6 @@ describe('release preflight', () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('Missing required public build environment value: VITE_GOOGLE_CLIENT_ID')
-  })
-
-  it('rejects missing public runtime values required by server code', () => {
-    const fixtureRoot = createReleasePreflightFixture()
-    const result = runReleasePreflight({
-      ...validReleaseEnv,
-      R2_PUBLIC_DOMAIN: '',
-    }, fixtureRoot)
-
-    expect(result.status).toBe(1)
-    expect(result.stderr).toContain('Missing required public runtime environment value: R2_PUBLIC_DOMAIN')
   })
 
   it('rejects committed Wrangler vars', () => {
@@ -200,6 +255,7 @@ describe('release preflight', () => {
           'CONTACT_ADMIN_EMAIL',
           'CONTACT_FROM_EMAIL',
           'DATABASE_URL',
+          'GROUP_SESSION_SIGNING_SECRET',
           'RESEND_API_KEY',
           'SUPABASE_SECRET_KEY',
         ],

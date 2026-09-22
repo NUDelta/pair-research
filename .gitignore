@@ -45,7 +45,21 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-.dev.vars
+.dev.vars*
+*.p12
+*.p8
+*.pfx
+*.pkcs8
+*.jks
+*.key
+/.netrc
+/.npmrc
+/.yarnrc*
+id_rsa
+id_ed25519
+secrets.json
+secrets.yaml
+secrets.yml
 
 # vercel
 .vercel

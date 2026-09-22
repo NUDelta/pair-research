@@ -59,7 +59,7 @@ export default {
         return new Response('Unauthorized group session', { status: 401 })
       }
 
-      const payload = await verifyGroupSessionTokenValue(token, env.SUPABASE_SECRET_KEY, groupId)
+      const payload = await verifyGroupSessionTokenValue(token, env.GROUP_SESSION_SIGNING_SECRET, groupId)
       if (payload === null) {
         return new Response('Unauthorized group session', { status: 401 })
       }

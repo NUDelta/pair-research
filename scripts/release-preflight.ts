@@ -1,9 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { config as loadDotenv } from 'dotenv'
-
-loadDotenv({ path: '.env', quiet: true })
 
 const REQUIRED_PUBLIC_BUILD_ENV_VALUES = [
   'VITE_SUPABASE_URL',
@@ -13,13 +10,10 @@ const REQUIRED_PUBLIC_BUILD_ENV_VALUES = [
   'VITE_GOOGLE_CLIENT_ID',
 ] as const
 
-const REQUIRED_PUBLIC_RUNTIME_ENV_VALUES = [
-  'R2_PUBLIC_DOMAIN',
-] as const
-
-const REQUIRED_RELEASE_ENV_VALUES = [
+const WORKER_RUNTIME_SECRET_NAMES = [
   'DATABASE_URL',
   'SUPABASE_SECRET_KEY',
+  'GROUP_SESSION_SIGNING_SECRET',
   'CLOUDFLARE_TURNSTILE_SECRET_KEY',
   'CONTACT_ADMIN_EMAIL',
   'CONTACT_FROM_EMAIL',
@@ -36,6 +30,7 @@ const REQUIRED_WORKER_SECRETS = [
   'CONTACT_ADMIN_EMAIL',
   'CONTACT_FROM_EMAIL',
   'DATABASE_URL',
+  'GROUP_SESSION_SIGNING_SECRET',
   'RESEND_API_KEY',
   'SUPABASE_SECRET_KEY',
 ] as const
@@ -199,18 +194,6 @@ function parseUrl(name: string, value: string) {
   }
 }
 
-function extractEmailAddress(value: string) {
-  const trimmedValue = value.trim()
-  const angleAddress = trimmedValue.match(/<([^<>]+)>$/)?.[1]?.trim()
-  return angleAddress ?? trimmedValue
-}
-
-function getEmailDomain(value: string) {
-  const email = extractEmailAddress(value)
-  const parts = email.split('@')
-  return parts.length === 2 ? parts[1].toLowerCase() : ''
-}
-
 const failures: string[] = []
 
 function assert(condition: boolean, message: string) {
@@ -219,16 +202,8 @@ function assert(condition: boolean, message: string) {
   }
 }
 
-for (const name of REQUIRED_RELEASE_ENV_VALUES) {
-  assert(hasEnvValue(name), `Missing required release environment value: ${name}`)
-}
-
 for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
   assert(hasEnvValue(name), `Missing required public build environment value: ${name}`)
-}
-
-for (const name of REQUIRED_PUBLIC_RUNTIME_ENV_VALUES) {
-  assert(hasEnvValue(name), `Missing required public runtime environment value: ${name}`)
 }
 
 const wrangler = readJsonc('wrangler.jsonc')
@@ -249,19 +224,6 @@ if (hasEnvValue('VITE_SITE_BASE_URL')) {
 if (hasEnvValue('VITE_SUPABASE_URL')) {
   const supabaseUrl = parseUrl('VITE_SUPABASE_URL', process.env.VITE_SUPABASE_URL ?? '')
   assert(supabaseUrl.protocol === 'https:', 'VITE_SUPABASE_URL must use https.')
-}
-
-if (hasEnvValue('R2_PUBLIC_DOMAIN')) {
-  const r2Url = parseUrl('R2_PUBLIC_DOMAIN', process.env.R2_PUBLIC_DOMAIN ?? '')
-  assert(r2Url.protocol === 'https:', 'R2_PUBLIC_DOMAIN must use https for release.')
-}
-
-if (hasEnvValue('CONTACT_FROM_EMAIL')) {
-  assert(getEmailDomain(process.env.CONTACT_FROM_EMAIL) === 'notify.pairresearch.io', 'CONTACT_FROM_EMAIL must use the notify.pairresearch.io sending domain.')
-}
-
-if (hasEnvValue('CONTACT_ADMIN_EMAIL')) {
-  assert(process.env.CONTACT_ADMIN_EMAIL.includes('@'), 'CONTACT_ADMIN_EMAIL must be an email address.')
 }
 
 for (const name of REQUIRED_WORKER_SECRETS) {
@@ -285,14 +247,15 @@ assert(routePatterns.has('pairresearch.io'), 'wrangler.jsonc must route pairrese
 assert(routePatterns.has('www.pairresearch.io'), 'wrangler.jsonc must route www.pairresearch.io.')
 
 const deployWorkflow = readText('.github/workflows/deploy-production.yml')
-for (const name of REQUIRED_RELEASE_ENV_VALUES) {
-  assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference secret: ${name}`)
+for (const name of WORKER_RUNTIME_SECRET_NAMES) {
+  const runtimeSecretAssignment = new RegExp(`\\b${name}\\s*[:=]`)
+  assert(
+    !runtimeSecretAssignment.test(deployWorkflow),
+    `Production deploy workflow must not expose Worker runtime secret to CI: ${name}`,
+  )
 }
 for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference public build secret: ${name}`)
-}
-for (const name of REQUIRED_PUBLIC_RUNTIME_ENV_VALUES) {
-  assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference public runtime secret: ${name}`)
 }
 for (const name of REQUIRED_DEPLOYMENT_SECRETS) {
   assert(deployWorkflow.includes(`secrets.${name}`), `Production deploy workflow must reference deployment secret: ${name}`)
@@ -304,6 +267,7 @@ assert(
   deployWorkflow.includes('deploy --keep-vars'),
   'Production deploy workflow must use wrangler deploy --keep-vars to preserve dashboard runtime variables.',
 )
+assert(deployWorkflow.includes('BUILD_SECRET_SCAN_CANARIES'), 'Production build must enable the artifact secret canary scan.')
 
 const prChecksWorkflow = readText('.github/workflows/pr-checks.yml')
 for (const command of REQUIRED_PR_CHECK_COMMANDS) {
@@ -312,8 +276,8 @@ for (const command of REQUIRED_PR_CHECK_COMMANDS) {
 for (const name of REQUIRED_PUBLIC_BUILD_ENV_VALUES) {
   assert(prChecksWorkflow.includes(name), `PR checks must define public build environment value: ${name}`)
 }
-for (const name of REQUIRED_PUBLIC_RUNTIME_ENV_VALUES) {
-  assert(prChecksWorkflow.includes(name), `PR checks must define public runtime environment value: ${name}`)
+for (const name of WORKER_RUNTIME_SECRET_NAMES) {
+  assert(!prChecksWorkflow.includes(`${name}:`), `PR checks must not define Worker runtime secret: ${name}`)
 }
 
 const supabaseMigrationsDirectory = path.join(REPO_ROOT, 'supabase', 'migrations')

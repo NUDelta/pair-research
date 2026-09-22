@@ -19,21 +19,6 @@ jobs:
       contents: read
       deployments: write
 
-    env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      VITE_SITE_BASE_URL: ${{ secrets.VITE_SITE_BASE_URL }}
-      VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
-      VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
-      R2_PUBLIC_DOMAIN: ${{ secrets.R2_PUBLIC_DOMAIN }}
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-      CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
-      CONTACT_ADMIN_EMAIL: ${{ secrets.CONTACT_ADMIN_EMAIL }}
-      CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
-      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      WRANGLER_LOG_PATH: .wrangler/logs
-
     steps:
       - name: 📂 Checkout code
         uses: actions/checkout@v4
@@ -44,6 +29,12 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
 
       - name: 🔐 Validate release secrets
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SITE_BASE_URL: ${{ secrets.VITE_SITE_BASE_URL }}
+          VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
         run: pnpm run release:preflight
 
       - name: 🚨 Lint code
@@ -53,6 +44,13 @@ jobs:
         run: pnpm run test
 
       - name: ✅ Run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SITE_BASE_URL: ${{ secrets.VITE_SITE_BASE_URL }}
+          VITE_CLOUDFLARE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          BUILD_SECRET_SCAN_CANARIES: pair-research-runtime-secret-canary
         run: pnpm run build
 
       - name: 🚀 Deploy Worker (Production)

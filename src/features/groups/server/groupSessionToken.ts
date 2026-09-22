@@ -6,6 +6,7 @@ import { getRequiredServerEnv } from '@/shared/server/env.server'
 import { getUser } from '@/shared/supabase/server'
 
 const TOKEN_TTL_SECONDS = 5 * 60
+const MINIMUM_SIGNING_SECRET_BYTES = 32
 
 interface GroupSessionTokenPayload {
   groupId: string
@@ -50,6 +51,14 @@ async function sign(message: string, secret: string): Promise<string> {
   return bytesToBase64Url(new Uint8Array(signature))
 }
 
+export function validateGroupSessionSigningSecret(secret: string): string {
+  if (new TextEncoder().encode(secret).byteLength < MINIMUM_SIGNING_SECRET_BYTES) {
+    throw new Error(`GROUP_SESSION_SIGNING_SECRET must be at least ${MINIMUM_SIGNING_SECRET_BYTES} bytes`)
+  }
+
+  return secret
+}
+
 async function timingSafeEqual(left: string, right: string): Promise<boolean> {
   const leftBytes = base64UrlToBytes(left)
   const rightBytes = base64UrlToBytes(right)
@@ -70,6 +79,7 @@ export async function createGroupSessionTokenValue(
   payload: GroupSessionTokenPayload,
   secret: string,
 ): Promise<string> {
+  validateGroupSessionSigningSecret(secret)
   const encodedPayload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(payload)))
   const signature = await sign(encodedPayload, secret)
 
@@ -81,6 +91,7 @@ export async function verifyGroupSessionTokenValue(
   secret: string,
   expectedGroupId: string,
 ): Promise<GroupSessionTokenPayload | null> {
+  validateGroupSessionSigningSecret(secret)
   const [encodedPayload, signature, extra] = token.split('.')
   if (encodedPayload === undefined || signature === undefined || extra !== undefined) {
     return null
@@ -125,7 +136,7 @@ export const createGroupSessionToken = createServerFn({ method: 'POST' })
       }
     }
 
-    const secret = getRequiredServerEnv('SUPABASE_SECRET_KEY')
+    const secret = getRequiredServerEnv('GROUP_SESSION_SIGNING_SECRET')
     const token = await createGroupSessionTokenValue({
       groupId: data.groupId,
       userId: user.id,

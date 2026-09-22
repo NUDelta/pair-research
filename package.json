@@ -6,7 +6,8 @@
   "packageManager": "pnpm@12.5.1",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "node scripts/secure-build.ts",
+    "build:verify-artifacts": "node scripts/verify-build-artifacts.ts",
     "preview": "vite preview --port 4000",
     "deploy": "pnpm run build && wrangler deploy --keep-vars",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings ./cloudflare-env.d.ts",
