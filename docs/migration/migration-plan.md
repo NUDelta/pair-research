@@ -1,5 +1,7 @@
 # MongoDB Atlas to Supabase Migration Plan
 
+Phase 0B production rollout and verification are defined in [phase-0b-deployment-runbook.md](./phase-0b-deployment-runbook.md). No Phase 2 identity or data work may begin until its exit criteria pass.
+
 This plan is based on read-only inspection of the connected legacy MongoDB Atlas database, the current Supabase schema/catalog, and the application authorization/data paths. Phase 0A and the Phase 1 preparation artifacts are complete in this change; no backup export, staging DDL, security DDL, or data migration has been executed.
 
 ## Non-negotiable invariants

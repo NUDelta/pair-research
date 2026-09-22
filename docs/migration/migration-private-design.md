@@ -25,8 +25,8 @@ It intentionally does not define live-data import functions, triggers, views, or
 
 - The schema must not be listed in Supabase Data API exposed schemas.
 - A dedicated `migration_private_owner` `NOLOGIN`, `NOINHERIT`, `NOBYPASSRLS` role must be created by an administrator first. It must not be granted to the application runtime role.
-- The design makes that role the schema/object owner and revokes schema, table, sequence, function, and default privileges from `PUBLIC`, `anon`, `authenticated`, `service_role`, and `postgres`.
-- RLS is enabled as defense in depth and no policies are defined. Only a separately approved migration operator that can deliberately `SET ROLE migration_private_owner` may access the tables.
+- The executable Phase 0B foundation makes that role the schema/object owner and revokes schema, table, sequence, function, and default privileges from `PUBLIC`, `anon`, `authenticated`, `service_role`, and both application runtime roles.
+- RLS is enabled as defense in depth and no policies are defined. Only the administrative `postgres` operator is granted the owner role so it can deliberately `SET ROLE migration_private_owner`; `postgres` is no longer an application runtime identity.
 - The future migration role must be separate from the application runtime role and must not be available to browser or normal Worker paths.
 - Do not apply the staging design while the application still connects as the privileged `postgres` role. Phase 0B must first move the runtime to a least-privilege role with no membership/admin option on `migration_private_owner`.
 - Before application, audit the executing owner, role memberships, and default-privilege owner. `ALTER DEFAULT PRIVILEGES` applies to objects later created by that owner, not globally.
@@ -86,7 +86,7 @@ Legacy tasks, ratings/affinities, rounds, pairs, and history may contribute only
 
 - Confirm the schema is absent from Data API exposed schemas.
 - Create and verify the dedicated no-login owner; confirm the least-privilege runtime cannot `SET ROLE` to it.
-- Verify `PUBLIC`, `anon`, `authenticated`, `service_role`, `postgres`, and the application runtime have no effective privileges, including through role membership.
+- Verify `PUBLIC`, `anon`, `authenticated`, `service_role`, and both application runtime roles have no effective privileges, including through role membership. Verify that only the approved administrative `postgres` operator is a member of `migration_private_owner`.
 - Add tests using `has_schema_privilege`, `has_table_privilege`, and direct negative queries.
 - Confirm backups and restore rehearsal have passed before applying any staging DDL.
 - Apply through a reviewed migration only after Phase 0B/Phase 1 approval; do not paste the design file directly into production.

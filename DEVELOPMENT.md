@@ -107,7 +107,7 @@ This project uses both **variables** and **secrets**.
 
 - **Public Vite build values** use `VITE_*` names and are read through `import.meta.env`. For local development, add them to `.env`. For production builds, configure them as GitHub Actions secrets.
 - **Worker runtime variables** are non-sensitive values available to the Cloudflare Worker at runtime. Keep production runtime variables in the Cloudflare dashboard and deploy with `wrangler deploy --keep-vars` so Wrangler does not clear them.
-- **Secrets** are sensitive values and must not be stored in `wrangler.jsonc`. For local development, add them to `.env`. For deployed Cloudflare environments, add any missing remote secrets with:
+- **Secrets** are sensitive values and must not be stored in `wrangler.jsonc` or exposed to GitHub install/test/build jobs. For local development, add them to `.env`. For deployed Cloudflare environments, add any missing remote secrets with:
 
 ```bash
 pnpm wrangler secret put SECRET_NAME
@@ -222,7 +222,7 @@ Wrangler should write logs inside the repository instead of a user-level prefere
 WRANGLER_LOG_PATH=.wrangler/logs pnpm deploy
 ```
 
-The GitHub production workflow sets `WRANGLER_LOG_PATH` automatically.
+Set `WRANGLER_LOG_PATH=.wrangler/logs` locally when Wrangler needs to write diagnostics. The production deploy action does not receive Worker runtime secrets.
 
 Run the automated release preflight before public deployment:
 
@@ -230,7 +230,7 @@ Run the automated release preflight before public deployment:
 pnpm run release:preflight
 ```
 
-The preflight checks required release environment values, production URL formats, Worker secret declarations, R2 and Durable Object bindings, production routes, public route metadata, static production links, migration artifacts, and CI gates.
+The preflight checks public build values, production URL formats, Worker secret declarations, secret isolation in CI, R2 and Durable Object bindings, production routes, public route metadata, static production links, migration artifacts, and CI gates. It validates secret names, never secret values.
 
 ### Required Production Secrets
 
@@ -244,18 +244,9 @@ Configure these GitHub Actions secrets before enabling the production deployment
 
 For local overrides, use Vite's normal `.env` files with the same `VITE_*` names.
 
-Configure this public runtime value in both GitHub Actions secrets and the production Cloudflare Worker environment. It is server-only and is not read through Vite:
+Configure this public runtime value only in the production Cloudflare Worker environment. It is server-only and is not read through Vite:
 
 - `R2_PUBLIC_DOMAIN`
-
-Configure these GitHub Actions secrets before enabling the production deployment workflow. They are passed to the production release gates and Worker runtime:
-
-- `DATABASE_URL`
-- `SUPABASE_SECRET_KEY`
-- `CLOUDFLARE_TURNSTILE_SECRET_KEY`
-- `CONTACT_ADMIN_EMAIL`
-- `CONTACT_FROM_EMAIL`
-- `RESEND_API_KEY`
 
 Configure these additional GitHub Actions secrets for the production deploy step only. Do not put them in `.env.example`, local `.env` files, or Worker runtime configuration:
 
@@ -265,6 +256,7 @@ Configure these additional GitHub Actions secrets for the production deploy step
 Also configure the required Cloudflare Worker secrets in the production Cloudflare environment:
 
 - `DATABASE_URL`
+- `GROUP_SESSION_SIGNING_SECRET` (independent from every Supabase key)
 - `SUPABASE_SECRET_KEY`
 - `CLOUDFLARE_TURNSTILE_SECRET_KEY`
 - `CONTACT_ADMIN_EMAIL`
@@ -272,6 +264,8 @@ Also configure the required Cloudflare Worker secrets in the production Cloudfla
 - `RESEND_API_KEY`
 
 Do not put Cloudflare Worker secrets in `wrangler.jsonc`. The `secrets.required` section is a local declaration aid; it does not prove that the remote production environment already has those secrets.
+
+`pnpm build` removes inherited Worker/deployment credentials before Vite starts, sets `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false`, and scans deploy output. It fails if environment files, package-manager/netrc credentials, private keys, conventional secrets files, or a configured secret canary appears in the artifact. Do not bypass this check.
 
 ### Production Release Gates
 

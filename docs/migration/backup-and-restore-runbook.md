@@ -79,6 +79,8 @@ Alternatively, load the URI into the environment. The script maps it to libpq's 
 export SUPABASE_DATABASE_URL='postgresql://...'
 ```
 
+Prefer `PGSERVICE` plus `PGPASSFILE` for production so credentials are managed by established protected libpq configuration. When `SUPABASE_DATABASE_URL` is used, the backup script moves it into a temporary mode-`0600` libpq service file, unsets the source variable before starting PostgreSQL tools, and deletes the file on exit; the URL is never placed in a client process argument.
+
 Run:
 
 ```bash
@@ -180,7 +182,7 @@ pg_restore \
 
 The preview contains sensitive data and must stay in the secure backup location with mode `0600` and its own checksum.
 
-After target verification, restore without cleanup flags:
+After target verification, restore only into the disposable isolated target. A newly created PostgreSQL database already contains `public`, so use archive-scoped cleanup to replace the archived schemas; never point this command at production or a shared database:
 
 ```bash
 export PGSERVICEFILE='/absolute/secure/path/pg_service.conf'
@@ -189,6 +191,8 @@ export PGSERVICE='pair_research_restore_validation'
 chmod 600 "$PGSERVICEFILE" "$PGPASSFILE"
 pg_restore \
   --dbname="service=$PGSERVICE" \
+  --clean \
+  --if-exists \
   --exit-on-error \
   --no-owner \
   '/absolute/path/to/<artifact>.pgdump'
