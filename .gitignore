@@ -88,6 +88,8 @@ node-compile-cache
 *.mongodump.archive.gz.partial
 *.pgdump
 *.pgdump.partial
+*.pgpass
+pg_service.conf
 *.bson
 *.sqlite
 *.sqlite3

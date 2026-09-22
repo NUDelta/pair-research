@@ -61,6 +61,11 @@ if [[ "$actual_checksum" != "$manifest_checksum" ]]; then
   exit 1
 fi
 
+(
+  cd "$backup_dir"
+  shasum -a 256 -c "$checksum_filename" >/dev/null
+)
+
 case "$artifact_filename" in
   *.pgdump)
     command -v pg_restore >/dev/null 2>&1 || {

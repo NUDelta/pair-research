@@ -12,6 +12,7 @@ Provider-native Atlas snapshots and Supabase backups/PITR are an additional reco
 - Load credentials into the shell from a password manager or existing secure local configuration. Do not paste them into scripts, shell history, manifests, tickets, or commits.
 - Stop application writes to the legacy MongoDB database for the database-scoped `mongodump`. A live database-scoped dump is not a cross-collection point-in-time snapshot. Keep writes stopped until the dump completes, then verify relationship invariants during restore rehearsal.
 - Use dedicated read-only backup credentials where the provider supports them. PostgreSQL backup credentials must be able to read `public`, `auth`, and `supabase_migrations` and inspect their schema objects.
+- For the Phase 0B recovery gate, quiesce every PostgreSQL writer to `public`, `auth`, and `supabase_migrations`—including application, Supabase Auth, and provider/background activity—before `pg_dump`, and keep them quiesced until the production acceptance summary completes. A summary captured after writes resume does not share the dump's MVCC snapshot and cannot prove row-count or sequence equivalence. If complete write quiescence is not possible, use a reviewed coordinated exported-snapshot procedure for both the dump and summary instead.
 - Never restore first into production. Restore into an isolated, empty validation target.
 - Do not use `--drop`, `--clean`, or a schema reset unless a separate destructive change has been approved.
 
@@ -46,6 +47,7 @@ Run:
 The script writes the URI to a short-lived `0600` MongoDB tools config file so that credentials do not appear in process arguments. It deletes the config after the command. The script creates one timestamped directory containing:
 
 - a gzip-compressed `mongodump` archive;
+- the redacted `mongodump` log and a per-collection extraction-count ledger captured during the quiesced dump;
 - a SHA-256 checksum file; and
 - a human-readable manifest with UTC timestamp, non-secret source label, database, tool version, redacted command, filename, and checksum.
 
@@ -100,6 +102,17 @@ Verify:
 ```bash
 ./scripts/migration/verify-backup.sh \
   '/absolute/encrypted/path/pair-research-backups/supabase-<timestamp>/backup-manifest.txt'
+```
+
+While PostgreSQL writes are still quiesced, capture the production count/catalog summary through the same protected libpq configuration immediately after the dump. Repeat this command against the isolated restored database, then checksum and compare both files. The output contains metadata and counts, not row payloads, but it is still protected change evidence and must remain outside Git with mode `0600`. If write quiescence or a coordinated shared snapshot was not recorded, the restore rehearsal is useful diagnostic evidence but does not satisfy the Phase 0B production gate.
+
+```bash
+psql --no-psqlrc --tuples-only --no-align --field-separator=$'\t' \
+  --set=ON_ERROR_STOP=1 \
+  --file='./scripts/migration/capture-postgres-restore-summary.sql' \
+  > '/absolute/secure/path/production-acceptance-summary.tsv'
+chmod 600 '/absolute/secure/path/production-acceptance-summary.tsv'
+shasum -a 256 '/absolute/secure/path/production-acceptance-summary.tsv'
 ```
 
 If the backup role can inspect global roles, separately capture a reviewed `pg_dumpall --roles-only` output into the secure backup directory. It may include password verifiers and provider-managed roles, so encrypt it, checksum it, restrict it to `0600`, and do not assume it can be restored to hosted Supabase. The normal script does not create this sensitive optional artifact.
@@ -182,7 +195,7 @@ pg_restore \
 
 The preview contains sensitive data and must stay in the secure backup location with mode `0600` and its own checksum.
 
-After target verification, restore only into the disposable isolated target. A newly created PostgreSQL database already contains `public`, so use archive-scoped cleanup to replace the archived schemas; never point this command at production or a shared database:
+After target verification, restore only into the disposable isolated target. For a Phase 0B gate rehearsal, first create reviewed `NOLOGIN` placeholder roles for every archived object owner and grantee, then restore with ownership enabled. A newly created PostgreSQL database already contains `public`, so use archive-scoped cleanup to replace the archived schemas; never point this command at production or a shared database:
 
 ```bash
 export PGSERVICEFILE='/absolute/secure/path/pg_service.conf'
@@ -194,11 +207,10 @@ pg_restore \
   --clean \
   --if-exists \
   --exit-on-error \
-  --no-owner \
   '/absolute/path/to/<artifact>.pgdump'
 ```
 
-If exact ownership is required, create and map the expected roles in the isolated target instead of using `--no-owner`. Review any errors involving Supabase-managed `auth` objects with the current Supabase backup/restore documentation before proceeding.
+`--no-owner` may be used for a diagnostic restore, but that restore cannot satisfy the exact Phase 0B source-versus-restored summary gate. The gate rehearsal must preserve or explicitly map expected owners and ACL grantees, including Supabase-managed `auth` owners. Review any errors involving Supabase-managed objects with the current Supabase backup/restore documentation before proceeding.
 
 ## Restore acceptance checks
 
@@ -214,6 +226,8 @@ For both systems:
 For Supabase specifically, test as `anon`, `authenticated`, the intended runtime role, and the migration/admin role. A successful owner-level query is not evidence that RLS or grants were restored correctly.
 
 An interrupted script leaves a `.partial` file and a `BACKUP_FAILED` marker. Such a directory is not a backup and must not be copied, restored, or entered into the migration ledger. Only a directory with a completed manifest and passing verifier is usable.
+
+The MongoDB backup script creates and checksums its extraction-count ledger from the collection inventory that `mongodump` announces during the quiesced dump. Independently record the Atlas collection inventory; the ledger alone does not prove that Atlas exposed every expected collection. PostgreSQL `pg_dump` does not emit per-table counts. For PostgreSQL, keep writes quiesced from before the dump until the checked-in `capture-postgres-restore-summary.sql` finishes against production, then run it again after the isolated restore. Store both mode `0600` outside Git, checksum them, and require an exact match. Under normalized output settings and C-collation ordering, the summary records per-table counts and content fingerprints (including migration state), plus database encoding/locale, column/default metadata, enum/domain/composite/range types, constraints, indexes, triggers, function definitions/security, policies, RLS/FORCE RLS state, schema/relation ACLs and owners/options, default ACLs, sequence definitions/values/ACLs, views, and effective privileges for roles that actually exist. If the summaries differ—or if the source was not quiesced and no coordinated shared snapshot was used—the backup cannot satisfy the production change gate and must be repeated with a reviewed coordinated-snapshot procedure.
 
 ## References
 

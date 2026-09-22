@@ -28,7 +28,9 @@ require_env MONGODB_WRITES_QUIESCED
 require_command git
 require_command gzip
 require_command mongodump
+require_command node
 require_command shasum
+require_command sed
 
 if [[ ! "$MONGODB_DATABASE" =~ ^[A-Za-z0-9._-]+$ ]]; then
   printf 'Error: MONGODB_DATABASE may contain only letters, numbers, dot, underscore, and hyphen.\n' >&2
@@ -73,6 +75,8 @@ artifact_path="$backup_dir/$artifact_name"
 partial_artifact_path="$artifact_path.partial"
 manifest_path="$backup_dir/backup-manifest.txt"
 checksum_path="$backup_dir/backup-checksums.sha256"
+dump_log_path="$backup_dir/mongodump.log"
+count_ledger_path="$backup_dir/backup-time-extraction-counts.tsv"
 mongo_config_path="$backup_dir/.mongodump-config.yml"
 failure_marker_path="$backup_dir/BACKUP_FAILED"
 
@@ -95,17 +99,30 @@ printf "uri: '%s'\n" "$MONGODB_URI" > "$mongo_config_path"
 chmod 600 "$mongo_config_path"
 unset MONGODB_URI
 
-mongodump \
+if ! mongodump \
   --config="$mongo_config_path" \
   --db="$MONGODB_DATABASE" \
   --archive="$partial_artifact_path" \
-  --gzip
+  --gzip \
+  2> "$dump_log_path"; then
+  cat "$dump_log_path" >&2
+  exit 1
+fi
+cat "$dump_log_path" >&2
+
+chmod 600 "$dump_log_path"
+node "${repository_root}/scripts/migration/extract-mongodb-dump-ledger.ts" \
+  "$MONGODB_DATABASE" "$dump_log_path" "$count_ledger_path"
+chmod 600 "$count_ledger_path"
 
 gzip --test "$partial_artifact_path"
 mv "$partial_artifact_path" "$artifact_path"
 chmod 600 "$artifact_path"
 artifact_checksum="$(shasum -a 256 "$artifact_path" | awk '{print $1}')"
-printf '%s  %s\n' "$artifact_checksum" "$artifact_name" > "$checksum_path"
+{
+  printf '%s  %s\n' "$artifact_checksum" "$artifact_name"
+  shasum -a 256 "$dump_log_path" "$count_ledger_path" | sed 's#  .*/#  #'
+} > "$checksum_path"
 chmod 600 "$checksum_path"
 
 mongo_version="$(mongodump --version | head -n 1)"
@@ -120,6 +137,8 @@ mongo_version="$(mongodump --version | head -n 1)"
   printf 'Filename: %s\n' "$artifact_name"
   printf 'SHA-256: %s\n' "$artifact_checksum"
   printf 'Checksum file: %s\n' "$(basename "$checksum_path")"
+  printf 'Backup log: %s\n' "$(basename "$dump_log_path")"
+  printf 'Extraction-count ledger: %s\n' "$(basename "$count_ledger_path")"
   printf 'Credential material recorded: no\n'
 } > "$manifest_path"
 chmod 600 "$manifest_path"

@@ -11,6 +11,14 @@ select exists (
 
 select jsonb_pretty(jsonb_build_object(
   'captured_at', now(),
+  'source_identity', jsonb_build_object(
+    'project_ref', :'dtr_project_ref',
+    'source_label', :'dtr_source_label',
+    'connection_form', :'dtr_connection_form',
+    'connection_target', :'dtr_connection_target',
+    'database', current_database(),
+    'database_user', current_user
+  ),
   'group', (
     select to_jsonb(g)
     from public."group" g

@@ -15,13 +15,13 @@ The executable migrations are intentionally ordered:
 3. `20260921181200_phase_0b_disable_data_api.sql` removes every non-runtime application-table policy and revokes Data API privileges.
 4. `20260921181300_phase_0b_migration_private_foundation.sql` creates the empty private migration schema and owner.
 
-Do not apply all pending migrations in one production step during the initial cutover. The runtime-role switch must be verified before migration 2 removes old access. Deploy from the focused runtime-role commit first, then deploy the later migrations only after the gate passes.
+Do not apply all pending migrations in one production step during the initial cutover. The runtime-role switch must be verified before migration 3 (`...disable_data_api.sql`) removes old access. Deploy from the focused runtime-role commit first, then deploy the later migrations only after the gate passes.
 
 ## Gate 0: recovery evidence
 
 Complete every item before production DDL:
 
-1. Create and verify the MongoDB and Supabase logical exports using [backup-and-restore-runbook.md](./backup-and-restore-runbook.md).
+1. Create and verify the MongoDB and Supabase logical exports using [backup-and-restore-runbook.md](./backup-and-restore-runbook.md). Record MongoDB write quiescence and either PostgreSQL write quiescence through completion of the source acceptance summary or a reviewed coordinated snapshot shared by the dump and summary.
 2. Restore both exports into isolated non-production targets and record count, index, constraint, policy, grant, and Auth checks.
 3. Record Atlas snapshot and Supabase backup/PITR identifiers, timestamps, retention, and restore-test status.
 4. Store manifests, artifacts, restore evidence, and checksums outside Git on encrypted storage.
@@ -37,6 +37,8 @@ Required commands, after loading credentials from protected configuration:
 
 An absent manifest, a `.partial` file, or `BACKUP_FAILED` is not a recovery point.
 
+Checksum verification is not the Gate 0 completion signal. Before continuing, create a protected, checksummed restore-evidence artifact for **each** database that records the disposable target identity/version, start/end timestamps, restore command with credentials redacted, warnings, source-versus-restored counts, and the acceptance checks from the backup runbook. The Mongo evidence must include the counts emitted at the dump consistency boundary. The PostgreSQL evidence must cover tables, constraints, indexes, policies, RLS, grants/default ACLs, Auth rows, and migration state. Record the Atlas and Supabase provider recovery-point identifiers and retention in the same protected change record. If either restore-evidence artifact or either provider recovery point is absent, **STOP before Stage 1**.
+
 ## Capture the DTR baseline
 
 Use an admin/read-only database connection through protected libpq configuration. Do not put a password in command arguments.
@@ -44,11 +46,13 @@ Use an admin/read-only database connection through protected libpq configuration
 ```bash
 export DTR_GROUP_ID='<verified-production-DTR-uuid>'
 export DTR_BASELINE_ROOT='/absolute/encrypted/path/pair-research-change-evidence'
+export DTR_EXPECTED_PROJECT_REF='twnurskjzrelsaptkblt'
+export DTR_SOURCE_LABEL='Supabase project twnurskjzrelsaptkblt / production'
 export PGSERVICE='pair_research_phase_0b_admin'
 ./scripts/migration/capture-dtr-baseline.sh
 ```
 
-The artifact records the group row, membership/role state, active pairing, pairs, and active tasks. It is mode `0600` and checksummed. Repeat the command after each rollout stage and compare the JSON after removing only `captured_at`. Application rows must be identical.
+The command accepts only a direct host exactly matching `db.<project-ref>.supabase.co`, or a Supabase pooler host paired with a role username ending in `.<project-ref>`. The artifact records the sanitized matched connection form/target plus the group row, membership/role state, active pairing, pairs, and active tasks; volatile pooler server IPs are deliberately excluded. It is mode `0600` and checksummed. Before Stage 1, verify the `.sha256` file, review `source_identity`, and independently confirm that the resolved group is the real production DTR group. If the baseline command, checksum, identity review, or DTR resolution fails, **STOP before Stage 1**. Repeat the command after each rollout stage and compare the JSON after removing only `captured_at`. Both `source_identity` and all application rows must be identical.
 
 ## Stage 1: least-privilege runtime
 
@@ -78,6 +82,8 @@ The artifact records the group row, membership/role state, active pairing, pairs
    ```
 
    Never point this command at production: its transaction rolls back rows, but PostgreSQL sequence increments are not transactional.
+
+7. Capture another production DTR baseline with the same expected project ref and source label. Verify both SHA-256 files, remove only `captured_at` from the JSON comparison, and require an exact match with the pre-deployment artifact. Any source-identity or application-row difference means **STOP, restore the prior Worker `DATABASE_URL`, redeploy, and investigate before Stage 2**.
 
 Rollback stage 1 by restoring the prior Worker `DATABASE_URL`, redeploying, and smoke testing. Do not delete or alter `postgres`. Drop runtime roles only after connections drain and only in a separately reviewed cleanup.
 
