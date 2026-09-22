@@ -156,6 +156,28 @@ model task_help_capacity {
   @@schema("public")
 }
 
+/// Server-only invitation abuse controls and provisioning reconciliation.
+/// This table is intentionally inaccessible through the Supabase Data API.
+model invitation_security_event {
+  id              BigInt   @id @default(autoincrement())
+  operation_id    String   @db.Uuid
+  event_kind      String
+  actor_id        String   @db.Uuid
+  group_id        String?  @db.Uuid
+  request_digest  String
+  recipient_hash  String?
+  status          String   @default("reserved")
+  auth_user_id    String?  @db.Uuid
+  delivery_status String   @default("not_attempted")
+  failure_stage   String?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([actor_id, created_at(sort: Desc)], map: "invitation_security_actor_created_idx")
+  @@index([created_at], map: "invitation_security_created_idx")
+  @@schema("public")
+}
+
 /// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

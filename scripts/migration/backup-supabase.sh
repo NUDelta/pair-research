@@ -4,6 +4,10 @@ set -euo pipefail
 
 umask 077
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./libpq-url-service.sh
+source "${script_dir}/libpq-url-service.sh"
+
 require_env() {
   local name="$1"
   if [[ -z "${!name:-}" ]]; then
@@ -28,9 +32,7 @@ require_command pg_restore
 require_command shasum
 
 if [[ -n "${SUPABASE_DATABASE_URL:-}" ]]; then
-  # libpq reads PGDATABASE from the environment, keeping the URI out of argv.
-  export PGDATABASE="$SUPABASE_DATABASE_URL"
-  unset SUPABASE_DATABASE_URL
+  configure_libpq_connection SUPABASE_DATABASE_URL
 elif [[ -z "${PGSERVICE:-}" && -z "${PGDATABASE:-}" ]]; then
   printf 'Error: set SUPABASE_DATABASE_URL, PGDATABASE, or a protected PGSERVICE configuration.\n' >&2
   exit 1
@@ -70,6 +72,7 @@ mkdir -m 700 "$backup_dir"
 
 backup_succeeded=0
 mark_failed() {
+  cleanup_libpq_connection
   if [[ "$backup_succeeded" -ne 1 ]]; then
     printf 'Backup did not complete. Do not use files in this directory.\n' > "$failure_marker_path"
     chmod 600 "$failure_marker_path"
@@ -103,7 +106,7 @@ pg_dump_version="$(pg_dump --version)"
   printf 'Source: %s\n' "$SUPABASE_SOURCE_LABEL"
   printf 'Schemas: public, auth, supabase_migrations\n'
   printf 'Tool: %s\n' "$pg_dump_version"
-  printf 'Command: pg_dump <libpq environment/service> --format=custom --schema=public --schema=auth --schema=supabase_migrations --strict-names --no-subscriptions --no-password\n'
+  printf 'Command: pg_dump <protected libpq connection> --format=custom --schema=public --schema=auth --schema=supabase_migrations --strict-names --no-subscriptions --no-password\n'
   printf 'Filename: %s\n' "$artifact_name"
   printf 'SHA-256: %s\n' "$artifact_checksum"
   printf 'Checksum file: %s\n' "$(basename "$checksum_path")"
@@ -113,6 +116,7 @@ pg_dump_version="$(pg_dump --version)"
 chmod 600 "$manifest_path"
 
 backup_succeeded=1
+cleanup_libpq_connection
 trap - EXIT
 
 printf 'Supabase/PostgreSQL backup created at %s\n' "$backup_dir"
