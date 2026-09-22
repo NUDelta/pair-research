@@ -23,15 +23,6 @@ interface GroupMembershipReader {
 
 interface InviteProfileDb {
   profile: {
-    findFirst: (args: {
-      where: {
-        email: string
-      }
-      select: {
-        id: true
-        email: true
-      }
-    }) => Promise<{ id: string, email: string } | null>
     upsert: (args: {
       where: {
         id: string
@@ -51,14 +42,13 @@ interface InviteProfileDb {
   }
 }
 
-interface InviteServiceRoleSupabase {
+export interface InviteServiceRoleSupabase {
   auth: {
     admin: {
-      createUser: (args: { email: string }) => Promise<{
+      inviteUserByEmail: (email: string) => Promise<{
         data: { user: User | null }
-        error: { message?: string } | null
+        error: { message?: string, code?: string } | null
       }>
-      inviteUserByEmail: (email: string) => Promise<unknown>
       listUsers: (args: { page: number, perPage: number }) => Promise<{
         data: { users: User[] }
         error: { message?: string } | null
@@ -73,7 +63,7 @@ export interface EnsuredInviteProfile {
     email: string
   }
   invitedNewUser: boolean
-  serviceRoleSupabase?: InviteServiceRoleSupabase
+  deliveryStatus: 'existing' | 'sent' | 'unknown'
 }
 
 export interface EnsuredInviteAuthUser {
@@ -82,6 +72,8 @@ export interface EnsuredInviteAuthUser {
     email: string
   }
   serviceRoleSupabase: InviteServiceRoleSupabase
+  invitedNewUser: boolean
+  deliveryStatus: 'existing' | 'sent' | 'unknown'
 }
 
 interface InviteProfileWriter {
@@ -189,57 +181,33 @@ function isPrismaSerializationConflict(error: unknown) {
     && error.code === 'P2034'
 }
 
-export async function ensureProfileForInvite(email: string, db?: InviteProfileDb): Promise<EnsuredInviteProfile> {
+export async function ensureProfileForInvite(
+  email: string,
+  db?: InviteProfileDb,
+  providedClient?: InviteServiceRoleSupabase,
+): Promise<EnsuredInviteProfile> {
   const profileDb = db ?? await getProfileInviteDb()
   const normalizedEmail = email.trim().toLowerCase()
-
-  const existingProfile = await profileDb.profile.findFirst({
-    where: {
-      email: normalizedEmail,
-    },
-    select: {
-      id: true,
-      email: true,
-    },
-  })
-
-  if (existingProfile !== null) {
-    return {
-      profile: existingProfile,
-      invitedNewUser: false,
-    }
-  }
-
-  const ensuredAuthUser = await ensureAuthUserForInvite(normalizedEmail)
+  const ensuredAuthUser = await ensureAuthUserForInvite(normalizedEmail, providedClient)
   const createdProfile = await upsertInviteProfile(profileDb, ensuredAuthUser.user)
 
   return {
     profile: createdProfile,
-    invitedNewUser: true,
-    serviceRoleSupabase: ensuredAuthUser.serviceRoleSupabase,
+    invitedNewUser: ensuredAuthUser.invitedNewUser,
+    deliveryStatus: ensuredAuthUser.deliveryStatus,
   }
 }
 
-export async function ensureAuthUserForInvite(email: string): Promise<EnsuredInviteAuthUser> {
+export async function ensureAuthUserForInvite(
+  email: string,
+  providedClient?: InviteServiceRoleSupabase,
+  preloadedAuthUser?: User | null,
+): Promise<EnsuredInviteAuthUser> {
   const normalizedEmail = email.trim().toLowerCase()
-  const { createServiceRoleSupabase } = await import('@/shared/server/supabase/serviceRole')
-  const serviceRoleSupabase = await createServiceRoleSupabase()
-  const {
-    data: { user },
-    error,
-  } = await serviceRoleSupabase.auth.admin.createUser({ email: normalizedEmail })
-
-  if (error === null && user !== null) {
-    return {
-      user: {
-        id: user.id,
-        email: normalizedEmail,
-      },
-      serviceRoleSupabase,
-    }
-  }
-
-  const existingAuthUser = await findAuthUserByEmail(serviceRoleSupabase, normalizedEmail)
+  const serviceRoleSupabase = providedClient ?? await getInviteServiceRoleClient()
+  const existingAuthUser = preloadedAuthUser === undefined
+    ? await findUniqueAuthUserByEmail(serviceRoleSupabase, normalizedEmail)
+    : preloadedAuthUser
   if (existingAuthUser !== null) {
     return {
       user: {
@@ -247,10 +215,40 @@ export async function ensureAuthUserForInvite(email: string): Promise<EnsuredInv
         email: normalizedEmail,
       },
       serviceRoleSupabase,
+      invitedNewUser: false,
+      deliveryStatus: 'existing',
     }
   }
 
-  throw new Error('Failed to create the invited user account.')
+  const { data, error } = await serviceRoleSupabase.auth.admin.inviteUserByEmail(normalizedEmail)
+  if (error === null && data.user !== null) {
+    return {
+      user: {
+        id: data.user.id,
+        email: normalizedEmail,
+      },
+      serviceRoleSupabase,
+      invitedNewUser: true,
+      deliveryStatus: 'sent',
+    }
+  }
+
+  // The provider may create the user and lose the response. A unique reread
+  // makes retries idempotent without ever selecting identity from profile.email.
+  const recoveredAuthUser = await findUniqueAuthUserByEmail(serviceRoleSupabase, normalizedEmail)
+  if (recoveredAuthUser !== null) {
+    return {
+      user: {
+        id: recoveredAuthUser.id,
+        email: normalizedEmail,
+      },
+      serviceRoleSupabase,
+      invitedNewUser: true,
+      deliveryStatus: 'unknown',
+    }
+  }
+
+  throw new Error('Failed to provision the invited user account.')
 }
 
 export async function upsertInviteProfile(db: InviteProfileWriter, profile: { id: string, email: string }) {
@@ -272,8 +270,21 @@ export async function upsertInviteProfile(db: InviteProfileWriter, profile: { id
   })
 }
 
-async function findAuthUserByEmail(serviceRoleSupabase: InviteServiceRoleSupabase, email: string) {
+export async function findUniqueAuthUserByEmail(serviceRoleSupabase: InviteServiceRoleSupabase, email: string) {
   const normalizedEmail = email.trim().toLowerCase()
+  return (await findUniqueAuthUsersByEmail(serviceRoleSupabase, [normalizedEmail])).get(normalizedEmail) ?? null
+}
+
+export async function findUniqueAuthUsersByEmail(
+  serviceRoleSupabase: InviteServiceRoleSupabase,
+  emails: string[],
+): Promise<Map<string, User>> {
+  const normalizedEmails = new Set(emails.map(email => email.trim().toLowerCase()))
+  const matchedUsers = new Map<string, User>()
+
+  if (normalizedEmails.size === 0) {
+    return matchedUsers
+  }
 
   for (let page = 1; ; page += 1) {
     const { data, error } = await serviceRoleSupabase.auth.admin.listUsers({
@@ -282,39 +293,35 @@ async function findAuthUserByEmail(serviceRoleSupabase: InviteServiceRoleSupabas
     })
 
     if (error !== null) {
-      return null
+      throw new Error('Failed to resolve the invited identity from Supabase Auth.')
     }
 
-    const matchedUser = data.users.find(user => user.email?.trim().toLowerCase() === normalizedEmail)
-    if (matchedUser !== undefined) {
-      return matchedUser
+    for (const user of data.users) {
+      const normalizedUserEmail = user.email?.trim().toLowerCase()
+      if (normalizedUserEmail === undefined || !normalizedEmails.has(normalizedUserEmail)) {
+        continue
+      }
+
+      if (matchedUsers.has(normalizedUserEmail)) {
+        throw createUserSafeActionError('An invited email matches multiple Auth identities. Resolve the identity conflict before inviting it.')
+      }
+      matchedUsers.set(normalizedUserEmail, user)
     }
 
     if (data.users.length < AUTH_USER_LIST_PAGE_SIZE) {
-      return null
+      break
     }
   }
+
+  return matchedUsers
+}
+
+export async function getInviteServiceRoleClient(): Promise<InviteServiceRoleSupabase> {
+  const { createServiceRoleSupabase } = await import('@/shared/server/supabase/serviceRole')
+  return await createServiceRoleSupabase() as InviteServiceRoleSupabase
 }
 
 async function getProfileInviteDb() {
   const { getPrismaClient } = await import('@/shared/server/prisma')
   return getPrismaClient()
-}
-
-export async function inviteCreatedUserByEmail(
-  serviceRoleSupabase: {
-    auth: {
-      admin: {
-        inviteUserByEmail: (email: string) => Promise<unknown>
-      }
-    }
-  },
-  email: string,
-) {
-  try {
-    await serviceRoleSupabase.auth.admin.inviteUserByEmail(email)
-  }
-  catch (error) {
-    console.warn('[GROUP_MEMBER_INVITE_FAILED]', { email, error })
-  }
 }

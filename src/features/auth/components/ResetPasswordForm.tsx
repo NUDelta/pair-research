@@ -1,3 +1,4 @@
+import type { PasswordRecoveryAuthorization } from '@/features/auth/lib/passwordRecovery'
 import type { ResetPasswordFormValues } from '@/features/auth/schemas/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useRouter } from '@tanstack/react-router'
@@ -6,6 +7,7 @@ import { useEffect, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { sanitizeRedirectPath } from '@/features/auth/lib/authRedirect'
+import { clearPasswordRecoveryAuthorization, matchesPasswordRecoveryAuthorization } from '@/features/auth/lib/passwordRecovery'
 import { resetPasswordFormSchema } from '@/features/auth/schemas/auth'
 import { buildAuthPageHref } from '@/features/auth/schemas/authSearch'
 import { createClient } from '@/shared/supabase/client'
@@ -14,13 +16,13 @@ import AuthField from './AuthField'
 import AuthStatusCard from './AuthStatusCard'
 
 interface ResetPasswordFormProps {
-  hasRecoverySession: boolean
+  recoveryAuthorization: PasswordRecoveryAuthorization | null
   isCheckingRecovery: boolean
   nextPath?: string
 }
 
 export default function ResetPasswordForm({
-  hasRecoverySession,
+  recoveryAuthorization,
   isCheckingRecovery,
   nextPath = '/groups',
 }: ResetPasswordFormProps) {
@@ -42,19 +44,32 @@ export default function ResetPasswordForm({
   })
 
   useEffect(() => {
-    if (!hasRecoverySession && !isCheckingRecovery) {
+    if (recoveryAuthorization === null && !isCheckingRecovery) {
       toast.error('This password reset link is missing or has expired.')
     }
-  }, [hasRecoverySession, isCheckingRecovery])
+  }, [recoveryAuthorization, isCheckingRecovery])
 
   const onSubmit = async ({ password }: ResetPasswordFormValues) => {
-    if (!hasRecoverySession) {
+    if (recoveryAuthorization === null) {
       setError('root', { message: 'Open the reset link from your email to continue.' })
       return
     }
 
     startTransition(async () => {
       const supabase = createClient()
+      const { data: currentSessionData, error: currentSessionError } = await supabase.auth.getSession()
+      const { data: currentUserData, error: currentUserError } = await supabase.auth.getUser()
+      if (
+        currentSessionError !== null
+        || currentUserError !== null
+        || currentUserData.user?.id !== recoveryAuthorization.userId
+        || !matchesPasswordRecoveryAuthorization(currentSessionData.session, recoveryAuthorization)
+      ) {
+        clearPasswordRecoveryAuthorization(globalThis.sessionStorage)
+        setError('root', { message: 'The password recovery session changed. Request a new reset link.' })
+        return
+      }
+
       const { error } = await supabase.auth.updateUser({ password })
 
       if (error) {
@@ -64,6 +79,7 @@ export default function ResetPasswordForm({
       }
 
       await router.invalidate()
+      clearPasswordRecoveryAuthorization(globalThis.sessionStorage)
       toast.success('Password updated successfully. You are now signed in.')
       await navigate({ href: sanitizeRedirectPath(nextPath, '/groups') })
     })
@@ -81,7 +97,7 @@ export default function ResetPasswordForm({
     )
   }
 
-  if (!hasRecoverySession) {
+  if (recoveryAuthorization === null) {
     return (
       <AuthStatusCard
         actionHref={buildAuthPageHref('/forgot-password', { nextPath })}

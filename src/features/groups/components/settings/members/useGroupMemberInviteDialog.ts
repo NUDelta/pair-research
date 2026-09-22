@@ -25,7 +25,7 @@ import {
   syncInviteRowRoles,
 } from './memberInviteRowState'
 
-const addGroupMembersFormSchema = addGroupMembersSchema.omit({ groupId: true })
+const addGroupMembersFormSchema = addGroupMembersSchema.omit({ groupId: true, operationId: true })
 
 export function useGroupMemberInviteDialog({
   applyOptimisticUpdate,
@@ -52,6 +52,7 @@ export function useGroupMemberInviteDialog({
   const [isPending, startTransition] = useTransition()
   const nextRowIdRef = useRef(0)
   const nextOptimisticMemberIdRef = useRef(0)
+  const pendingOperationRef = useRef<{ fingerprint: string, operationId: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const availablePermissions = useMemo(
     () => getAssignableGroupPermissions(currentUserPermission),
@@ -85,6 +86,7 @@ export function useGroupMemberInviteDialog({
   }
 
   function resetDialogState() {
+    pendingOperationRef.current = null
     setDraftSource('')
     setStoredInviteRows([])
     setRowErrors({})
@@ -200,6 +202,9 @@ export function useGroupMemberInviteDialog({
   }
 
   function handleDialogToggle(nextOpen: boolean) {
+    if (isPending && !nextOpen) {
+      return
+    }
     setOpen(nextOpen)
     if (!nextOpen) {
       resetDialogState()
@@ -207,6 +212,9 @@ export function useGroupMemberInviteDialog({
   }
 
   function handleCancel() {
+    if (isPending) {
+      return
+    }
     resetDialogState()
     setOpen(false)
   }
@@ -242,6 +250,11 @@ export function useGroupMemberInviteDialog({
       permission: invite.permission,
     }))
     const optimisticMembers = createOptimisticMembers(optimisticInvites)
+    const operationFingerprint = JSON.stringify(optimisticInvites)
+    const operationId = pendingOperationRef.current?.fingerprint === operationFingerprint
+      ? pendingOperationRef.current.operationId
+      : crypto.randomUUID()
+    pendingOperationRef.current = { fingerprint: operationFingerprint, operationId }
     const rollback = applyOptimisticUpdate((draft) => {
       applyGroupMemberInvites(draft, {
         invites: optimisticInvites,
@@ -249,13 +262,11 @@ export function useGroupMemberInviteDialog({
       })
     })
 
-    resetDialogState()
-    setOpen(false)
-
     startTransition(async () => {
       const response = await addGroupMembersFn({
         data: {
           groupId,
+          operationId,
           invites: validationResult.data.invites,
         },
       })
@@ -265,6 +276,8 @@ export function useGroupMemberInviteDialog({
         toast.error(response.message)
         return
       }
+      resetDialogState()
+      setOpen(false)
       toast.success(response.message)
       void router.invalidate()
     })

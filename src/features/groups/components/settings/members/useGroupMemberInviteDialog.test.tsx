@@ -1,4 +1,5 @@
 import type { GroupSettingsData } from '../types'
+import type { AddGroupMembersValues } from '@/features/groups/schemas/groupManagement'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useGroupMemberInviteDialog } from './useGroupMemberInviteDialog'
@@ -212,6 +213,37 @@ describe('useGroupMemberInviteDialog', () => {
     await waitFor(() => {
       expect(addGroupMembersFn).toHaveBeenCalledTimes(2)
     })
+  })
+
+  it('keeps the same operation and payload available for a failed-request retry', async () => {
+    const addGroupMembersFn = vi.fn()
+      .mockResolvedValueOnce({ success: false, message: 'Temporary failure.' })
+      .mockResolvedValueOnce({ success: true, message: 'Added 1 member.' })
+    mockUseServerFn.mockReturnValue(addGroupMembersFn)
+
+    const { result } = renderHook(() =>
+      useGroupMemberInviteDialog({
+        applyOptimisticUpdate,
+        currentUserPermission: 'owner',
+        groupId: 'group-1',
+        roles: [{ id: '1', title: 'Researcher' }],
+      }),
+    )
+
+    act(() => result.current.handleImportSource('grace@example.com'))
+    act(() => result.current.handleSubmit())
+    await waitFor(() => expect(addGroupMembersFn).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+
+    expect(result.current.inviteRows).toHaveLength(1)
+    act(() => result.current.handleSubmit())
+    await waitFor(() => expect(addGroupMembersFn).toHaveBeenCalledTimes(2))
+
+    const requests = addGroupMembersFn.mock.calls as unknown as Array<[{ data: AddGroupMembersValues }]>
+    const firstRequest = requests[0][0]
+    const retryRequest = requests[1][0]
+    expect(retryRequest.data.operationId).toBe(firstRequest.data.operationId)
+    expect(retryRequest.data.invites).toEqual(firstRequest.data.invites)
   })
 
   it('sanitizes privileged imported access for non-owner managers', async () => {

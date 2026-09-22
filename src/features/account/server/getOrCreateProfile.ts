@@ -24,17 +24,26 @@ export const getOrCreateProfile = createServerFn({ method: 'GET' }).handler(asyn
     },
   } = user
 
+  const normalizedEmail = email?.trim().toLowerCase()
+  if (normalizedEmail === undefined || normalizedEmail.length === 0) {
+    throw new Error('Authenticated account is missing an email address')
+  }
+
   const existing = await prisma.profile.findUnique({
     where: { id },
-    select: { full_name: true, avatar_url: true },
+    select: { full_name: true, avatar_url: true, email: true },
   })
 
   const fullNameNeedsUpdate = existing?.full_name === null && fullName !== null
+  const emailNeedsUpdate = existing !== null && existing.email !== normalizedEmail
 
-  if (existing && fullNameNeedsUpdate) {
+  if (existing && (fullNameNeedsUpdate || emailNeedsUpdate)) {
     const updateData: Record<string, unknown> = {}
     if (fullNameNeedsUpdate) {
       updateData.full_name = fullName
+    }
+    if (emailNeedsUpdate) {
+      updateData.email = normalizedEmail
     }
 
     const updatedUser = await prisma.profile.update({
@@ -46,7 +55,7 @@ export const getOrCreateProfile = createServerFn({ method: 'GET' }).handler(asyn
       full_name: updatedUser.full_name,
       avatar_url: updatedUser.avatar_url,
       id,
-      email: email?.trim() as string,
+      email: normalizedEmail,
     }
   }
 
@@ -55,14 +64,14 @@ export const getOrCreateProfile = createServerFn({ method: 'GET' }).handler(asyn
       full_name: existing.full_name,
       avatar_url: existing.avatar_url,
       id,
-      email: email?.trim() as string,
+      email: normalizedEmail,
     }
   }
 
   const created = await prisma.profile.create({
     data: {
       id,
-      email: email?.trim() as string,
+      email: normalizedEmail,
       full_name: fullName as string,
       avatar_url: avatarUrl as string,
     },
@@ -73,7 +82,7 @@ export const getOrCreateProfile = createServerFn({ method: 'GET' }).handler(asyn
     full_name: created.full_name,
     avatar_url: created.avatar_url,
     id,
-    email: email?.trim() as string,
+    email: normalizedEmail,
   }
 })
 

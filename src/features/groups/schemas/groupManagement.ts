@@ -52,6 +52,7 @@ export const groupMemberInviteSchema = z.object({
 
 export const addGroupMembersSchema = z.object({
   groupId: groupIdSchema,
+  operationId: z.string().uuid('Invitation operation ID must be a valid UUID'),
   invites: z.array(groupMemberInviteSchema).min(1, 'Add at least one member').max(20, 'You can add at most 20 members at a time'),
 })
 

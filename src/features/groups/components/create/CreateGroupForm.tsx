@@ -23,6 +23,7 @@ const CreateGroupForm = () => {
   const navigate = useNavigate()
   const createGroupFn = useServerFn(createGroup)
   const turnstileRef = useRef<TurnstileFieldHandle>(null)
+  const operationRef = useRef<{ fingerprint: string, operationId: string } | null>(null)
   const [isPending, startTransition] = useTransition()
   const form = useForm<GroupValues>({
     resolver: zodResolver(groupSchema),
@@ -89,11 +90,17 @@ const CreateGroupForm = () => {
       setError('root', { message: 'Please complete the security check to continue.' })
       return
     }
+    const operationFingerprint = JSON.stringify(data)
+    const operationId = operationRef.current?.fingerprint === operationFingerprint
+      ? operationRef.current.operationId
+      : crypto.randomUUID()
+    operationRef.current = { fingerprint: operationFingerprint, operationId }
 
     startTransition(async () => {
       const result = await createGroupFn({
         data: {
           ...data,
+          operationId,
           turnstileToken,
         },
       })

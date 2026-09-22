@@ -5,12 +5,24 @@ import { createUserSafeActionError, getActionErrorMessage } from '@/features/gro
 import { parseValidatedInput } from '@/features/groups/server/parseValidatedInput'
 import { addGroupMembersSchema } from '../../schemas/groupManagement'
 import {
+  ensureAuthUserForInvite,
   ensureCurrentGroupManager,
-  ensureProfileForInvite,
   findManagedGroup,
-  inviteCreatedUserByEmail,
+  findUniqueAuthUsersByEmail,
+  getInviteServiceRoleClient,
+  upsertInviteProfile,
   withSerializableRetry,
 } from './groupManagement'
+import {
+  hashInvitationRecipient,
+  hashInvitationRequest,
+  isInvitationOperationComplete,
+  markInvitationOperationComplete,
+  markInvitationOperationFailed,
+  markInvitationProvisioned,
+  reserveInvitationOperation,
+  runLockedInvitationOperation,
+} from './invitationRateLimit'
 
 interface LockedMembershipRow {
   permission: 'owner' | 'admin' | 'member'
@@ -62,6 +74,17 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
       }
 
       const uniqueRoleIds = [...new Set(normalizedInvites.map(invite => invite.roleId))].map(roleId => BigInt(roleId))
+      const requestDigest = await hashInvitationRequest(JSON.stringify({
+        kind: 'add_group_members',
+        groupId: data.groupId,
+        invites: normalizedInvites
+          .map(invite => ({
+            email: invite.email,
+            roleId: invite.roleId,
+            permission: invite.permission,
+          }))
+          .sort((left, right) => left.email.localeCompare(right.email)),
+      }))
       const roles = await prisma.group_role.findMany({
         where: {
           group_id: data.groupId,
@@ -76,49 +99,6 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
         return {
           success: false,
           message: 'Selected role is no longer available for this group.',
-        }
-      }
-
-      const existingProfiles = await prisma.profile.findMany({
-        where: {
-          email: {
-            in: normalizedInvites.map(invite => invite.email),
-          },
-        },
-        select: {
-          id: true,
-          email: true,
-        },
-      })
-      const existingProfilesByEmail = new Map(existingProfiles.map(profile => [profile.email, profile]))
-      const existingMemberships = await prisma.group_member.findMany({
-        where: {
-          group_id: data.groupId,
-          user_id: {
-            in: existingProfiles.map(profile => profile.id),
-          },
-        },
-        select: {
-          user_id: true,
-          is_pending: true,
-        },
-      })
-      const existingMembershipByUserId = new Map(existingMemberships.map(membership => [membership.user_id, membership]))
-
-      for (const invite of normalizedInvites) {
-        const existingProfile = existingProfilesByEmail.get(invite.email)
-        if (existingProfile === undefined) {
-          continue
-        }
-
-        const existingMembership = existingMembershipByUserId.get(existingProfile.id)
-        if (existingMembership !== undefined) {
-          return {
-            success: false,
-            message: existingMembership.is_pending
-              ? `${invite.email} already has a pending invitation to this group.`
-              : `${invite.email} is already a member of this group.`,
-          }
         }
       }
 
@@ -148,8 +128,86 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
           }
         }, { isolationLevel: 'Serializable' }))
 
-      const ensuredProfiles = await withSerializableRetry(async () =>
-        prisma.$transaction(async (tx) => {
+      const reservation = await reserveInvitationOperation(prisma, {
+        actorId: user.id,
+        groupId: data.groupId,
+        operationId: data.operationId,
+        requestDigest,
+        recipientEmails: normalizedInvites.map(invite => invite.email),
+      })
+
+      if (
+        reservation.size === normalizedInvites.length
+        && [...reservation.values()].every(event => event.status === 'membership_created')
+      ) {
+        return { success: true, message: 'Group members were already added successfully.' }
+      }
+
+      // Supabase Auth calls deliberately run outside the database transaction.
+      // The durable operation ledger makes retries reuse the same immutable Auth
+      // UUID after a provider success / database failure boundary.
+      let ensuredInviteProfiles
+      try {
+        const serviceRoleSupabase = await getInviteServiceRoleClient()
+        const invitationEntries = await Promise.all(normalizedInvites.map(async invite => ({
+          invite,
+          recipientHash: await hashInvitationRecipient(invite.email),
+        })))
+        const unresolvedEmails = invitationEntries
+          .filter(({ recipientHash }) => reservation.get(recipientHash)?.authUserId == null)
+          .map(({ invite }) => invite.email)
+        const existingAuthUsers = await findUniqueAuthUsersByEmail(serviceRoleSupabase, unresolvedEmails)
+        ensuredInviteProfiles = await Promise.all(invitationEntries.map(async ({ invite, recipientHash }) => {
+          const reservedEvent = reservation.get(recipientHash)
+          const ensuredProfile = reservedEvent?.authUserId === null || reservedEvent === undefined
+            ? await (async () => {
+                const ensuredAuthUser = await ensureAuthUserForInvite(
+                  invite.email,
+                  serviceRoleSupabase,
+                  existingAuthUsers.get(invite.email) ?? null,
+                )
+                return {
+                  profile: await upsertInviteProfile(prisma, ensuredAuthUser.user),
+                  invitedNewUser: ensuredAuthUser.invitedNewUser,
+                  deliveryStatus: ensuredAuthUser.deliveryStatus,
+                }
+              })()
+            : {
+                profile: await upsertInviteProfile(prisma, {
+                  id: reservedEvent.authUserId,
+                  email: invite.email,
+                }),
+                invitedNewUser: reservedEvent.deliveryStatus !== 'existing',
+                deliveryStatus: reservedEvent.deliveryStatus as 'existing' | 'sent' | 'unknown',
+              }
+
+          await markInvitationProvisioned(prisma, {
+            actorId: user.id,
+            operationId: data.operationId,
+            recipientHash,
+            requestDigest,
+            authUserId: ensuredProfile.profile.id,
+            deliveryStatus: ensuredProfile.deliveryStatus,
+          })
+          return { invite, ensuredProfile }
+        }))
+      }
+      catch (error) {
+        await markInvitationOperationFailed(prisma, {
+          actorId: user.id,
+          operationId: data.operationId,
+          requestDigest,
+          failureStage: 'auth_provisioning',
+        })
+        throw error
+      }
+
+      try {
+        const { alreadyCompleted } = await runLockedInvitationOperation(prisma, {
+          actorId: user.id,
+          operationId: data.operationId,
+          requestDigest,
+        }, async (tx) => {
           const [currentActorMembership] = await tx.$queryRaw<LockedMembershipRow[]>`
             select permission
             from public.group_member
@@ -183,13 +241,6 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
           if (currentRoles.length !== uniqueRoleIds.length) {
             throw createUserSafeActionError('Selected role is no longer available for this group.')
           }
-
-          const ensuredInviteProfiles = await Promise.all(
-            normalizedInvites.map(async invite => ({
-              invite,
-              ensuredProfile: await ensureProfileForInvite(invite.email, tx),
-            })),
-          )
 
           const currentMemberships = await tx.group_member.findMany({
             where: {
@@ -236,20 +287,35 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
             throw createUserSafeActionError('One or more invitees already has a group membership. Refresh and try again.')
           }
 
-          return ensuredInviteProfiles
-        }, { isolationLevel: 'Serializable' }))
+          await markInvitationOperationComplete(tx, {
+            actorId: user.id,
+            operationId: data.operationId,
+            requestDigest,
+            groupId: data.groupId,
+          })
+        })
+        if (alreadyCompleted) {
+          return { success: true, message: 'Group members were already added successfully.' }
+        }
+      }
+      catch (error) {
+        if (await isInvitationOperationComplete(prisma, {
+          actorId: user.id,
+          operationId: data.operationId,
+          requestDigest,
+        })) {
+          return { success: true, message: 'Group members were already added successfully.' }
+        }
+        await markInvitationOperationFailed(prisma, {
+          actorId: user.id,
+          operationId: data.operationId,
+          requestDigest,
+          failureStage: 'membership_write',
+        })
+        throw error
+      }
 
-      await Promise.all(
-        ensuredProfiles.map(async ({ invite, ensuredProfile }) => {
-          if (!ensuredProfile.invitedNewUser || ensuredProfile.serviceRoleSupabase === undefined) {
-            return
-          }
-
-          await inviteCreatedUserByEmail(ensuredProfile.serviceRoleSupabase, invite.email)
-        }),
-      )
-
-      const addedCount = ensuredProfiles.length
+      const addedCount = ensuredInviteProfiles.length
 
       return {
         success: true,
@@ -257,7 +323,7 @@ export const addGroupMembers = createServerFn({ method: 'POST' })
       }
     }
     catch (error) {
-      console.error('[ADD_GROUP_MEMBERS]', error)
+      console.error('[ADD_GROUP_MEMBERS_FAILED]')
       return {
         success: false,
         message: getActionErrorMessage(error, 'Failed to add group members.'),
