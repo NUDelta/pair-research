@@ -49,6 +49,9 @@ jobs:
       - name: 🚨 Lint code
         run: pnpm run lint:ci
 
+      - name: Check TypeScript
+        run: pnpm run typecheck
+
       - name: 🧪 Run unit tests
         run: pnpm run test
 

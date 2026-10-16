@@ -209,6 +209,7 @@ If generated files are out of sync, rerun the relevant generation command instea
 - `pnpm dev` starts the app locally
 - `pnpm build` builds the app for production
 - `pnpm preview` previews the production build locally
+- `pnpm run typecheck` checks TypeScript without emitting files
 - `pnpm lint` runs ESLint
 - `pnpm run lint:fix` runs ESLint and applies safe fixes
 - `pnpm test` runs Vitest unit tests
@@ -287,6 +288,7 @@ Before deploying publicly, the automated release gates must pass:
 
 - `pnpm run release:preflight`
 - `pnpm run lint:ci`
+- `pnpm run typecheck`
 - `pnpm run test`
 - `WRANGLER_LOG_PATH=.wrangler/logs pnpm run build`
 

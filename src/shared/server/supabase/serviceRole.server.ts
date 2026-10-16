@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { getSupabasePublicEnv } from '@/shared/config/env'
 import { getRequiredServerEnv } from '@/shared/server/env.server'
 
-const supabaseUrlSchema = z.string().url().nonempty()
+const supabaseUrlSchema = z.url().nonempty()
 const supabaseSecretKeySchema = z.string().nonempty()
 
 export const createServiceRoleSupabase = () => {

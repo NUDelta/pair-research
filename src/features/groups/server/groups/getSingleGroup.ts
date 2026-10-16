@@ -89,6 +89,7 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
       }
 
       const activePairing = membership.group.pairing_group_active_pairing_idTopairing
+      const activeTasksByUserId = new Map(activePairing?.task.map(task => [task.user_id, task]))
       const latestPairing = await prisma.pairing.findFirst({
         where: {
           group_id: groupId,
@@ -107,13 +108,13 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
             userId: pair.first_user,
             fullName: pair.profile_pair_first_userToprofile.full_name,
             avatarUrl: pair.profile_pair_first_userToprofile.avatar_url,
-            taskDescription: activePairing.task.find(task => task.user_id === pair.first_user)?.description ?? null,
+            taskDescription: activeTasksByUserId.get(pair.first_user)?.description ?? null,
           },
           {
             userId: pair.second_user,
             fullName: pair.profile_pair_second_userToprofile.full_name,
             avatarUrl: pair.profile_pair_second_userToprofile.avatar_url,
-            taskDescription: activePairing.task.find(task => task.user_id === pair.second_user)?.description ?? null,
+            taskDescription: activeTasksByUserId.get(pair.second_user)?.description ?? null,
           },
         ],
       })) ?? []
@@ -171,12 +172,8 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
               : helperPair.profile_pair_second_userToprofile
             : undefined
 
-          const helpeeTask = activePairing.task.find(task =>
-            task.user_id === helpeeUserId,
-          )
-          const helperTask = activePairing.task.find(task =>
-            task.user_id === helperUserId,
-          )
+          const helpeeTask = activeTasksByUserId.get(helpeeUserId)
+          const helperTask = activeTasksByUserId.get(helperUserId)
 
           currentUserActivePairingTaskWithProfile = {
             id: String(activePairing.id),

@@ -59,6 +59,23 @@ jobs:
       - name: 🚨 Run lint
         run: pnpm run lint:ci
 
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Check TypeScript
+        run: pnpm run typecheck
+
   unit:
     name: 🧪 Unit
     runs-on: ubuntu-latest
@@ -111,7 +128,7 @@ jobs:
     name: 💬 Report
     runs-on: ubuntu-latest
     if: always()
-    needs: [preflight, lint, unit, build]
+    needs: [preflight, lint, typecheck, unit, build]
     permissions:
       contents: read
       pull-requests: write
@@ -122,6 +139,7 @@ jobs:
         shell: bash
         env:
           LINT_RESULT: ${{ needs.lint.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
           PREFLIGHT_RESULT: ${{ needs.preflight.result }}
           UNIT_RESULT: ${{ needs.unit.result }}
           BUILD_RESULT: ${{ needs.build.result }}
@@ -133,6 +151,7 @@ jobs:
           const icon = (outcome) => outcome === 'success' ? '✅' : outcome === 'failure' ? '❌' : '⏭️';
 
           const lint = process.env.LINT_RESULT || 'skipped';
+          const typecheck = process.env.TYPECHECK_RESULT || 'skipped';
           const preflight = process.env.PREFLIGHT_RESULT || 'skipped';
           const unit = process.env.UNIT_RESULT || 'skipped';
           const build = process.env.BUILD_RESULT || 'skipped';
@@ -142,6 +161,7 @@ jobs:
             '',
             `- 🔐 Release preflight: ${icon(preflight)} **${preflight}**`,
             `- 🚨 Lint: ${icon(lint)} **${lint}**`,
+            `- Typecheck: ${icon(typecheck)} **${typecheck}**`,
             `- 🧪 Unit tests: ${icon(unit)} **${unit}**`,
             `- 🏗️ Build: ${icon(build)} **${build}**`,
             '',
@@ -155,6 +175,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           LINT_RESULT: ${{ needs.lint.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
           PREFLIGHT_RESULT: ${{ needs.preflight.result }}
           UNIT_RESULT: ${{ needs.unit.result }}
           BUILD_RESULT: ${{ needs.build.result }}
@@ -166,6 +187,7 @@ jobs:
             const icon = (outcome) => (outcome === "success" ? "✅" : outcome === "failure" ? "❌" : "⏭️");
 
             const lint = process.env.LINT_RESULT || "skipped";
+            const typecheck = process.env.TYPECHECK_RESULT || "skipped";
             const preflight = process.env.PREFLIGHT_RESULT || "skipped";
             const unit = process.env.UNIT_RESULT || "skipped";
             const build = process.env.BUILD_RESULT || "skipped";
@@ -176,6 +198,7 @@ jobs:
               "",
               `- 🔐 Release preflight: ${icon(preflight)} **${preflight}**`,
               `- 🚨 Lint: ${icon(lint)} **${lint}**`,
+              `- Typecheck: ${icon(typecheck)} **${typecheck}**`,
               `- 🧪 Unit tests: ${icon(unit)} **${unit}**`,
               `- 🏗️ Build: ${icon(build)} **${build}**`,
               "",
@@ -210,12 +233,14 @@ jobs:
         shell: bash
         env:
           LINT_RESULT: ${{ needs.lint.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
           PREFLIGHT_RESULT: ${{ needs.preflight.result }}
           UNIT_RESULT: ${{ needs.unit.result }}
           BUILD_RESULT: ${{ needs.build.result }}
         run: |
           if [ "$PREFLIGHT_RESULT" = "failure" ] || \
              [ "$LINT_RESULT" = "failure" ] || \
+             [ "$TYPECHECK_RESULT" = "failure" ] || \
              [ "$UNIT_RESULT" = "failure" ] || \
              [ "$BUILD_RESULT" = "failure" ]; then
             echo "One or more required PR checks failed."

@@ -6,7 +6,7 @@ import { createClient } from '@/shared/supabase/server'
 import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
 
-const loginRequestSchema = loginSchema.merge(turnstileTokenSchema)
+const loginRequestSchema = loginSchema.extend(turnstileTokenSchema.shape)
 const LOGIN_FAILED_MESSAGE = 'Invalid email or password.'
 
 export function getLoginFailureResponse(error: { code?: string, message: string }): LoginResponse {
