@@ -1,3 +1,5 @@
+import type { SearchSchemaInput } from '@tanstack/react-router'
+import type { z } from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import AuthPageShell from '@/features/auth/components/AuthPageShell'
@@ -7,7 +9,7 @@ import { buildSeoHead, SEO_NOINDEX_ROBOTS } from '@/shared/seo'
 import { createClient } from '@/shared/supabase/client'
 
 export const Route = createFileRoute('/reset-password')({
-  validateSearch: search => resetPasswordSearchSchema.parse(search),
+  validateSearch: (search: z.input<typeof resetPasswordSearchSchema> & SearchSchemaInput) => resetPasswordSearchSchema.parse(search),
   head: () => buildSeoHead({
     title: 'Create a new password',
     description: 'Create a new Pair Research password after opening a secure reset link.',

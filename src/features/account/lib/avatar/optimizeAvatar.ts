@@ -3,14 +3,14 @@ import { optimizeImage } from './optimizeImage'
 
 export const optimizeAvatar = async (
   file: File,
-): Promise<{ imageBuffer: ArrayBuffer, contentType: string }> => {
+): Promise<{ imageBuffer: ArrayBuffer, contentType: 'image/webp' | 'image/avif' }> => {
   if (file.size > MAX_FILE_SIZE) {
     throw new Error('File size exceeds 2MB')
   }
 
   // If already a webp image, no need to optimize
   let imageBuffer: ArrayBuffer | null = null
-  let contentType = 'image/webp'
+  let contentType: 'image/webp' | 'image/avif' = 'image/webp'
   if (file.type === 'image/webp') {
     imageBuffer = await file.arrayBuffer()
   }

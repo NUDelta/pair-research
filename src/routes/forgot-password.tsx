@@ -1,3 +1,5 @@
+import type { SearchSchemaInput } from '@tanstack/react-router'
+import type { z } from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
 import AuthPageShell from '@/features/auth/components/AuthPageShell'
 import ForgotPasswordForm from '@/features/auth/components/ForgotPasswordForm'
@@ -5,7 +7,7 @@ import { authPageSearchSchema, buildAuthPageHref } from '@/features/auth/schemas
 import { buildSeoHead, SEO_NOINDEX_ROBOTS } from '@/shared/seo'
 
 export const Route = createFileRoute('/forgot-password')({
-  validateSearch: search => authPageSearchSchema.parse(search),
+  validateSearch: (search: z.input<typeof authPageSearchSchema> & SearchSchemaInput) => authPageSearchSchema.parse(search),
   head: () => buildSeoHead({
     title: 'Reset your password',
     description: 'Request a secure Pair Research password reset link.',

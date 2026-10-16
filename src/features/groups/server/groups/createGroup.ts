@@ -8,7 +8,7 @@ import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/tur
 import { buildCreateGroupData } from './buildCreateGroupData'
 import { ensureAuthUserForInvite, upsertInviteProfile } from './groupManagement'
 
-const createGroupRequestSchema = groupSchema.merge(turnstileTokenSchema)
+const createGroupRequestSchema = groupSchema.extend(turnstileTokenSchema.shape)
 
 export const createGroup = createServerFn({ method: 'POST' })
   .validator((data: unknown) => parseValidatedInput(createGroupRequestSchema, data))
