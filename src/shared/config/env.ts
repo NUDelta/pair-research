@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const supabaseUrlSchema = z.string().url().nonempty()
+const supabaseUrlSchema = z.url().nonempty()
 const supabasePublishableKeySchema = z.string().nonempty()
 const optionalApiKeySchema = z.string().trim().min(1)
 

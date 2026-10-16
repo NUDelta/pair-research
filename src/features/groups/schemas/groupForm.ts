@@ -22,7 +22,7 @@ export const emailSchema = z.object({
     .string()
     .trim()
     .nonempty('Email is required')
-    .email('Please enter a valid email address')
+    .check(z.email('Please enter a valid email address'))
     .refine(
       email => !email.endsWith('@disposable.com'),
       'Disposable email addresses are not allowed',
@@ -65,7 +65,7 @@ export const groupSchema = z.object({
         const normalizedTitle = role.title.trim().toLowerCase()
         if (seenTitles.has(normalizedTitle)) {
           context.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: 'custom',
             path: [index, 'title'],
             message: 'Each role title must be unique.',
           })

@@ -5,10 +5,10 @@ const groupNameRegex = /^[\p{L}\p{N}_\- ]+$/u
 const groupDescriptionRegex = /^[^<>]*$/
 const roleTitleRegex = /^[\p{L}\p{N}_\- ]+$/u
 
-export const groupIdSchema = z.string().uuid('Group ID must be a valid UUID')
-const userIdSchema = z.string().uuid('User ID must be a valid UUID')
+export const groupIdSchema = z.uuid('Group ID must be a valid UUID')
+const userIdSchema = z.uuid('User ID must be a valid UUID')
 const roleIdSchema = z.string().regex(/^\d+$/, 'Role ID must be a valid numeric identifier')
-const emailSchema = z.string().trim().min(1, 'Email is required').email('Please enter a valid email address').refine(
+const emailSchema = z.string().trim().min(1, 'Email is required').check(z.email('Please enter a valid email address')).refine(
   email => !email.endsWith('@disposable.com'),
   'Disposable email addresses are not allowed',
 )
@@ -77,7 +77,7 @@ export const bulkManageGroupRolesSchema = z.object({
 }).superRefine((value, context) => {
   if ((value.targetRoleId === undefined) === (value.targetRoleTitle === undefined)) {
     context.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: 'custom',
       path: ['targetRoleId'],
       message: 'Choose an existing destination role or provide a new role name.',
     })

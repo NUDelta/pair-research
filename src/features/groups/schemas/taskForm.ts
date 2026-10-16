@@ -10,9 +10,7 @@ function countWords(value: string) {
 }
 
 export const taskSchema = z.object({
-  groupId: z
-    .string()
-    .uuid('Invalid Group ID'),
+  groupId: z.uuid('Invalid Group ID'),
   description: z
     .string()
     .trim()

@@ -4,7 +4,7 @@ description: Install pnpm, configure Node.js with pnpm cache, and optionally ins
 inputs:
   node-version:
     description: Node.js version passed to actions/setup-node.
-    default: lts/*
+    default: 24.21.0
   install:
     description: Whether to run pnpm install.
     default: 'true'

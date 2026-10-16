@@ -9,7 +9,7 @@ import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/tur
 import { buildCreateGroupData } from './buildCreateGroupData'
 import { ensureAuthUserForInvite, upsertInviteProfile } from './groupManagement'
 
-const createGroupRequestSchema = groupSchema.merge(turnstileTokenSchema)
+const createGroupRequestSchema = groupSchema.extend(turnstileTokenSchema.shape)
 
 /** Creates a group from validated form data. */
 export async function createGroupFromForm(data: GroupValues & TurnstileTokenValues): Promise<TurnstileAwareActionResponse> {

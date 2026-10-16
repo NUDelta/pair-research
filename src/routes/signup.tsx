@@ -1,3 +1,5 @@
+import type { SearchSchemaInput } from '@tanstack/react-router'
+import type { z } from 'zod'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import AuthEmailStatusNotice from '@/features/auth/components/AuthEmailStatusNotice'
 import AuthPageShell from '@/features/auth/components/AuthPageShell'
@@ -7,7 +9,7 @@ import { getCurrentUser } from '@/features/auth/server'
 import { buildSeoHead, SEO_NOINDEX_ROBOTS } from '@/shared/seo'
 
 export const Route = createFileRoute('/signup')({
-  validateSearch: search => authPageSearchSchema.parse(search),
+  validateSearch: (search: z.input<typeof authPageSearchSchema> & SearchSchemaInput) => authPageSearchSchema.parse(search),
   beforeLoad: async ({ search }) => {
     const user = await getCurrentUser()
 
