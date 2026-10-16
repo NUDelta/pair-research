@@ -2,8 +2,14 @@ import { encode } from '@jsquash/webp'
 
 const loadImage = async (src: string): Promise<ImageData> => {
   const img = document.createElement('img')
-  img.src = src
-  await new Promise(resolve => img.onload = resolve)
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve()
+    img.onerror = () => reject(new Error('Failed to decode image'))
+    img.src = src
+  }).finally(() => {
+    img.onload = null
+    img.onerror = null
+  })
   const canvas = document.createElement('canvas');
   [canvas.width, canvas.height] = [img.width, img.height]
   const ctx = canvas.getContext('2d')
@@ -15,28 +21,26 @@ const loadImage = async (src: string): Promise<ImageData> => {
 }
 
 export const optimizeImage = async (imageData: Blob | MediaSource): Promise<ArrayBuffer | null> => {
+  let objectUrl: string | undefined
   try {
-    const objectUrl = URL.createObjectURL(imageData)
+    objectUrl = URL.createObjectURL(imageData)
     const imageDataObj = await loadImage(objectUrl)
-    const webpBuffer = await encode(imageDataObj)
-    URL.revokeObjectURL(objectUrl)
-    return webpBuffer
+    return await encode(imageDataObj)
   }
   catch {
     return null
   }
+  finally {
+    if (objectUrl !== undefined) {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }
 }
 
 export const optimizeImageFromUrl = async (url: string): Promise<ArrayBuffer | null> => {
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-    },
-  })
+  const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
   if (!res.ok) {
     return null
   }
-  const blob = await res.blob()
-  return optimizeImage(blob)
+  return optimizeImage(await res.blob())
 }

@@ -150,4 +150,17 @@ describe('contact email helpers', () => {
 
     expect(sendEmail).toHaveBeenCalledTimes(3)
   })
+  it('allows another message after the local rate-limit window expires', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
+    const sendEmail = vi.fn(async () => undefined)
+    const verifyToken = vi.fn(async () => ({ success: true, interactive: false, message: 'ok', errors: [] }))
+    const values = { ...contactValues, turnstileToken: 'token' }
+    for (let index = 0; index < 3; index += 1) {
+      await handleSendContactMessage(values, { sendEmail, verifyToken })
+    }
+    expect((await handleSendContactMessage(values, { sendEmail, verifyToken })).success).toBe(false)
+    now.mockReturnValue(1000 + 15 * 60 * 1000)
+    expect((await handleSendContactMessage(values, { sendEmail, verifyToken })).success).toBe(true)
+    expect(sendEmail).toHaveBeenCalledTimes(4)
+  })
 })

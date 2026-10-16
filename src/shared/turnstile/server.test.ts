@@ -190,4 +190,16 @@ describe('verifyTurnstileToken', () => {
       errors: ['invalid-response'],
     })
   })
+  it('returns a retryable failure when request timeout aborts verification', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const controller = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal)
+    fetchMock.mockImplementation(async (_url: string, options: RequestInit) => new Promise((_resolve, reject) => {
+      options.signal?.addEventListener('abort', () => reject(new DOMException('Timed out', 'TimeoutError')))
+    }))
+    const { verifyTurnstileToken } = await import('./server')
+    const result = verifyTurnstileToken({ action: 'contact', token: 'token' })
+    controller.abort()
+    await expect(result).resolves.toMatchObject({ success: false, errors: ['request-failed'] })
+  })
 })
