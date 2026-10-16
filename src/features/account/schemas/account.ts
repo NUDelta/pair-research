@@ -27,9 +27,15 @@ const updateProfileBaseInputSchema = z.object({
   fullName: fullNameSchema.optional(),
   imageBuffer: imageBufferSchema.optional(),
   contentType: supportedAvatarContentTypeSchema.optional(),
+  expectedUserId: z.string().min(1).optional(),
+  expectedAvatarUrl: z.string().nullable().optional(),
 })
 
 export const updateProfileInputSchema = updateProfileBaseInputSchema.superRefine((payload, context) => {
+  if ((payload.expectedUserId === undefined) !== (payload.expectedAvatarUrl === undefined)) {
+    context.addIssue({ code: 'custom', message: 'Avatar sync expectations must be provided together' })
+  }
+
   if (payload.avatarSource !== 'upload') {
     return
   }

@@ -18,7 +18,9 @@ export function sanitizeRedirectPath(next: string | null | undefined, fallback =
     }
 
     const path = `${url.pathname}${url.search}${url.hash}`
-    return path.startsWith('/') ? path : fallback
+    return path.startsWith('/') && !path.startsWith('//') && new URL(path, url.origin).origin === url.origin
+      ? path
+      : fallback
   }
   catch {
     return fallback

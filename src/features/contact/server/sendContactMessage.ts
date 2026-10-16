@@ -16,6 +16,7 @@ type SendContactMessageValues = z.infer<typeof sendContactMessageSchema>
 const CONTACT_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
 const CONTACT_RATE_LIMIT_MAX_MESSAGES = 3
 const contactMessageAttempts = new Map<string, number[]>()
+let nextRateLimitCleanupAt = 0
 
 interface SendContactMessageDependencies {
   sendEmail?: (values: ContactFormValues) => Promise<unknown>
@@ -70,6 +71,14 @@ function getContactRateLimitKey(email: string) {
 function isContactRateLimited(email: string, now = Date.now()) {
   const key = getContactRateLimitKey(email)
   const windowStart = now - CONTACT_RATE_LIMIT_WINDOW_MS
+  if (now >= nextRateLimitCleanupAt) {
+    for (const [emailKey, attempts] of contactMessageAttempts) {
+      if (attempts.every(timestamp => timestamp <= windowStart)) {
+        contactMessageAttempts.delete(emailKey)
+      }
+    }
+    nextRateLimitCleanupAt = now + CONTACT_RATE_LIMIT_WINDOW_MS
+  }
   const recentAttempts = (contactMessageAttempts.get(key) ?? []).filter(timestamp => timestamp > windowStart)
 
   if (recentAttempts.length >= CONTACT_RATE_LIMIT_MAX_MESSAGES) {
@@ -83,6 +92,7 @@ function isContactRateLimited(email: string, now = Date.now()) {
 
 export function resetContactMessageRateLimitForTest() {
   contactMessageAttempts.clear()
+  nextRateLimitCleanupAt = 0
 }
 
 export async function handleSendContactMessage(

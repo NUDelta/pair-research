@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_FILE_SIZE } from '@/shared/config/constants'
 import { uploadAvatarFromArrayBuffer } from './uploadAvatar'
@@ -50,23 +52,24 @@ describe('uploadAvatarFromArrayBuffer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     putObject.mockResolvedValue(undefined)
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue('00000000-0000-4000-8000-000000000001')
   })
 
-  it('stores valid WebP avatars with a deterministic object key', async () => {
+  it('stores valid WebP avatars with an immutable revision key', async () => {
     await expect(uploadAvatarFromArrayBuffer('user-123', webpBytes(), 'image/webp')).resolves.toBe(
-      'https://r2.example.com/images/avatars/user-123.webp',
+      'https://r2.example.com/images/avatars/user-123-00000000-0000-4000-8000-000000000001.webp',
     )
 
     expect(putObject).toHaveBeenCalledWith(
-      'images/avatars/user-123.webp',
+      'images/avatars/user-123-00000000-0000-4000-8000-000000000001.webp',
       expect.any(Uint8Array),
       { httpMetadata: { contentType: 'image/webp' } },
     )
   })
 
-  it('stores valid AVIF avatars with a deterministic object key', async () => {
+  it('stores valid AVIF avatars with an immutable revision key', async () => {
     await expect(uploadAvatarFromArrayBuffer('user-123', avifBytes(), 'image/avif')).resolves.toBe(
-      'https://r2.example.com/images/avatars/user-123.avif',
+      'https://r2.example.com/images/avatars/user-123-00000000-0000-4000-8000-000000000001.avif',
     )
   })
 

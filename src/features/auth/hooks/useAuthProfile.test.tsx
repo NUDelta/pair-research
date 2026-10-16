@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthProfile } from './useAuthProfile'
 
@@ -16,7 +16,7 @@ const {
   updateProfileToken: Symbol('updateProfile'),
   mockGetOrCreateProfileFn: vi.fn(),
   mockGetUser: vi.fn(),
-  mockOnAuthStateChange: vi.fn(),
+  mockOnAuthStateChange: vi.fn<(callback: (event: string, session: { user: User } | null) => void) => unknown>(),
   mockOptimizeImageFromUrl: vi.fn(),
   mockUpdateProfileFn: vi.fn(),
 }))
@@ -141,6 +141,8 @@ describe('useAuthProfile', () => {
           avatarSource: 'upload',
           imageBuffer: optimizedBuffer,
           contentType: 'image/webp',
+          expectedUserId: user.id,
+          expectedAvatarUrl: initialProfile.avatar_url,
         },
       })
     })
@@ -189,5 +191,62 @@ describe('useAuthProfile', () => {
     })
 
     expect(mockUpdateProfileFn).not.toHaveBeenCalled()
+  })
+  it('ignores a profile response that arrives after logout', async () => {
+    const user = buildUser()
+    let resolveProfile!: (value: { id: string, full_name: string, avatar_url: null }) => void
+    const pendingProfile = new Promise<{ id: string, full_name: string, avatar_url: null }>((resolve) => {
+      resolveProfile = resolve
+    })
+    mockGetUser.mockResolvedValue({ data: { user }, error: null })
+    mockGetOrCreateProfileFn.mockReturnValue(pendingProfile)
+    const setUserLoggedIn = vi.fn()
+    const { result } = renderHook(() => useAuthProfile(setUserLoggedIn))
+    await waitFor(() => expect(mockGetOrCreateProfileFn).toHaveBeenCalled())
+    const onAuthChange = mockOnAuthStateChange.mock.calls[0][0]
+    await act(async () => {
+      onAuthChange('SIGNED_OUT', null)
+      resolveProfile({ id: user.id, full_name: 'Old profile', avatar_url: null })
+    })
+    expect(result.current.profile).toEqual({ full_name: null, avatar_url: null })
+    expect(result.current.loading).toBe(false)
+    expect(setUserLoggedIn).not.toHaveBeenCalledWith(true)
+  })
+
+  it('discards a Google avatar downloaded for the previous account', async () => {
+    const user = buildUser()
+    const secondUser = { ...user, id: 'user-2', user_metadata: {} }
+    let resolveImage!: (value: ArrayBuffer) => void
+    mockOptimizeImageFromUrl.mockReturnValue(new Promise<ArrayBuffer>((resolve) => {
+      resolveImage = resolve
+    }))
+    mockGetUser.mockResolvedValueOnce({ data: { user }, error: null }).mockResolvedValue({ data: { user: secondUser }, error: null })
+    mockGetOrCreateProfileFn.mockResolvedValueOnce({ id: user.id, full_name: 'Ada', avatar_url: user.user_metadata.avatar_url }).mockResolvedValue({ id: secondUser.id, full_name: 'Second user', avatar_url: null })
+    const setUserLoggedIn = vi.fn()
+    const { result } = renderHook(() => useAuthProfile(setUserLoggedIn))
+    await waitFor(() => expect(mockOptimizeImageFromUrl).toHaveBeenCalled())
+    const onAuthChange = mockOnAuthStateChange.mock.calls[0][0]
+    await act(async () => {
+      onAuthChange('SIGNED_IN', { user: secondUser })
+      resolveImage(new ArrayBuffer(12))
+    })
+    await waitFor(() => expect(result.current.profile.full_name).toBe('Second user'))
+    expect(mockUpdateProfileFn).not.toHaveBeenCalled()
+  })
+
+  it('allows a failed Google sync to retry on the next profile refresh', async () => {
+    const user = buildUser()
+    const initialProfile = { id: user.id, full_name: 'Ada', avatar_url: user.user_metadata.avatar_url }
+    mockGetUser.mockResolvedValue({ data: { user }, error: null })
+    mockGetOrCreateProfileFn.mockResolvedValue(initialProfile)
+    mockOptimizeImageFromUrl.mockResolvedValue(new ArrayBuffer(12))
+    mockUpdateProfileFn.mockResolvedValue({ success: false })
+    const setUserLoggedIn = vi.fn()
+    const { result } = renderHook(() => useAuthProfile(setUserLoggedIn))
+    await waitFor(() => expect(mockUpdateProfileFn).toHaveBeenCalledTimes(1))
+    await act(async () => {
+      await result.current.refreshProfile()
+    })
+    await waitFor(() => expect(mockUpdateProfileFn).toHaveBeenCalledTimes(2))
   })
 })

@@ -5,11 +5,7 @@ const AVATAR_OBJECT_PREFIX = 'images/avatars/'
 
 interface DeleteStoredAvatarOptions {
   currentAvatarUrl?: string | null
-  preserveAvatarUrl?: string | null
 }
-
-export const getStoredAvatarKeys = (id: string): string[] =>
-  AVATAR_EXTENSIONS.map(extension => `images/avatars/${id}.${extension}`)
 
 /**
  * Extracts an owned R2 avatar object key from a previously persisted public URL.
@@ -51,20 +47,18 @@ export function getStoredAvatarKeyFromUrl(id: string, avatarUrl: string | null |
   return isOwnedAvatar ? key : null
 }
 
+/** Deletes only the replaced object; unrelated revisions may belong to concurrent updates. */
 export const deleteStoredAvatar = async (id: string, options: DeleteStoredAvatarOptions = {}): Promise<void> => {
-  const { deleteObject } = await import('@/shared/server/cloudflare/r2')
-  const preserveKey = getStoredAvatarKeyFromUrl(id, options.preserveAvatarUrl)
-  const keys = new Set([
-    ...getStoredAvatarKeys(id),
-    getStoredAvatarKeyFromUrl(id, options.currentAvatarUrl),
-  ].filter(key => key != null && key !== preserveKey))
+  const key = getStoredAvatarKeyFromUrl(id, options.currentAvatarUrl)
+  if (key === null) {
+    return
+  }
 
-  await Promise.all([...keys].map(async (key) => {
-    try {
-      await deleteObject(key)
-    }
-    catch (error) {
-      console.error('Avatar file delete failed:', error)
-    }
-  }))
+  const { deleteObject } = await import('@/shared/server/cloudflare/r2')
+  try {
+    await deleteObject(key)
+  }
+  catch (error) {
+    console.error('Avatar file delete failed:', error)
+  }
 }
