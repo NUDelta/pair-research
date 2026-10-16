@@ -10,7 +10,7 @@ import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
 
 const signupRequestSchema = signupSchema
-  .merge(turnstileTokenSchema)
+  .extend(turnstileTokenSchema.shape)
   .extend({
     nextPath: z.string().optional(),
   })

@@ -57,7 +57,7 @@ export const deleteStoredAvatar = async (id: string, options: DeleteStoredAvatar
   const keys = new Set([
     ...getStoredAvatarKeys(id),
     getStoredAvatarKeyFromUrl(id, options.currentAvatarUrl),
-  ].filter(key => key != null && key !== preserveKey))
+  ].filter((key): key is string => key != null && key !== preserveKey))
 
   await Promise.all([...keys].map(async (key) => {
     try {
