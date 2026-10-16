@@ -10,7 +10,7 @@ import { SITE_BASE_URL } from '@/shared/config/constants'
 import { TURNSTILE_ERROR_CODES, turnstileTokenSchema } from '@/shared/turnstile/constants'
 import { createTurnstileErrorResponse, verifyTurnstileToken } from '@/shared/turnstile/server'
 
-const sendContactMessageSchema = contactFormSchema.merge(turnstileTokenSchema)
+const sendContactMessageSchema = contactFormSchema.extend(turnstileTokenSchema.shape)
 type SendContactMessageValues = z.infer<typeof sendContactMessageSchema>
 
 const CONTACT_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000

@@ -1,8 +1,19 @@
 minimumReleaseAgeExcludePrune: true
+minimumReleaseAgeExclude:
+  - '@prisma/adapter-pg@7.10.1'
+  - '@prisma/client-runtime-utils@7.10.1'
+  - '@prisma/client@7.10.1'
+  - '@prisma/config@7.10.1'
+  - '@prisma/debug@7.10.1'
+  - '@prisma/driver-adapter-utils@7.10.1'
+  - '@prisma/engines@7.10.1'
+  - '@prisma/fetch-engine@7.10.1'
+  - '@prisma/get-platform@7.10.1'
+  - prisma@7.10.1
 
 trustPolicy: no-downgrade
 trustPolicyExclude:
-  - prisma@7.10.0
+  - prisma@7.10.1
   - semver@6.3.1
   - undici-types@6.21.0
 
@@ -10,6 +21,11 @@ shellEmulator: true
 
 overrides:
   '@hono/node-server': ^1.19.14
+  sharp@0.35.4: 0.35.5
+  shell-quote@1.10.0: 1.11.0
+  source-map-js@1.2.1: 1.2.2
+  tinypool@2.1.0: 2.1.2
+  undici@7.29.0: 7.29.1
 
 allowBuilds:
   '@prisma/engines': true

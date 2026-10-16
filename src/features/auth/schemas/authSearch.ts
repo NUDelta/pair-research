@@ -5,7 +5,7 @@ export const authNoticeSchema = z.enum(['check-email', 'verified'])
 export type AuthNotice = z.infer<typeof authNoticeSchema>
 
 export const authPageSearchSchema = z.object({
-  email: z.string().email().optional(),
+  email: z.email().optional(),
   next: z
     .string()
     .optional()

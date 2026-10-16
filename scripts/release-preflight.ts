@@ -44,12 +44,14 @@ const REQUIRED_PUBLIC_ROUTES = ['/', '/contact', '/privacy', '/terms'] as const
 const REQUIRED_PR_CHECK_COMMANDS = [
   'pnpm run release:preflight',
   'pnpm run lint:ci',
+  'pnpm run typecheck',
   'pnpm run test',
   'pnpm run build',
 ] as const
 const REQUIRED_PRODUCTION_DEPLOY_COMMANDS = [
   'pnpm run release:preflight',
   'pnpm run lint:ci',
+  'pnpm run typecheck',
   'pnpm run test',
   'pnpm run build',
 ] as const

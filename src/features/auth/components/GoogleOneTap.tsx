@@ -49,7 +49,7 @@ async function loadGoogleIdentityScript() {
     script.defer = true
     script.addEventListener('load', () => resolve(), { once: true })
     script.addEventListener('error', () => reject(new Error('Failed to load Google One Tap.')), { once: true })
-    document.head.append(script)
+    document.head.appendChild(script)
   })
 
   return googleIdentityScriptPromise
