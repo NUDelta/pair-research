@@ -1,14 +1,19 @@
 import type { GroupSessionRuntime } from './runtime'
-import type { GroupSessionRequest, MakePairsResponse } from './types'
+import type { GroupSessionRequest, MakePairsResponse, PrismaClient, StoredRatingRow, StoredTaskRow } from './types'
+import type { BuiltPair } from '@/features/groups/lib/pairing/types'
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { buildPairs } from '@/features/groups/lib/pairing'
 import { getMembership, getPrisma } from './database'
 import { buildPairingHistory } from './pairing-history'
+import { notifyGroupSession } from './runtime'
 import {
+  clearPendingOperation,
   getStoredRatings,
   getStoredTasks,
   pruneRatingsToActiveTasks,
   removeStoredTasks,
+  retainStoredMembers,
+  writeSessionMetadata,
 } from './storage'
 import {
   ACTIVE_PAIRING_EXISTS_MESSAGE,
@@ -39,6 +44,7 @@ export async function handleMakePairs(
       }
     }
 
+    await runtime.ensureHydrated(request.groupId, prisma)
     const group = await prisma.group.findUnique({
       where: { id: request.groupId },
       select: {
@@ -60,7 +66,11 @@ export async function handleMakePairs(
       }
     }
 
-    await runtime.ensureHydrated(request.groupId, prisma)
+    const memberships = await prisma.group_member.findMany({
+      where: { group_id: request.groupId, is_pending: false },
+      select: { user_id: true },
+    })
+    retainStoredMembers(runtime.ctx, new Set(memberships.map(member => member.user_id)))
     const tasks = getStoredTasks(runtime.ctx)
 
     if (tasks.length === 0) {
@@ -117,148 +127,17 @@ export async function handleMakePairs(
     }
 
     const pairedTaskIds = pairs.flatMap(pair => pair.taskIds)
-    const pairedTaskIdSet = new Set(pairedTaskIds)
 
-    const pairing = await prisma.$transaction(async (tx) => {
-      const currentMembership = await tx.group_member.findFirst({
-        where: {
-          group_id: request.groupId,
-          user_id: request.userId,
-          is_pending: false,
-        },
-        select: {
-          permission: true,
-        },
-      })
+    const pairingId = crypto.randomUUID()
+    writeSessionMetadata(runtime.ctx, 'pending', JSON.stringify({ kind: 'pair', request, pairingId, pairs }))
+    const pairing = await persistPairing(prisma, request, tasks, ratings, pairs, pairingId)
 
-      if (currentMembership === null) {
-        throw new Error('You are not a member in this group')
-      }
-
-      if (!hasGroupManagementAccess(currentMembership.permission)) {
-        throw new Error(MAKE_PAIRS_MANAGER_REQUIRED_MESSAGE)
-      }
-
-      const nextPairing = await tx.pairing.create({
-        data: {
-          group_id: request.groupId,
-        },
-      })
-
-      const activatedGroup = await tx.group.updateMany({
-        where: {
-          id: request.groupId,
-          active_pairing_id: null,
-        },
-        data: { active_pairing_id: nextPairing.id },
-      })
-
-      if (activatedGroup.count === 0) {
-        throw new Error(ACTIVE_PAIRING_EXISTS_MESSAGE)
-      }
-
-      const persistedTasks: Array<{ id: bigint, user_id: string }> = []
-      for (const task of tasks) {
-        persistedTasks.push(
-          await tx.task.upsert({
-            where: {
-              user_id_group_id: {
-                user_id: task.user_id,
-                group_id: request.groupId,
-              },
-            },
-            update: {
-              description: task.description,
-              pairing_id: pairedTaskIdSet.has(task.id) ? nextPairing.id : null,
-              delete_pending: false,
-              updated_at: new Date(task.updated_at),
-            },
-            create: {
-              description: task.description,
-              user_id: task.user_id,
-              group_id: request.groupId,
-              pairing_id: pairedTaskIdSet.has(task.id) ? nextPairing.id : null,
-              delete_pending: false,
-              created_at: new Date(task.created_at),
-              updated_at: new Date(task.updated_at),
-            },
-            select: {
-              id: true,
-              user_id: true,
-            },
-          }),
-        )
-      }
-      const persistedTaskIdByUserId = new Map(
-        persistedTasks.map(task => [task.user_id, task.id]),
-      )
-      const persistedTaskIdBySessionTaskId = new Map(
-        tasks.flatMap((task) => {
-          const persistedTaskId = persistedTaskIdByUserId.get(task.user_id)
-
-          return persistedTaskId === undefined ? [] : [[task.id, persistedTaskId] as const]
-        }),
-      )
-      const persistedTaskIds = Array.from(persistedTaskIdBySessionTaskId.values())
-      const ratingsToPersist = ratings.flatMap((rating) => {
-        const persistedTaskId = persistedTaskIdBySessionTaskId.get(rating.task_id)
-
-        return persistedTaskId === undefined
-          ? []
-          : [{
-              task_id: persistedTaskId,
-              user_id: rating.user_id,
-              help_capacity: rating.help_capacity,
-            }]
-      })
-
-      if (persistedTaskIds.length > 0) {
-        await tx.task_help_capacity.deleteMany({
-          where: {
-            task_id: {
-              in: persistedTaskIds,
-            },
-          },
-        })
-      }
-
-      if (ratingsToPersist.length > 0) {
-        await tx.task_help_capacity.createMany({
-          data: ratingsToPersist,
-        })
-      }
-
-      await tx.pair.createMany({
-        data: pairs.map(pair => ({
-          pairing_id: nextPairing.id,
-          first_user: pair.firstUser,
-          second_user: pair.secondUser,
-        })),
-      })
-
-      await tx.affinity.createMany({
-        data: pairs.flatMap(pair => [
-          {
-            pairing_id: nextPairing.id,
-            helpee_id: pair.firstUser,
-            helper_id: pair.secondUser,
-            value: pair.affinity,
-          },
-          {
-            pairing_id: nextPairing.id,
-            helpee_id: pair.secondUser,
-            helper_id: pair.firstUser,
-            value: pair.affinity,
-          },
-        ]),
-      })
-
-      return nextPairing
-    }, { isolationLevel: 'Serializable' })
-
-    removeStoredTasks(runtime.ctx, pairedTaskIds)
-    pruneRatingsToActiveTasks(runtime.ctx)
-    runtime.broadcast({
+    runtime.ctx.storage.transactionSync(() => {
+      removeStoredTasks(runtime.ctx, pairedTaskIds)
+      pruneRatingsToActiveTasks(runtime.ctx)
+      clearPendingOperation(runtime.ctx)
+    })
+    await notifyGroupSession(runtime, request.groupId, {
       type: 'pairing:created',
       pairingId: pairing.id,
     })
@@ -281,18 +160,182 @@ export async function handleMakePairs(
       error instanceof Error
       && (error.message === 'You are not a member in this group' || error.message === MAKE_PAIRS_MANAGER_REQUIRED_MESSAGE)
     ) {
+      clearPendingOperation(runtime.ctx)
       return { success: false, message: error.message }
     }
 
     if (error instanceof Error && error.message === ACTIVE_PAIRING_EXISTS_MESSAGE) {
+      clearPendingOperation(runtime.ctx)
       return { success: false, message: ACTIVE_PAIRING_EXISTS_MESSAGE }
     }
 
     if (error instanceof Error && error.message === POOL_CHANGED_MESSAGE) {
+      clearPendingOperation(runtime.ctx)
       return { success: false, message: POOL_CHANGED_MESSAGE }
     }
 
     console.error('Error making pairs through group session:', error)
     return { success: false, message: 'Failed to make pairs' }
   }
+}
+
+/** Reuses a persisted pairing ID when recovering an interrupted cross-store commit. */
+export async function persistPairing(
+  prisma: PrismaClient,
+  request: GroupSessionRequest,
+  tasks: StoredTaskRow[],
+  ratings: StoredRatingRow[],
+  pairs: BuiltPair[],
+  pairingId: string,
+) {
+  const pairedTaskIdSet = new Set(pairs.flatMap(pair => pair.taskIds))
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.pairing.findUnique({ where: { id: pairingId } })
+    if (existing !== null) {
+      return existing
+    }
+    const currentMembership = await tx.group_member.findFirst({
+      where: {
+        group_id: request.groupId,
+        user_id: request.userId,
+        is_pending: false,
+      },
+      select: {
+        permission: true,
+      },
+    })
+
+    if (currentMembership === null) {
+      throw new Error('You are not a member in this group')
+    }
+
+    if (!hasGroupManagementAccess(currentMembership.permission)) {
+      throw new Error(MAKE_PAIRS_MANAGER_REQUIRED_MESSAGE)
+    }
+
+    const participants = await tx.group_member.findMany({
+      where: { group_id: request.groupId, is_pending: false, user_id: { in: tasks.map(task => task.user_id) } },
+      select: { user_id: true },
+    })
+    if (new Set(participants.map(member => member.user_id)).size !== new Set(tasks.map(task => task.user_id)).size) {
+      throw new Error(POOL_CHANGED_MESSAGE)
+    }
+
+    const nextPairing = await tx.pairing.create({
+      data: {
+        id: pairingId,
+        group_id: request.groupId,
+      },
+    })
+
+    const activatedGroup = await tx.group.updateMany({
+      where: {
+        id: request.groupId,
+        active_pairing_id: null,
+      },
+      data: { active_pairing_id: nextPairing.id },
+    })
+
+    if (activatedGroup.count === 0) {
+      throw new Error(ACTIVE_PAIRING_EXISTS_MESSAGE)
+    }
+
+    const persistedTasks: Array<{ id: bigint, user_id: string }> = []
+    for (const task of tasks) {
+      persistedTasks.push(
+        await tx.task.upsert({
+          where: {
+            user_id_group_id: {
+              user_id: task.user_id,
+              group_id: request.groupId,
+            },
+          },
+          update: {
+            description: task.description,
+            pairing_id: pairedTaskIdSet.has(task.id) ? nextPairing.id : null,
+            delete_pending: false,
+            updated_at: new Date(task.updated_at),
+          },
+          create: {
+            description: task.description,
+            user_id: task.user_id,
+            group_id: request.groupId,
+            pairing_id: pairedTaskIdSet.has(task.id) ? nextPairing.id : null,
+            delete_pending: false,
+            created_at: new Date(task.created_at),
+            updated_at: new Date(task.updated_at),
+          },
+          select: {
+            id: true,
+            user_id: true,
+          },
+        }),
+      )
+    }
+    const persistedTaskIdByUserId = new Map(
+      persistedTasks.map(task => [task.user_id, task.id]),
+    )
+    const persistedTaskIdBySessionTaskId = new Map(
+      tasks.flatMap((task) => {
+        const persistedTaskId = persistedTaskIdByUserId.get(task.user_id)
+
+        return persistedTaskId === undefined ? [] : [[task.id, persistedTaskId] as const]
+      }),
+    )
+    const persistedTaskIds = Array.from(persistedTaskIdBySessionTaskId.values())
+    const ratingsToPersist = ratings.flatMap((rating) => {
+      const persistedTaskId = persistedTaskIdBySessionTaskId.get(rating.task_id)
+
+      return persistedTaskId === undefined
+        ? []
+        : [{
+            task_id: persistedTaskId,
+            user_id: rating.user_id,
+            help_capacity: rating.help_capacity,
+          }]
+    })
+
+    if (persistedTaskIds.length > 0) {
+      await tx.task_help_capacity.deleteMany({
+        where: {
+          task_id: {
+            in: persistedTaskIds,
+          },
+        },
+      })
+    }
+
+    if (ratingsToPersist.length > 0) {
+      await tx.task_help_capacity.createMany({
+        data: ratingsToPersist,
+      })
+    }
+
+    await tx.pair.createMany({
+      data: pairs.map(pair => ({
+        pairing_id: nextPairing.id,
+        first_user: pair.firstUser,
+        second_user: pair.secondUser,
+      })),
+    })
+
+    await tx.affinity.createMany({
+      data: pairs.flatMap(pair => [
+        {
+          pairing_id: nextPairing.id,
+          helpee_id: pair.firstUser,
+          helper_id: pair.secondUser,
+          value: pair.affinity,
+        },
+        {
+          pairing_id: nextPairing.id,
+          helpee_id: pair.secondUser,
+          helper_id: pair.firstUser,
+          value: pair.affinity,
+        },
+      ]),
+    })
+
+    return nextPairing
+  }, { isolationLevel: 'Serializable' })
 }

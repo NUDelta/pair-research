@@ -46,6 +46,7 @@ const REQUIRED_PR_CHECK_COMMANDS = [
   'pnpm run lint:ci',
   'pnpm run typecheck',
   'pnpm run test',
+  'pnpm run test:workers',
   'pnpm run build',
 ] as const
 const REQUIRED_PRODUCTION_DEPLOY_COMMANDS = [
@@ -53,6 +54,7 @@ const REQUIRED_PRODUCTION_DEPLOY_COMMANDS = [
   'pnpm run lint:ci',
   'pnpm run typecheck',
   'pnpm run test',
+  'pnpm run test:workers',
   'pnpm run build',
 ] as const
 const ROUTE_FILE_BY_PUBLIC_PATH: Record<string, string> = {

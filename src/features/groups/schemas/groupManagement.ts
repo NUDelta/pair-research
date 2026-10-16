@@ -104,6 +104,7 @@ export const deleteGroupRoleSchema = z.object({
 export const removeGroupMemberSchema = z.object({
   groupId: groupIdSchema,
   userId: userIdSchema,
+  expectedJoinedAt: z.iso.datetime(),
 })
 
 export type UpdateGroupBasicsValues = z.infer<typeof updateGroupBasicsSchema>

@@ -180,6 +180,14 @@ pnpm test
 
 Use this for logical changes, utility functions, algorithms, and non-UI behavior.
 
+Run Durable Object restart, recovery, and WebSocket checks in the local Workers runtime:
+
+```bash
+pnpm run test:workers
+```
+
+These tests use an isolated Worker configuration and mocked Postgres access without remote bindings.
+
 ## 9. Prisma and Generated Files
 
 If you change the Prisma schema, regenerate the Prisma client:

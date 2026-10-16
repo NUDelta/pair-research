@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "pair-research-runtime-tests",
+  "main": "./worker.ts",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [{ "name": "GROUP_SESSIONS", "class_name": "GroupSessionDO" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GroupSessionDO"] }]
+}

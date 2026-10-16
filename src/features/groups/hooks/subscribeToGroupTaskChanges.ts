@@ -10,10 +10,14 @@ interface GroupTaskChannelEntry {
   socket: WebSocket | null
   reconnectTimer: ReturnType<typeof setTimeout> | null
   closed: boolean
+  connecting: boolean
+  reconnectAttempt: number
+  onOnline: () => void
 }
 
 const groupTaskChannels = new Map<string, GroupTaskChannelEntry>()
 const RECONNECT_DELAY_MS = 750
+const MAX_RECONNECT_DELAY_MS = 30_000
 
 function getRealtimeUrl(groupId: string) {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -23,7 +27,7 @@ function getRealtimeUrl(groupId: string) {
 
 function fanOut(entry: GroupTaskChannelEntry, event: GroupSessionEvent) {
   for (const currentListener of Array.from(entry.listeners)) {
-    void Promise.resolve(currentListener(event)).catch((error) => {
+    void Promise.resolve().then(async () => currentListener(event)).catch((error) => {
       console.error('Error handling group session realtime event', error)
     })
   }
@@ -34,14 +38,17 @@ function scheduleReconnect(
   entry: GroupTaskChannelEntry,
   getToken: GroupSessionTokenLoader,
 ) {
-  if (entry.closed || groupTaskChannels.get(groupId) !== entry || entry.reconnectTimer !== null) {
+  if (entry.closed || groupTaskChannels.get(groupId) !== entry || entry.reconnectTimer !== null || !navigator.onLine) {
     return
   }
 
+  const delay = Math.min(MAX_RECONNECT_DELAY_MS, RECONNECT_DELAY_MS * 2 ** Math.min(entry.reconnectAttempt, 6))
+    * (0.5 + Math.random() / 2)
+  entry.reconnectAttempt += 1
   entry.reconnectTimer = setTimeout(() => {
     entry.reconnectTimer = null
     void connectGroupSession(groupId, entry, getToken)
-  }, RECONNECT_DELAY_MS)
+  }, delay)
 }
 
 async function connectGroupSession(
@@ -49,16 +56,22 @@ async function connectGroupSession(
   entry: GroupTaskChannelEntry,
   getToken: GroupSessionTokenLoader,
 ) {
+  if (entry.closed || entry.connecting || entry.socket !== null || !navigator.onLine) {
+    return
+  }
+  entry.connecting = true
   let token: string | null
   try {
     token = await getToken()
   }
   catch {
+    entry.connecting = false
     scheduleReconnect(groupId, entry, getToken)
     return
   }
 
-  if (entry.closed || token === null) {
+  entry.connecting = false
+  if (entry.closed || groupTaskChannels.get(groupId) !== entry || token === null) {
     return
   }
 
@@ -79,16 +92,23 @@ async function connectGroupSession(
 
     const event = parseGroupSessionEvent(message.data)
     if (event !== null) {
+      if (event.type === 'snapshot') {
+        entry.reconnectAttempt = 0
+      }
       fanOut(entry, event)
     }
   })
 
-  socket.addEventListener('close', () => {
+  socket.addEventListener('close', (event) => {
     if (entry.closed || groupTaskChannels.get(groupId) !== entry) {
       return
     }
 
     entry.socket = null
+    if (event.code === 1008) {
+      entry.closed = true
+      return
+    }
     scheduleReconnect(groupId, entry, getToken)
   })
 
@@ -116,7 +136,19 @@ export function subscribeToGroupTaskChanges(
       socket: null,
       reconnectTimer: null,
       closed: false,
+      connecting: false,
+      reconnectAttempt: 0,
+      onOnline: () => {},
     }
+    const currentEntry = entry
+    entry.onOnline = () => {
+      if (currentEntry.reconnectTimer !== null) {
+        clearTimeout(currentEntry.reconnectTimer)
+        currentEntry.reconnectTimer = null
+      }
+      void connectGroupSession(groupId, currentEntry, getToken)
+    }
+    window.addEventListener('online', entry.onOnline)
     groupTaskChannels.set(groupId, entry)
     void connectGroupSession(groupId, entry, getToken)
   }
@@ -134,6 +166,7 @@ export function subscribeToGroupTaskChanges(
     if (currentEntry.listeners.size === 0) {
       currentEntry.closed = true
       groupTaskChannels.delete(groupId)
+      window.removeEventListener('online', currentEntry.onOnline)
 
       if (currentEntry.reconnectTimer !== null) {
         clearTimeout(currentEntry.reconnectTimer)

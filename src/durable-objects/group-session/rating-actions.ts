@@ -1,6 +1,7 @@
 import type { GroupSessionRuntime } from './runtime'
 import type { UpsertRatingsRequest } from './types'
 import { getMembership, getPrisma } from './database'
+import { notifyGroupSession } from './runtime'
 import { getStoredTaskByUserId, getStoredTasks, upsertStoredRatingUpdates } from './storage'
 
 export async function handleUpsertRatings(
@@ -52,7 +53,7 @@ export async function handleUpsertRatings(
     }
 
     const progress = upsertStoredRatingUpdates(runtime.ctx, request.userId, scopedUpdates)
-    runtime.broadcast({
+    await notifyGroupSession(runtime, request.groupId, {
       type: 'ratings:updated',
       taskIds: scopedUpdates.map(update => update.taskId),
       userId: request.userId,

@@ -1,8 +1,9 @@
 import type { GroupSessionRuntime } from './runtime'
-import type { GroupSessionRequest } from './types'
+import type { GroupSessionRequest, PrismaClient } from './types'
 import { hasGroupManagementAccess } from '@/features/groups/lib/groupPermissions'
 import { getMembership, getPrisma } from './database'
-import { clearStoredGroupSession } from './storage'
+import { notifyGroupSession } from './runtime'
+import { clearPendingOperation, clearStoredGroupSession, markSessionInitialized, writeSessionMetadata } from './storage'
 
 const RESET_POOL_MANAGER_REQUIRED_MESSAGE = 'Only group managers can reset the pool'
 
@@ -28,71 +29,16 @@ export async function handleResetPool(
       }
     }
 
-    const activeTasks = await prisma.task.findMany({
-      where: {
-        group_id: request.groupId,
-        delete_pending: {
-          not: true,
-        },
-      },
-      select: {
-        id: true,
-      },
+    await runtime.ensureHydrated(request.groupId, prisma)
+    writeSessionMetadata(runtime.ctx, 'pending', JSON.stringify({ kind: 'reset', request }))
+    await persistResetPool(prisma, request)
+
+    runtime.ctx.storage.transactionSync(() => {
+      clearStoredGroupSession(runtime.ctx)
+      markSessionInitialized(runtime.ctx)
+      clearPendingOperation(runtime.ctx)
     })
-    const activeTaskIds = activeTasks.map(task => task.id)
-
-    await prisma.$transaction(async (tx) => {
-      const currentMembership = await tx.group_member.findFirst({
-        where: {
-          group_id: request.groupId,
-          user_id: request.userId,
-          is_pending: false,
-        },
-        select: {
-          permission: true,
-        },
-      })
-
-      if (currentMembership === null) {
-        throw new Error('You are not a member in this group')
-      }
-
-      if (!hasGroupManagementAccess(currentMembership.permission)) {
-        throw new Error(RESET_POOL_MANAGER_REQUIRED_MESSAGE)
-      }
-
-      if (activeTaskIds.length > 0) {
-        await tx.task_help_capacity.deleteMany({
-          where: {
-            task_id: {
-              in: activeTaskIds,
-            },
-          },
-        })
-      }
-
-      await tx.group.update({
-        where: {
-          id: request.groupId,
-        },
-        data: {
-          active_pairing_id: null,
-        },
-      })
-
-      if (activeTaskIds.length > 0) {
-        await tx.task.deleteMany({
-          where: {
-            id: {
-              in: activeTaskIds,
-            },
-          },
-        })
-      }
-    }, { isolationLevel: 'Serializable' })
-
-    clearStoredGroupSession(runtime.ctx)
-    runtime.broadcast({ type: 'pool:reset' })
+    await notifyGroupSession(runtime, request.groupId, { type: 'pool:reset' })
 
     return {
       success: true,
@@ -104,6 +50,7 @@ export async function handleResetPool(
       error instanceof Error
       && (error.message === 'You are not a member in this group' || error.message === RESET_POOL_MANAGER_REQUIRED_MESSAGE)
     ) {
+      clearPendingOperation(runtime.ctx)
       return { success: false, message: error.message }
     }
 
@@ -113,4 +60,70 @@ export async function handleResetPool(
       message: 'Failed to reset the pool',
     }
   }
+}
+
+/** Reset is replayable while the DO queue holds subsequent pool edits. */
+export async function persistResetPool(prisma: PrismaClient, request: GroupSessionRequest) {
+  const activeTasks = await prisma.task.findMany({
+    where: {
+      group_id: request.groupId,
+      delete_pending: {
+        not: true,
+      },
+    },
+    select: {
+      id: true,
+    },
+  })
+  const activeTaskIds = activeTasks.map(task => task.id)
+
+  return prisma.$transaction(async (tx) => {
+    const currentMembership = await tx.group_member.findFirst({
+      where: {
+        group_id: request.groupId,
+        user_id: request.userId,
+        is_pending: false,
+      },
+      select: {
+        permission: true,
+      },
+    })
+
+    if (currentMembership === null) {
+      throw new Error('You are not a member in this group')
+    }
+
+    if (!hasGroupManagementAccess(currentMembership.permission)) {
+      throw new Error(RESET_POOL_MANAGER_REQUIRED_MESSAGE)
+    }
+
+    if (activeTaskIds.length > 0) {
+      await tx.task_help_capacity.deleteMany({
+        where: {
+          task_id: {
+            in: activeTaskIds,
+          },
+        },
+      })
+    }
+
+    await tx.group.update({
+      where: {
+        id: request.groupId,
+      },
+      data: {
+        active_pairing_id: null,
+      },
+    })
+
+    if (activeTaskIds.length > 0) {
+      await tx.task.deleteMany({
+        where: {
+          id: {
+            in: activeTaskIds,
+          },
+        },
+      })
+    }
+  }, { isolationLevel: 'Serializable' })
 }

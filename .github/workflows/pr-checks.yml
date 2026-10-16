@@ -93,6 +93,9 @@ jobs:
       - name: 🧪 Run unit tests
         run: pnpm run test
 
+      - name: Test Durable Objects in workerd
+        run: pnpm run test:workers
+
   build:
     name: 🏗️ Build
     runs-on: ubuntu-latest

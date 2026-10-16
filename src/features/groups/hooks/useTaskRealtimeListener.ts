@@ -122,6 +122,8 @@ export const useTaskRealtimeListener = (
     switch (event.type) {
       case 'snapshot':
         setTasks(event.tasks.map(toTask))
+        // One snapshot per connection also reconciles pairing/reset events missed offline.
+        await router.invalidate()
         break
       case 'task:upserted': {
         const task = toTask(event.task)
