@@ -32,9 +32,7 @@ export function createMatchingOutput(
     removeAll: true,
     avoidUnmatchedParticipantIndex,
   })
-  const mwmResultFull = findMaximumWeightMatching(undirectedGraph, {
-    avoidUnmatchedParticipantIndex,
-  }).matching
+  let mwmResultFull: number[] = []
 
   if (stableResult.fullyStable) {
     return {
@@ -81,8 +79,12 @@ export function createMatchingOutput(
     unmatchedParticipantIndexes,
   )
 
+  if (!isResolvedMatching(combinedMatching)) {
+    mwmResultFull = findMaximumWeightMatching(undirectedGraph, { avoidUnmatchedParticipantIndex }).matching
+  }
+
   return {
-    matching: isResolvedMatching(combinedMatching) ? combinedMatching : mwmResultFull,
+    matching: mwmResultFull.length > 0 ? mwmResultFull : combinedMatching,
     fullyStable: false,
     stableDebug: stableResult.debug,
     stableResult: stableResult.matching,

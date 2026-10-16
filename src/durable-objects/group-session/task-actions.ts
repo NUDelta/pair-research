@@ -1,6 +1,7 @@
 import type { GroupSessionRuntime } from './runtime'
 import type { DeleteTaskRequest, UpsertTaskRequest } from './types'
 import { getMembership, getPrisma } from './database'
+import { notifyGroupSession } from './runtime'
 import {
   deleteStoredTaskAndRatings,
   getRatingProgressByUserId,
@@ -25,6 +26,7 @@ export async function handleUpsertTask(
       }
     }
 
+    await runtime.ensureHydrated(request.groupId, prisma)
     const group = await prisma.group.findUnique({
       where: { id: request.groupId },
       select: {
@@ -61,7 +63,7 @@ export async function handleUpsertTask(
     }
     upsertStoredTask(runtime.ctx, storedTask)
 
-    runtime.broadcast({
+    await notifyGroupSession(runtime, request.groupId, {
       type: 'task:upserted',
       task: toStoredTask(storedTask, new Map(), getRatingProgressByUserId(runtime.ctx)),
     })
@@ -112,6 +114,7 @@ export async function handleDeleteTask(
       }
     }
 
+    await runtime.ensureHydrated(request.groupId, prisma)
     const group = await prisma.group.findUnique({
       where: { id: request.groupId },
       select: {
@@ -126,7 +129,7 @@ export async function handleDeleteTask(
     }
 
     deleteStoredTaskAndRatings(runtime.ctx, request.taskId, request.userId)
-    runtime.broadcast({
+    await notifyGroupSession(runtime, request.groupId, {
       type: 'task:deleted',
       taskId: request.taskId,
       userId: request.userId,

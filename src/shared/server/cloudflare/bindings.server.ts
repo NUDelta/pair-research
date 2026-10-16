@@ -5,7 +5,7 @@ import { assertBinding } from '@/shared/lib/cloudflare/errors'
 
 type GroupSessionStub = DurableObjectStub & Pick<
   GroupSessionDO,
-  'deleteTask' | 'getSnapshot' | 'makePairs' | 'resetPool' | 'upsertRatings' | 'upsertTask'
+  'reconcileRemovedMember' | 'deleteTask' | 'getSnapshot' | 'makePairs' | 'resetPool' | 'upsertRatings' | 'upsertTask'
 >
 
 /**

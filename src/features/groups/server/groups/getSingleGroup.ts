@@ -14,6 +14,13 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
       const { getUser } = await import('@/shared/supabase/server')
       const { id: userId } = await getUser()
 
+      // Recover interrupted pool transitions before reading the active round.
+      const { getGroupSession } = await import('@/shared/server/cloudflare/bindings.server')
+      const { tasks } = await getGroupSession(groupId).getSnapshot({
+        groupId,
+        userId,
+      })
+
       const membership = await prisma.group_member.findFirst({
         where: {
           group_id: groupId,
@@ -186,12 +193,6 @@ export const getSingleGroup = createServerFn({ method: 'GET' })
           }
         }
       }
-
-      const { getGroupSession } = await import('@/shared/server/cloudflare/bindings.server')
-      const { tasks } = await getGroupSession(groupId).getSnapshot({
-        groupId,
-        userId,
-      })
 
       return { groupInfo, tasks, currentUserActivePairingTaskWithProfile }
     }

@@ -142,6 +142,7 @@ export default function GroupMembersTable({
       data: {
         groupId,
         userId: member.userId,
+        expectedJoinedAt: member.joinedAt,
       },
     })
 
@@ -258,6 +259,7 @@ export default function GroupMembersTable({
                             data: {
                               groupId,
                               userId: member.userId,
+                              expectedJoinedAt: member.joinedAt,
                             },
                           }),
                       })

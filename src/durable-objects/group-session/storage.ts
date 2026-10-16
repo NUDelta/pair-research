@@ -16,6 +16,12 @@ interface CountRow extends Record<string, SqlStorageValue> {
 
 export function initializeGroupSessionStorage(ctx: DurableObjectState): void {
   ctx.storage.sql.exec(`
+    CREATE TABLE IF NOT EXISTS session_state (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `)
+  ctx.storage.sql.exec(`
     CREATE TABLE IF NOT EXISTS active_tasks (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -35,6 +41,7 @@ export function initializeGroupSessionStorage(ctx: DurableObjectState): void {
       PRIMARY KEY (task_id, user_id)
     )
   `)
+  ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS ratings_user_lookup ON ratings (user_id)')
 }
 
 export function toStoredTask(
@@ -92,6 +99,49 @@ export function deleteStoredTaskAndRatings(ctx: DurableObjectState, taskId: stri
   ctx.storage.sql.exec('DELETE FROM active_tasks WHERE id = ?', taskId)
 }
 
+export function removeStoredMemberState(ctx: DurableObjectState, userId: string): string[] {
+  const taskIds = ctx.storage.sql.exec<StoredTaskIdRow>(
+    'SELECT id FROM active_tasks WHERE user_id = ?',
+    userId,
+  ).toArray().map(row => row.id)
+
+  ctx.storage.sql.exec(
+    `DELETE FROM ratings
+     WHERE user_id = ?
+        OR task_id IN (SELECT id FROM active_tasks WHERE user_id = ?)`,
+    userId,
+    userId,
+  )
+  ctx.storage.sql.exec('DELETE FROM active_tasks WHERE user_id = ?', userId)
+
+  return taskIds
+}
+
+export function retainStoredMembers(ctx: DurableObjectState, confirmedUserIds: Set<string>): string[] {
+  const removedUserIds = [...new Set(
+    getStoredTasks(ctx)
+      .map(task => task.user_id)
+      .filter(userId => !confirmedUserIds.has(userId)),
+  )]
+
+  for (const userId of removedUserIds) {
+    removeStoredMemberState(ctx, userId)
+  }
+
+  ctx.storage.sql.exec(
+    `DELETE FROM ratings
+     WHERE task_id NOT IN (SELECT id FROM active_tasks)`,
+  )
+
+  for (const rating of getStoredRatings(ctx)) {
+    if (!confirmedUserIds.has(rating.user_id)) {
+      ctx.storage.sql.exec('DELETE FROM ratings WHERE user_id = ?', rating.user_id)
+    }
+  }
+
+  return removedUserIds
+}
+
 export function upsertStoredRatings(
   ctx: DurableObjectState,
   ratings: Array<{ id: bigint | number, task_id: bigint | number, user_id: string, help_capacity: number }>,
@@ -147,15 +197,42 @@ export function getStoredTasks(ctx: DurableObjectState): StoredTaskRow[] {
   ).toArray()
 }
 
-export function hasStoredGroupSessionState(ctx: DurableObjectState): boolean {
-  const activeTaskCount = ctx.storage.sql.exec<CountRow>(
-    'SELECT COUNT(*) as count FROM active_tasks',
-  ).one().count
-  const ratingCount = ctx.storage.sql.exec<CountRow>(
-    'SELECT COUNT(*) as count FROM ratings',
-  ).one().count
+export function readSessionMetadata(ctx: DurableObjectState, key: string): string | null {
+  return ctx.storage.sql.exec<{ value: string } & Record<string, SqlStorageValue>>(
+    'SELECT value FROM session_state WHERE key = ?',
+    key,
+  ).toArray()[0]?.value ?? null
+}
 
-  return activeTaskCount > 0 || ratingCount > 0
+export function writeSessionMetadata(ctx: DurableObjectState, key: string, value: string): void {
+  ctx.storage.sql.exec(
+    'INSERT INTO session_state (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+    key,
+    value,
+  )
+}
+
+export function clearPendingOperation(ctx: DurableObjectState): void {
+  ctx.storage.sql.exec('DELETE FROM session_state WHERE key = \'pending\'')
+}
+
+export function markSessionInitialized(ctx: DurableObjectState): void {
+  writeSessionMetadata(ctx, 'initialized', '1')
+}
+
+export function hasStoredGroupSessionState(ctx: DurableObjectState): boolean {
+  if (readSessionMetadata(ctx, 'initialized') !== null) {
+    return true
+  }
+  // Preserve pools created before the explicit empty-state marker was added.
+  const count = ctx.storage.sql.exec<CountRow>(
+    'SELECT (SELECT COUNT(*) FROM active_tasks) + (SELECT COUNT(*) FROM ratings) AS count',
+  ).one().count
+  if (count > 0) {
+    markSessionInitialized(ctx)
+    return true
+  }
+  return false
 }
 
 export function getStoredRatings(ctx: DurableObjectState): StoredRatingRow[] {
@@ -213,30 +290,24 @@ export function getTasksForUser(ctx: DurableObjectState, userId: string): GroupS
   return getStoredTasks(ctx).map(task => toStoredTask(task, viewerRatings, progressByUserId))
 }
 
+interface ProgressRow extends Record<string, SqlStorageValue> {
+  user_id: string
+  count: number
+  completion_order: number | null
+}
+
 export function getRatingProgressByUserId(ctx: DurableObjectState): Map<string, RatingProgress> {
-  const progress = new Map<string, RatingProgress>()
-
-  for (const rating of getStoredRatings(ctx)) {
-    const current = progress.get(rating.user_id) ?? {
-      count: 0,
-      completionOrder: null,
-    }
-    progress.set(rating.user_id, {
-      count: current.count + 1,
-      completionOrder: current.completionOrder === null
-        ? rating.completion_order
-        : Math.max(current.completionOrder, rating.completion_order ?? 0),
-    })
-  }
-
-  return progress
+  return new Map(ctx.storage.sql.exec<ProgressRow>(
+    'SELECT user_id, COUNT(*) AS count, MAX(completion_order) AS completion_order FROM ratings GROUP BY user_id',
+  ).toArray().map(row => [row.user_id, { count: row.count, completionOrder: row.completion_order }]))
 }
 
 export function getRatingProgressForUser(ctx: DurableObjectState, userId: string): RatingProgress {
-  return getRatingProgressByUserId(ctx).get(userId) ?? {
-    count: 0,
-    completionOrder: null,
-  }
+  const row = ctx.storage.sql.exec<ProgressRow>(
+    'SELECT user_id, COUNT(*) AS count, MAX(completion_order) AS completion_order FROM ratings WHERE user_id = ?',
+    userId,
+  ).one()
+  return { count: row.count, completionOrder: row.completion_order }
 }
 
 export async function hydrateGroupSessionStorage(
@@ -244,9 +315,20 @@ export async function hydrateGroupSessionStorage(
   groupId: string,
   prisma: PrismaClient,
 ): Promise<void> {
+  const confirmedMemberships = await prisma.group_member.findMany({
+    where: {
+      group_id: groupId,
+      is_pending: false,
+    },
+    select: {
+      user_id: true,
+    },
+  })
+  const confirmedUserIds = confirmedMemberships.map(membership => membership.user_id)
   const tasks = await prisma.task.findMany({
     where: {
       group_id: groupId,
+      user_id: { in: confirmedUserIds },
       pairing_id: null,
       delete_pending: {
         not: true,
@@ -270,9 +352,8 @@ export async function hydrateGroupSessionStorage(
   const ratings = activeTaskIds.length > 0
     ? await prisma.task_help_capacity.findMany({
         where: {
-          task_id: {
-            in: activeTaskIds,
-          },
+          task_id: { in: activeTaskIds },
+          user_id: { in: confirmedUserIds },
         },
         select: {
           id: true,
@@ -298,4 +379,5 @@ export async function hydrateGroupSessionStorage(
   }
 
   upsertStoredRatings(ctx, ratings)
+  markSessionInitialized(ctx)
 }

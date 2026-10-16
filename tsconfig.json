@@ -26,6 +26,7 @@
     "tests/**/*.tsx",
     "scripts/**/*.ts",
     "vite.config.ts",
+    "vitest.workers.config.ts",
     "prisma.config.ts",
     "cloudflare-env.d.ts"
   ],

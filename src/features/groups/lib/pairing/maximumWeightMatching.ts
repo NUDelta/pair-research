@@ -1,3 +1,5 @@
+import blossom from 'edmonds-blossom-esm'
+
 interface WeightedMatchingResult {
   /**
    * Index-based partner mapping.
@@ -22,6 +24,55 @@ interface WeightedMatchingOptions {
   avoidUnmatchedParticipantIndex?: number | null
 }
 
+/** Exact cardinality-first matching, with bounded subset search for small pools. */
+export function findMaximumWeightMatching(
+  weightMatrix: Array<Array<number | null>>,
+  options: WeightedMatchingOptions = {},
+): WeightedMatchingResult {
+  if (weightMatrix.length <= 16) {
+    return findSmallMaximumWeightMatching(weightMatrix, options)
+  }
+
+  const participantCount = weightMatrix.length
+  const avoided = options.avoidUnmatchedParticipantIndex ?? null
+  const edges: Array<[number, number, number]> = []
+  let maxMagnitude = 0
+  for (let i = 0; i < participantCount; i += 1) {
+    for (let j = i + 1; j < participantCount; j += 1) {
+      const weight = weightMatrix[i][j]
+      if (weight !== null) {
+        maxMagnitude = Math.max(maxMagnitude, Math.abs(weight))
+        edges.push([i, j, weight])
+      }
+    }
+  }
+
+  const empty = () => ({ matching: Array.from<number>({ length: participantCount }).fill(-1), pairCount: 0, totalWeight: 0 })
+  if (edges.length === 0 || (avoided !== null && !edges.some(([i, j]) => i === avoided || j === avoided))) {
+    return empty()
+  }
+
+  // Every non-isolated vertex can be covered by a maximum-cardinality matching.
+  // A constant bonus on its incident edges enforces the existing bye constraint.
+  const bonus = 2 * maxMagnitude * participantCount + 1
+  const weightedEdges = edges.map(([i, j, weight]): [number, number, number] => [
+    i,
+    j,
+    weight + (i === avoided || j === avoided ? bonus : 0),
+  ])
+  const partners = blossom(weightedEdges, true)
+  const matching = Array.from({ length: participantCount }, (_, i) => partners[i] ?? -1)
+  let pairCount = 0
+  let totalWeight = 0
+  for (let i = 0; i < participantCount; i += 1) {
+    if (matching[i] > i) {
+      pairCount += 1
+      totalWeight += weightMatrix[i][matching[i]] ?? 0
+    }
+  }
+  return { matching, pairCount, totalWeight }
+}
+
 /**
  * Computes an exact maximum-weight matching for the current pool.
  *
@@ -36,7 +87,7 @@ interface WeightedMatchingOptions {
  * unmatched when another maximum-cardinality solution exists.
  * @returns Exact best matching for the matrix, including pair count and total weight.
  */
-export function findMaximumWeightMatching(
+function findSmallMaximumWeightMatching(
   weightMatrix: Array<Array<number | null>>,
   options: WeightedMatchingOptions = {},
 ): WeightedMatchingResult {

@@ -11,11 +11,13 @@ import type {
 import type { GroupSessionEvent } from '@/features/groups/lib/groupSessionEvents'
 import { DurableObject } from 'cloudflare:workers'
 import { GROUP_SESSION_WEBSOCKET_PROTOCOL } from '@/features/groups/lib/groupSessionProtocol'
-import { getPrisma } from './group-session/database'
+import { getMembership, getPrisma } from './group-session/database'
 import { handleMakePairs } from './group-session/pairing-actions'
 import { handleResetPool } from './group-session/pool-actions'
 import { handleUpsertRatings } from './group-session/rating-actions'
-import { getTasksForUser, hasStoredGroupSessionState, hydrateGroupSessionStorage, initializeGroupSessionStorage } from './group-session/storage'
+import { recoverGroupSession } from './group-session/recovery'
+import { notifyGroupSession } from './group-session/runtime'
+import { getStoredTaskByUserId, getTasksForUser, hasStoredGroupSessionState, hydrateGroupSessionStorage, initializeGroupSessionStorage, readSessionMetadata, removeStoredMemberState, retainStoredMembers, writeSessionMetadata } from './group-session/storage'
 import { handleDeleteTask, handleUpsertTask } from './group-session/task-actions'
 
 export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
@@ -45,8 +47,12 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
     const pair = new WebSocketPair()
     const [client, server] = Object.values(pair) as [WebSocket, WebSocket]
 
-    await this.runExclusive(async () => {
-      await this.ensureHydrated(groupId)
+    const authorized = await this.runExclusive(async () => {
+      const prisma = await getPrisma()
+      if (await getMembership(prisma, groupId, userId) === null) {
+        return false
+      }
+      await this.ensureHydrated(groupId, prisma)
 
       server.serializeAttachment({ userId })
       this.ctx.acceptWebSocket(server)
@@ -54,7 +60,11 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
         type: 'snapshot',
         tasks: getTasksForUser(this.ctx, userId),
       } satisfies GroupSessionEvent))
+      return true
     })
+    if (!authorized) {
+      return new Response('Group membership required', { status: 401 })
+    }
 
     return new Response(null, {
       status: 101,
@@ -69,6 +79,10 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
     if (message === 'ping') {
       webSocket.send('pong')
     }
+  }
+
+  webSocketClose(webSocket: WebSocket, code: number, reason: string): void {
+    webSocket.close([1005, 1006, 1015].includes(code) ? 1000 : code, reason)
   }
 
   webSocketError(webSocket: WebSocket): void {
@@ -103,11 +117,50 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
 
   async getSnapshot(request: GroupSessionRequest): Promise<GroupSessionSnapshot> {
     return this.runExclusive(async () => {
-      await this.ensureHydrated(request.groupId)
+      const prisma = await getPrisma()
+      if (await getMembership(prisma, request.groupId, request.userId) === null) {
+        throw new Error('You are not a member in this group')
+      }
+      await this.ensureHydrated(request.groupId, prisma)
+      const members = await prisma.group_member.findMany({
+        where: { group_id: request.groupId, is_pending: false },
+        select: { user_id: true },
+      })
+      retainStoredMembers(this.ctx, new Set(members.map(member => member.user_id)))
 
       return {
         tasks: getTasksForUser(this.ctx, request.userId),
       }
+    })
+  }
+
+  async reconcileRemovedMember(request: GroupSessionRequest): Promise<ActionResponse> {
+    return this.runExclusive(async () => {
+      const prisma = await getPrisma()
+      const membership = await prisma.group_member.findFirst({
+        where: { group_id: request.groupId, user_id: request.userId },
+        select: { id: true },
+      })
+      // A later invitation or rejoin owns the current membership and pool state.
+      if (membership !== null) {
+        return { success: true, message: 'Current membership preserved' }
+      }
+      await this.ensureHydrated(request.groupId, prisma)
+      const task = getStoredTaskByUserId(this.ctx, request.userId)
+      removeStoredMemberState(this.ctx, request.userId)
+      for (const socket of this.ctx.getWebSockets()) {
+        const attachment = socket.deserializeAttachment() as { userId?: string } | null
+        if (attachment?.userId === request.userId) {
+          try {
+            socket.close(1008, 'Group membership revoked')
+          }
+          catch { /* Already closed. */ }
+        }
+      }
+      if (task !== null) {
+        await notifyGroupSession(this.runtime(), request.groupId, { type: 'task:deleted', taskId: task.id, userId: request.userId })
+      }
+      return { success: true, message: 'Member session state removed' }
     })
   }
 
@@ -137,6 +190,17 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
   }
 
   private async ensureHydrated(groupId: string, prisma?: PrismaClient): Promise<void> {
+    const boundGroupId = readSessionMetadata(this.ctx, 'groupId')
+    if (boundGroupId !== null && boundGroupId !== groupId) {
+      throw new Error('Group session identity mismatch')
+    }
+    writeSessionMetadata(this.ctx, 'groupId', groupId)
+    if (readSessionMetadata(this.ctx, 'pending') !== null) {
+      const event = await recoverGroupSession(this.ctx, prisma ?? await getPrisma())
+      if (event !== null) {
+        await notifyGroupSession(this.runtime(), groupId, event)
+      }
+    }
     if (this.hydrated) {
       return
     }
@@ -167,11 +231,34 @@ export class GroupSessionDO extends DurableObject<Cloudflare.Env> {
     this.hydrated = true
   }
 
-  private broadcast(event: GroupSessionEvent): void {
+  private async broadcast(groupId: string, event: GroupSessionEvent): Promise<void> {
+    const sockets = this.ctx.getWebSockets().filter(socket => socket.readyState === WebSocket.OPEN)
+    if (sockets.length === 0) {
+      return
+    }
+    const prisma = await getPrisma()
+    const members = await prisma.group_member.findMany({
+      where: { group_id: groupId, is_pending: false },
+      select: { user_id: true },
+    })
+    const authorized = new Set(members.map(member => member.user_id))
     const serialized = JSON.stringify(event)
-
-    for (const webSocket of this.ctx.getWebSockets()) {
-      webSocket.send(serialized)
+    for (const socket of sockets) {
+      const attachment = socket.deserializeAttachment() as { userId?: string } | null
+      try {
+        if (attachment?.userId === undefined || !authorized.has(attachment.userId)) {
+          socket.close(1008, 'Group membership revoked')
+        }
+        else {
+          socket.send(serialized)
+        }
+      }
+      catch {
+        try {
+          socket.close(1011, 'Reconnect to synchronize')
+        }
+        catch { /* Already closed. */ }
+      }
     }
   }
 }

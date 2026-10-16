@@ -79,7 +79,7 @@ export interface MatchingOutput {
   stableDebug: string
   /** Raw result returned by the stable-roommates phase before weighted repair. */
   stableResult: number[]
-  /** Maximum-weight matching across the full pool, used as a fallback baseline. */
+  /** Full-pool weighted fallback; empty when the stable or partial result suffices. */
   mwmResultFull: number[]
   /** Maximum-weight matching across only the unmatched stable-roommates participants. */
   mwmResultPartial: number[]
