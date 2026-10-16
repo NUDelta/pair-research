@@ -1,63 +1,36 @@
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { deleteStoredAvatar, getStoredAvatarKeyFromUrl, getStoredAvatarKeys } from './deleteAvatar'
+import { deleteStoredAvatar, getStoredAvatarKeyFromUrl } from './deleteAvatar'
 
 const deleteObject = vi.fn()
-
-vi.mock('@/shared/server/cloudflare/r2', () => ({
-  deleteObject,
-}))
+vi.mock('@/shared/server/cloudflare/r2', () => ({ deleteObject }))
 
 describe('deleteStoredAvatar', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  beforeEach(() => vi.clearAllMocks())
 
-  it('derives the stored avatar keys for all supported formats', () => {
-    expect(getStoredAvatarKeys('user-123')).toEqual([
-      'images/avatars/user-123.webp',
-      'images/avatars/user-123.avif',
-    ])
-  })
-
-  it('derives the current stored avatar key from owned public URLs', () => {
-    expect(getStoredAvatarKeyFromUrl('user-123', 'https://r2.example.com/images/avatars/user-123-AbCd12.webp')).toBe(
-      'images/avatars/user-123-AbCd12.webp',
-    )
+  it('recognizes owned legacy and revision keys', () => {
+    expect(getStoredAvatarKeyFromUrl('user-123', 'https://r2.example.com/images/avatars/user-123-AbCd12.webp')).toBe('images/avatars/user-123-AbCd12.webp')
+    expect(getStoredAvatarKeyFromUrl('user-123', 'https://r2.example.com/images/avatars/user-123.avif')).toBe('images/avatars/user-123.avif')
     expect(getStoredAvatarKeyFromUrl('user-123', 'https://r2.example.com/images/avatars/other-user.webp')).toBeNull()
     expect(getStoredAvatarKeyFromUrl('user-123', 'not-a-url')).toBeNull()
   })
 
-  it('attempts to delete every stored avatar variant', async () => {
-    deleteObject.mockResolvedValue(undefined)
+  it('deletes only the replaced revision', async () => {
+    await deleteStoredAvatar('user-123', { currentAvatarUrl: 'https://r2.example.com/images/avatars/user-123-old.webp' })
+    expect(deleteObject).toHaveBeenCalledExactlyOnceWith('images/avatars/user-123-old.webp')
+  })
 
+  it('leaves unrelated objects alone when the profile has no stored avatar', async () => {
     await deleteStoredAvatar('user-123')
-
-    expect(deleteObject).toHaveBeenCalledTimes(2)
-    expect(deleteObject).toHaveBeenNthCalledWith(1, 'images/avatars/user-123.webp')
-    expect(deleteObject).toHaveBeenNthCalledWith(2, 'images/avatars/user-123.avif')
+    await deleteStoredAvatar('user-123', { currentAvatarUrl: 'https://gravatar.com/avatar/123' })
+    expect(deleteObject).not.toHaveBeenCalled()
   })
 
-  it('deletes a previous random-key avatar while preserving a new deterministic avatar', async () => {
-    deleteObject.mockResolvedValue(undefined)
-
-    await deleteStoredAvatar('user-123', {
-      currentAvatarUrl: 'https://r2.example.com/images/avatars/user-123-old.webp',
-      preserveAvatarUrl: 'https://r2.example.com/images/avatars/user-123.webp',
-    })
-
-    expect(deleteObject).toHaveBeenCalledTimes(2)
-    expect(deleteObject).toHaveBeenNthCalledWith(1, 'images/avatars/user-123.avif')
-    expect(deleteObject).toHaveBeenNthCalledWith(2, 'images/avatars/user-123-old.webp')
-  })
-
-  it('swallows delete failures so avatar clearing still completes', async () => {
+  it('does not fail a committed profile update when old-object cleanup fails', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    deleteObject.mockRejectedValueOnce(new Error('missing'))
-    deleteObject.mockResolvedValueOnce(undefined)
-
-    await deleteStoredAvatar('user-123')
-
+    deleteObject.mockRejectedValueOnce(new Error('unavailable'))
+    await deleteStoredAvatar('user-123', { currentAvatarUrl: 'https://r2.example.com/images/avatars/user-123.webp' })
     expect(errorSpy).toHaveBeenCalledWith('Avatar file delete failed:', expect.any(Error))
-    expect(deleteObject).toHaveBeenCalledTimes(2)
   })
 })

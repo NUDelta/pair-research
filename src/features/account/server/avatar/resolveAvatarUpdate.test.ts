@@ -38,7 +38,7 @@ describe('resolveAvatarUpdate', () => {
     expect(deleteStoredAvatar).not.toHaveBeenCalled()
   })
 
-  it('removes stored avatars when the user clears their photo', async () => {
+  it('resolves removal without deleting the currently published avatar', async () => {
     deleteStoredAvatar.mockResolvedValue(undefined)
 
     await expect(resolveAvatarUpdate({
@@ -49,10 +49,10 @@ describe('resolveAvatarUpdate', () => {
       shouldUpdateAvatar: true,
     })
 
-    expect(deleteStoredAvatar).toHaveBeenCalledWith('user-123', { currentAvatarUrl: undefined })
+    expect(deleteStoredAvatar).not.toHaveBeenCalled()
   })
 
-  it('resolves a gravatar avatar and clears stored uploads first', async () => {
+  it('resolves a gravatar avatar without deleting the currently published avatar', async () => {
     deleteStoredAvatar.mockResolvedValue(undefined)
     mockGravatarLink.mockResolvedValue('https://gravatar.zla.app/avatar/hash?s=200')
 
@@ -61,19 +61,16 @@ describe('resolveAvatarUpdate', () => {
       userId: 'user-123',
       email: 'ada@example.com',
       fullName: 'Ada Lovelace',
-      currentAvatarUrl: 'https://r2.example.com/images/avatars/user-123-old.webp',
     })).resolves.toEqual({
       avatarUrl: 'https://gravatar.zla.app/avatar/hash?s=200',
       shouldUpdateAvatar: true,
     })
 
-    expect(deleteStoredAvatar).toHaveBeenCalledWith('user-123', {
-      currentAvatarUrl: 'https://r2.example.com/images/avatars/user-123-old.webp',
-    })
+    expect(deleteStoredAvatar).not.toHaveBeenCalled()
     expect(mockGravatarLink).toHaveBeenCalledWith('ada@example.com', 'Ada Lovelace')
   })
 
-  it('stores uploaded avatar bytes and preserves the new object during cleanup', async () => {
+  it('stores uploaded avatar bytes without deleting the currently published avatar', async () => {
     const imageBuffer = Uint8Array.from([1, 2, 3]).buffer
     uploadAvatarFromArrayBuffer.mockResolvedValue('https://r2.example.com/images/avatars/user-123.webp')
 
@@ -82,17 +79,13 @@ describe('resolveAvatarUpdate', () => {
       userId: 'user-123',
       imageBuffer,
       contentType: 'image/webp',
-      currentAvatarUrl: 'https://r2.example.com/images/avatars/user-123-old.webp',
     })).resolves.toEqual({
       avatarUrl: 'https://r2.example.com/images/avatars/user-123.webp',
       shouldUpdateAvatar: true,
     })
 
     expect(uploadAvatarFromArrayBuffer).toHaveBeenCalledWith('user-123', imageBuffer, 'image/webp')
-    expect(deleteStoredAvatar).toHaveBeenCalledWith('user-123', {
-      currentAvatarUrl: 'https://r2.example.com/images/avatars/user-123-old.webp',
-      preserveAvatarUrl: 'https://r2.example.com/images/avatars/user-123.webp',
-    })
+    expect(deleteStoredAvatar).not.toHaveBeenCalled()
   })
 
   it('rejects upload requests without image bytes', async () => {

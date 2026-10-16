@@ -21,6 +21,7 @@ export async function sendResendEmail(values: ContactFormValues) {
 
   const response = await fetch(RESEND_EMAIL_API_URL, {
     method: 'POST',
+    signal: AbortSignal.timeout(10000),
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',

@@ -32,9 +32,20 @@ const AvatarUploader = ({
   setValue,
 }: AvatarUploaderProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
+  const uploadGenerationRef = useRef(0)
   const [previewUrl, setPreviewUrl] = useState(() => normalizePreviewUrl(initialUrl))
   const [pending, setPending] = useState(false)
   const [isUsingGravatar, setIsUsingGravatar] = useState(() => isGravatarAvatarUrl(initialUrl))
+
+  useEffect(() => () => {
+    uploadGenerationRef.current += 1
+  }, [])
+
+  useEffect(() => () => {
+    if (previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     if (!isUsingGravatar) {
@@ -79,10 +90,14 @@ const AvatarUploader = ({
       return
     }
 
+    const generation = ++uploadGenerationRef.current
     try {
       setPending(true)
       setIsUsingGravatar(false)
       const { imageBuffer, contentType } = await optimizeAvatar(file)
+      if (generation !== uploadGenerationRef.current) {
+        return
+      }
       setValue('avatar_source', 'upload', { shouldDirty: true })
       setValue('avatar', imageBuffer, { shouldDirty: true })
       setValue('content_type', contentType, { shouldDirty: true })
@@ -90,11 +105,16 @@ const AvatarUploader = ({
       setPreviewUrl(url)
     }
     catch (error_) {
+      if (generation !== uploadGenerationRef.current) {
+        return
+      }
       console.error('Avatar upload failed:', error_)
       toast.error(error_ instanceof Error ? error_.message : 'Avatar upload failed')
     }
     finally {
-      setPending(false)
+      if (generation === uploadGenerationRef.current) {
+        setPending(false)
+      }
       if (inputRef.current) {
         inputRef.current.value = ''
       }
@@ -102,6 +122,8 @@ const AvatarUploader = ({
   }
 
   const handleGravatarToggle = (checked: boolean) => {
+    uploadGenerationRef.current += 1
+    setPending(false)
     setIsUsingGravatar(checked)
     setValue('avatar', undefined, { shouldDirty: true })
     setValue('content_type', undefined, { shouldDirty: true })

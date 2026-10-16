@@ -64,6 +64,7 @@ export async function verifyTurnstileToken({
   try {
     response = await fetch(TURNSTILE_VERIFY_URL, {
       method: 'POST',
+      signal: AbortSignal.timeout(10000),
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },

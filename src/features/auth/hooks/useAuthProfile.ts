@@ -23,10 +23,12 @@ const emptyProfile = {
 export const useAuthProfile = (
   setUserLoggedIn: (value: boolean) => void,
 ) => {
-  const supabaseAuth = createClient().auth
+  const [supabaseAuth] = useState(() => createClient().auth)
   const getOrCreateProfileFn = useServerFn(getOrCreateProfile)
   const updateProfileFn = useServerFn(updateProfile)
   const lastGoogleAvatarSyncUrlRef = useRef<string | null>(null)
+  const generationRef = useRef(0)
+  const userIdRef = useRef<string | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<{ full_name: string | null, avatar_url: string | null }>(emptyProfile)
@@ -40,51 +42,60 @@ export const useAuthProfile = (
   const syncGoogleAvatar = useCallback(async (
     user: User,
     currentAvatarUrl: string | null,
+    generation: number,
   ) => {
-    if (!isGoogleAvatarUrl(currentAvatarUrl)) {
-      return
-    }
-
+    const isCurrent = () => generationRef.current === generation
     const googleAvatarUrl = getGoogleAvatarUrlForUser(user)
-    if (googleAvatarUrl === null) {
+    const normalizedGoogleAvatarUrl = googleAvatarUrl === null ? null : normalizeGoogleAvatarUrl(googleAvatarUrl)
+    const syncKey = `${user.id}:${normalizedGoogleAvatarUrl}`
+    if (!isGoogleAvatarUrl(currentAvatarUrl) || normalizedGoogleAvatarUrl === null || lastGoogleAvatarSyncUrlRef.current === syncKey) {
       return
     }
 
-    const normalizedGoogleAvatarUrl = normalizeGoogleAvatarUrl(googleAvatarUrl)
-    if (normalizedGoogleAvatarUrl === null || lastGoogleAvatarSyncUrlRef.current === normalizedGoogleAvatarUrl) {
-      return
+    try {
+      const imageBuffer = await optimizeImageFromUrl(normalizedGoogleAvatarUrl)
+      if (imageBuffer === null || !isCurrent()) {
+        return
+      }
+
+      const latestProfile = await getOrCreateProfileFn()
+      if (!isCurrent() || latestProfile.id !== user.id) {
+        return
+      }
+      if (!isGoogleAvatarUrl(latestProfile.avatar_url)) {
+        setProfile(latestProfile)
+        return
+      }
+
+      const result = await updateProfileFn({
+        data: {
+          avatarSource: 'upload',
+          imageBuffer,
+          contentType: 'image/webp',
+          expectedUserId: user.id,
+          expectedAvatarUrl: latestProfile.avatar_url,
+        },
+      })
+      if (!result.success || !isCurrent()) {
+        return
+      }
+
+      lastGoogleAvatarSyncUrlRef.current = syncKey
+      const refreshedProfile = await getOrCreateProfileFn()
+      if (isCurrent() && refreshedProfile.id === user.id) {
+        setProfile(refreshedProfile)
+      }
     }
-
-    lastGoogleAvatarSyncUrlRef.current = normalizedGoogleAvatarUrl
-
-    const imageBuffer = await optimizeImageFromUrl(normalizedGoogleAvatarUrl)
-    if (imageBuffer === null) {
-      return
+    catch (error) {
+      if (isCurrent()) {
+        console.error('Failed to sync Google avatar:', error)
+      }
     }
-
-    const latestProfile = await getOrCreateProfileFn()
-    if (!isGoogleAvatarUrl(latestProfile.avatar_url)) {
-      setProfile(latestProfile)
-      return
-    }
-
-    const result = await updateProfileFn({
-      data: {
-        avatarSource: 'upload',
-        imageBuffer,
-        contentType: 'image/webp',
-      },
-    })
-
-    if (!result.success) {
-      return
-    }
-
-    const refreshedProfile = await getOrCreateProfileFn()
-    setProfile(refreshedProfile)
   }, [getOrCreateProfileFn, updateProfileFn])
 
   const fetchProfile = useCallback(async () => {
+    const generation = ++generationRef.current
+    const isCurrent = () => generationRef.current === generation
     setLoading(true)
     try {
       const url = new URL(globalThis.location.href)
@@ -120,6 +131,10 @@ export const useAuthProfile = (
         error: userError,
       } = await supabaseAuth.getUser()
 
+      if (!isCurrent()) {
+        return
+      }
+
       if (userError || !user) {
         setLoggedOut()
         if (userError && !isMissingSupabaseSessionError(userError)) {
@@ -128,25 +143,36 @@ export const useAuthProfile = (
         return
       }
 
+      userIdRef.current = user.id
       try {
         const result = await getOrCreateProfileFn()
+        if (!isCurrent() || result.id !== user.id) {
+          return
+        }
         setProfile(result)
-        void syncGoogleAvatar(user, result.avatar_url)
+        void syncGoogleAvatar(user, result.avatar_url, generation)
       }
       catch (profileError) {
+        if (!isCurrent()) {
+          return
+        }
         console.error('Failed to fetch server profile, falling back to auth metadata:', profileError)
         const fallbackProfile = getAuthProfileSnapshot(user)
         setProfile(fallbackProfile)
-        void syncGoogleAvatar(user, fallbackProfile.avatar_url)
+        void syncGoogleAvatar(user, fallbackProfile.avatar_url, generation)
       }
 
       setUserLoggedIn(true)
     }
     catch (error_) {
-      console.error('Failed to fetch profile:', error_)
+      if (isCurrent()) {
+        console.error('Failed to fetch profile:', error_)
+      }
     }
     finally {
-      setLoading(false)
+      if (isCurrent()) {
+        setLoading(false)
+      }
     }
   }, [getOrCreateProfileFn, setLoggedOut, setUserLoggedIn, supabaseAuth, syncGoogleAvatar])
 
@@ -155,18 +181,35 @@ export const useAuthProfile = (
   }, [fetchProfile])
 
   useEffect(() => {
+    let disposed = false
     const {
       data: { subscription },
-    } = supabaseAuth.onAuthStateChange(() => {
+    } = supabaseAuth.onAuthStateChange((_event, session) => {
+      // Invalidate immediately: queued profile/image results may resolve before the next fetch.
+      generationRef.current += 1
+      const nextUserId = session?.user.id ?? null
+      if (nextUserId !== userIdRef.current) {
+        setProfile(emptyProfile)
+        lastGoogleAvatarSyncUrlRef.current = null
+      }
+      userIdRef.current = nextUserId
+      if (session === null) {
+        setLoggedOut()
+        return
+      }
       queueMicrotask(() => {
-        void fetchProfile()
+        if (!disposed) {
+          void fetchProfile()
+        }
       })
     })
 
     return () => {
+      disposed = true
+      generationRef.current += 1
       subscription.unsubscribe()
     }
-  }, [fetchProfile, supabaseAuth])
+  }, [fetchProfile, setLoggedOut, supabaseAuth])
 
   return { loading, profile, refreshProfile: fetchProfile }
 }

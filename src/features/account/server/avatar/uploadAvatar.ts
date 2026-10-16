@@ -17,10 +17,10 @@ type AvatarContentType = (typeof AVATAR_CONTENT_TYPES)[keyof typeof AVATAR_CONTE
 /**
  * Stores one optimized avatar image in R2 and returns its public URL.
  *
- * The object key is deterministic per user so a replacement upload overwrites the
- * previous avatar instead of leaving orphaned objects behind.
+ * Each upload gets an immutable revision key so concurrent updates cannot
+ * overwrite the object referenced by another successful update.
  *
- * @param id Auth user id used to derive the stable avatar object key.
+ * @param id Auth user id used to scope the avatar object key.
  * @param imageBuffer Optimized avatar bytes ready to persist.
  * @param contentType MIME type produced by the avatar optimization pipeline.
  * @returns Publicly accessible R2 URL for the stored avatar.
@@ -34,7 +34,7 @@ export const uploadAvatarFromArrayBuffer = async (
   const bytes = new Uint8Array(imageBuffer)
   const imageExtension = validateAvatarBytes(bytes, contentType)
 
-  const filename = `images/avatars/${id}.${imageExtension}`
+  const filename = `images/avatars/${id}-${crypto.randomUUID()}.${imageExtension}`
 
   // Use a platform-neutral byte view so the upload path works the same in
   // Workers and in isolated unit tests.

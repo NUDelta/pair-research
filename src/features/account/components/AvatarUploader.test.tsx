@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AvatarUploader from './AvatarUploader'
 
-const { mockGravatarLink, mockOptimizeAvatar } = vi.hoisted(() => ({
+const { mockGravatarLink, mockOptimizeAvatar, revokeObjectURL } = vi.hoisted(() => ({
   mockGravatarLink: vi.fn(),
   mockOptimizeAvatar: vi.fn(),
+  revokeObjectURL: vi.fn(),
 }))
 
 vi.mock('@/features/account/lib/avatar', async (importOriginal) => {
@@ -29,6 +30,7 @@ describe('avatarUploader', () => {
       contentType: 'image/webp',
     })
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:avatar-preview')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(revokeObjectURL)
   })
 
   it('marks the form for avatar removal when the user clears their photo', async () => {
@@ -133,5 +135,16 @@ describe('avatarUploader', () => {
     await user.click(within(dialog).getByRole('button', { name: /^remove photo$/i }))
 
     expect(screen.getByRole('switch', { name: /use gravatar/i })).toHaveAttribute('aria-checked', 'false')
+  })
+  it('revokes uploaded preview URLs on replacement and unmount', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(<AvatarUploader email="ada@example.com" fullName="Ada" isRemoving={false} onRemove={vi.fn()} setValue={vi.fn()} />)
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]')!
+    vi.spyOn(URL, 'createObjectURL').mockReturnValueOnce('blob:first').mockReturnValueOnce('blob:second')
+    await user.upload(input, new File(['one'], 'one.png', { type: 'image/png' }))
+    await user.upload(input, new File(['two'], 'two.png', { type: 'image/png' }))
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:first')
+    unmount()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:second')
   })
 })

@@ -6,6 +6,20 @@ describe('sanitizeRedirectPath', () => {
     expect(sanitizeRedirectPath('/groups?view=all', '/')).toBe('/groups?view=all')
   })
 
+  it.each([
+    '/.//evil.example/x',
+    '/a/..//evil.example/x',
+    '/%2e//evil.example/x',
+    'http://localhost//evil.example/x',
+    '/\\evil.example/x',
+  ])('rejects normalized protocol-relative paths: %s', (next) => {
+    expect(sanitizeRedirectPath(next, '/groups')).toBe('/groups')
+  })
+
+  it('keeps local path normalization and query fragments', () => {
+    expect(sanitizeRedirectPath('/account/../groups?next=https://example.com#members')).toBe('/groups?next=https://example.com#members')
+  })
+
   it('rejects external redirect targets', () => {
     expect(sanitizeRedirectPath('https://evil.example/login', '/')).toBe('/')
   })
